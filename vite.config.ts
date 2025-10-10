@@ -1,0 +1,27 @@
+import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
+
+export default defineConfig({
+  plugins: [dts({ rollupTypes: true })],
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'SMKit',
+      formats: ['es', 'cjs'],
+      fileName: (format) => {
+        if (format === 'es') return 'smkit.js';
+        if (format === 'cjs') return 'smkit.cjs';
+        return `smkit.${format}.js`;
+      },
+    },
+    rollupOptions: {
+      external: [],
+    },
+    sourcemap: true,
+  },
+  test: {
+    globals: true,
+    environment: 'node',
+  },
+});
