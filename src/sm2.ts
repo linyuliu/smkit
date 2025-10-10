@@ -1,9 +1,28 @@
 import { digest as sm3Digest } from './sm3';
+import { SM2CipherMode, type SM2CipherModeType } from './constants';
 
 /**
  * SM2 elliptic curve parameters (placeholder implementation)
  * This is a simplified version. A full implementation would use proper elliptic curve operations.
  */
+
+/**
+ * SM2 elliptic curve parameters (based on GM/T 0003-2012)
+ */
+export interface SM2CurveParams {
+  // Prime modulus p
+  p?: string;
+  // Coefficient a
+  a?: string;
+  // Coefficient b
+  b?: string;
+  // Base point x coordinate
+  Gx?: string;
+  // Base point y coordinate
+  Gy?: string;
+  // Order n
+  n?: string;
+}
 
 export interface KeyPair {
   publicKey: string;
@@ -13,11 +32,13 @@ export interface KeyPair {
 export interface SignOptions {
   der?: boolean;
   userId?: string;
+  curveParams?: SM2CurveParams;
 }
 
 export interface VerifyOptions {
   der?: boolean;
   userId?: string;
+  curveParams?: SM2CurveParams;
 }
 
 /**
@@ -63,7 +84,7 @@ export function getPublicKeyFromPrivateKey(privateKey: string): string {
 export function encrypt(
   _publicKey: string,
   data: string | Uint8Array,
-  mode: 'C1C3C2' | 'C1C2C3' = 'C1C3C2'
+  mode: SM2CipherModeType = SM2CipherMode.C1C3C2
 ): string {
   // Placeholder implementation
   // A real implementation would use SM2 encryption algorithm
@@ -84,7 +105,7 @@ export function encrypt(
 export function decrypt(
   _privateKey: string,
   _encryptedData: string,
-  _mode: 'C1C3C2' | 'C1C2C3' = 'C1C3C2'
+  _mode: SM2CipherModeType = SM2CipherMode.C1C3C2
 ): string {
   // Placeholder implementation
   // A real implementation would use SM2 decryption algorithm
@@ -104,7 +125,9 @@ export function sign(
   _options?: SignOptions
 ): string {
   // Placeholder implementation
-  // A real implementation would use SM2 signature algorithm
+  // A real implementation would use SM2 signature algorithm with:
+  //   - userId: _options?.userId || DEFAULT_USER_ID (from constants)
+  //   - curveParams: _options?.curveParams
   const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
   const hash = sm3Digest(dataBytes);
   
@@ -127,6 +150,8 @@ export function verify(
   _options?: VerifyOptions
 ): boolean {
   // Placeholder implementation
-  // A real implementation would use SM2 verification algorithm
+  // A real implementation would use SM2 verification algorithm with:
+  //   - userId: _options?.userId || DEFAULT_USER_ID (from constants)
+  //   - curveParams: _options?.curveParams
   return signature.length > 0;
 }

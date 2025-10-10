@@ -7,6 +7,7 @@ import {
   sign,
   verify,
 } from '../src/sm2';
+import { SM2CipherMode, DEFAULT_USER_ID } from '../src/constants';
 
 describe('SM2', () => {
   describe('generateKeyPair', () => {
@@ -47,10 +48,10 @@ describe('SM2', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello';
       
-      const encrypted1 = encrypt(keyPair.publicKey, plaintext, 'C1C3C2');
+      const encrypted1 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
       expect(encrypted1).toBeTruthy();
       
-      const encrypted2 = encrypt(keyPair.publicKey, plaintext, 'C1C2C3');
+      const encrypted2 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
       expect(encrypted2).toBeTruthy();
     });
 
@@ -93,10 +94,10 @@ describe('SM2', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello';
       
-      const signature = sign(keyPair.privateKey, data, { der: true, userId: '1234567812345678' });
+      const signature = sign(keyPair.privateKey, data, { der: true, userId: DEFAULT_USER_ID });
       expect(signature).toBeTruthy();
       
-      const isValid = verify(keyPair.publicKey, data, signature, { der: true, userId: '1234567812345678' });
+      const isValid = verify(keyPair.publicKey, data, signature, { der: true, userId: DEFAULT_USER_ID });
       expect(isValid).toBe(true);
     });
   });
