@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { encrypt, decrypt } from '../src/sm4';
+import { CipherMode, PaddingMode } from '../src/constants';
 
 describe('SM4', () => {
   const key = '0123456789abcdeffedcba9876543210'; // 128-bit key
@@ -7,28 +8,28 @@ describe('SM4', () => {
   describe('ECB mode', () => {
     it('should encrypt and decrypt with ECB mode', () => {
       const plaintext = 'Hello, SM4!';
-      const encrypted = encrypt(key, plaintext, { mode: 'ECB', padding: 'Pkcs7' });
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(encrypted).toMatch(/^[0-9a-f]+$/);
       
-      const decrypted = decrypt(key, encrypted, { mode: 'ECB', padding: 'Pkcs7' });
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe(plaintext);
     });
 
     it('should handle Uint8Array input', () => {
       const plaintext = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
-      const encrypted = encrypt(key, plaintext, { mode: 'ECB', padding: 'Pkcs7' });
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(encrypted).toMatch(/^[0-9a-f]+$/);
       
-      const decrypted = decrypt(key, encrypted, { mode: 'ECB', padding: 'Pkcs7' });
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe('Hello');
     });
 
     it('should encrypt exactly 16 bytes without padding', () => {
       const plaintext = '0123456789abcdef'; // exactly 16 bytes
-      const encrypted = encrypt(key, plaintext, { mode: 'ECB', padding: 'None' });
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.NONE });
       expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
       
-      const decrypted = decrypt(key, encrypted, { mode: 'ECB', padding: 'None' });
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.NONE });
       expect(decrypted).toBe(plaintext);
     });
   });
@@ -38,22 +39,22 @@ describe('SM4', () => {
 
     it('should encrypt and decrypt with CBC mode', () => {
       const plaintext = 'Hello, SM4 CBC!';
-      const encrypted = encrypt(key, plaintext, { mode: 'CBC', padding: 'Pkcs7', iv });
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
       expect(encrypted).toMatch(/^[0-9a-f]+$/);
       
-      const decrypted = decrypt(key, encrypted, { mode: 'CBC', padding: 'Pkcs7', iv });
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
       expect(decrypted).toBe(plaintext);
     });
 
     it('should require IV for CBC mode', () => {
       const plaintext = 'Hello';
-      expect(() => encrypt(key, plaintext, { mode: 'CBC' })).toThrow('IV is required');
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.CBC })).toThrow('IV is required');
     });
 
     it('should validate IV length', () => {
       const plaintext = 'Hello';
       const shortIv = '0123456789abcdef'; // too short
-      expect(() => encrypt(key, plaintext, { mode: 'CBC', iv: shortIv })).toThrow();
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.CBC, iv: shortIv })).toThrow();
     });
   });
 
@@ -68,10 +69,10 @@ describe('SM4', () => {
   describe('Multiple blocks', () => {
     it('should handle multiple blocks correctly', () => {
       const plaintext = 'a'.repeat(100);
-      const encrypted = encrypt(key, plaintext, { mode: 'ECB', padding: 'Pkcs7' });
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(encrypted).toMatch(/^[0-9a-f]+$/);
       
-      const decrypted = decrypt(key, encrypted, { mode: 'ECB', padding: 'Pkcs7' });
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe(plaintext);
     });
   });

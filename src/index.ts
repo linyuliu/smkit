@@ -7,6 +7,18 @@
  * - SM4: Block cipher
  */
 
+// Export constants
+export {
+  PaddingMode,
+  CipherMode,
+  SM2CipherMode,
+  OID,
+  DEFAULT_USER_ID,
+  type PaddingModeType,
+  type CipherModeType,
+  type SM2CipherModeType,
+} from './constants';
+
 // Export SM2 functions
 export {
   generateKeyPair,
@@ -18,6 +30,7 @@ export {
   type KeyPair,
   type SignOptions,
   type VerifyOptions,
+  type SM2CurveParams,
 } from './sm2';
 
 // Export SM3 functions
@@ -46,10 +59,15 @@ export {
   uint32ToBytes4BE,
 } from './utils';
 
+// Export OOP classes
+export { SM2 as SM2Class } from './sm2-class';
+export { SM3 as SM3Class } from './sm3-class';
+export { SM4 as SM4Class } from './sm4-class';
+
 // Namespace exports for convenience
-import * as SM2 from './sm2';
-import * as SM3 from './sm3';
-import * as SM4 from './sm4';
+import * as SM2Funcs from './sm2';
+import * as SM3Funcs from './sm3';
+import * as SM4Funcs from './sm4';
 import * as Utils from './utils';
 
-export { SM2, SM3, SM4, Utils };
+export { SM2Funcs as SM2, SM3Funcs as SM3, SM4Funcs as SM4, Utils };
