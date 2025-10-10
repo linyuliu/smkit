@@ -1,0 +1,43 @@
+{
+  "name": "smkit",
+  "version": "0.1.0",
+  "description": "Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4)",
+  "type": "module",
+  "main": "./dist/smkit.cjs",
+  "module": "./dist/smkit.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/smkit.js",
+      "require": "./dist/smkit.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "sm2",
+    "sm3",
+    "sm4",
+    "cryptography",
+    "chinese-standard",
+    "gm",
+    "guomi"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "vitest": "^1.0.0"
+  }
+}
