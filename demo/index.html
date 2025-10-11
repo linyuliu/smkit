@@ -293,6 +293,22 @@
                 <button onclick="testSM2Verify()">验证签名</button>
             </div>
             
+            <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                <h3 style="margin-bottom: 15px;">SM2 加解密</h3>
+                
+                <div class="form-group">
+                    <label for="sm2-encrypt-text">明文：</label>
+                    <textarea id="sm2-encrypt-text" placeholder="输入要加密的文本...">Hello, SM2 Encryption!</textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="testSM2Encrypt()">加密</button>
+                    <button onclick="testSM2Decrypt()">解密</button>
+                </div>
+                
+                <div id="sm2-encrypt-result"></div>
+            </div>
+            
             <div id="sm2-result"></div>
         </div>
         
@@ -339,41 +355,28 @@ const keyPair = generateKeyPair();</code>
     </div>
     
     <script type="module">
-        // 导入 SMKit（在实际使用中，需要先构建库）
-        // 这里我们使用 CDN 或本地构建的版本
+        // 导入 SMKit 库（使用本地构建的版本）
+        import * as smkit from '../dist/smkit.js';
         
-        // 临时实现用于演示
-        window.smkit = {
-            digest: (text) => {
-                // 简化的 SM3 实现占位
-                return '9a4c6d8f7e3b2a1c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1';
-            },
-            sm4Encrypt: (key, plaintext) => {
-                // 简化的 SM4 实现占位
-                return 'encrypted_' + plaintext;
-            },
-            sm4Decrypt: (key, ciphertext) => {
-                // 简化的 SM4 实现占位
-                return ciphertext.replace('encrypted_', '');
-            },
-            generateKeyPair: () => {
-                // 简化的密钥生成占位
-                const privateKey = Array.from({length: 64}, () => 
-                    Math.floor(Math.random() * 16).toString(16)
-                ).join('');
-                const publicKey = '04' + privateKey + privateKey;
-                return { privateKey, publicKey };
-            },
-            sign: (privateKey, message) => {
-                // 简化的签名占位
-                return Array.from({length: 128}, () => 
-                    Math.floor(Math.random() * 16).toString(16)
-                ).join('');
-            },
-            verify: (publicKey, message, signature) => {
-                // 简化的验签占位
-                return signature.length === 128;
-            }
+        // 将 smkit 暴露到全局 window 对象，方便 inline script 使用
+        window.smkit = smkit;
+        
+        // 为了方便使用，创建包装函数
+        window.smkitHelpers = {
+            digest: (text) => smkit.digest(text),
+            sm4Encrypt: (key, plaintext) => smkit.sm4Encrypt(key, plaintext, { 
+                mode: smkit.CipherMode.ECB, 
+                padding: smkit.PaddingMode.PKCS7 
+            }),
+            sm4Decrypt: (key, ciphertext) => smkit.sm4Decrypt(key, ciphertext, { 
+                mode: smkit.CipherMode.ECB, 
+                padding: smkit.PaddingMode.PKCS7 
+            }),
+            generateKeyPair: () => smkit.generateKeyPair(),
+            sign: (privateKey, message) => smkit.sign(privateKey, message),
+            verify: (publicKey, message, signature) => smkit.verify(publicKey, message, signature),
+            sm2Encrypt: (publicKey, plaintext) => smkit.sm2Encrypt(publicKey, plaintext),
+            sm2Decrypt: (privateKey, ciphertext) => smkit.sm2Decrypt(privateKey, ciphertext)
         };
     </script>
     
@@ -393,114 +396,245 @@ const keyPair = generateKeyPair();</code>
         }
         
         function testSM3() {
-            const input = document.getElementById('sm3-input').value;
-            const hash = window.smkit.digest(input);
-            
-            document.getElementById('sm3-result').innerHTML = `
-                <div class="result">
-                    <h3>哈希结果：</h3>
-                    <pre>${hash}</pre>
-                </div>
-            `;
+            try {
+                const input = document.getElementById('sm3-input').value;
+                const hash = window.smkitHelpers.digest(input);
+                
+                document.getElementById('sm3-result').innerHTML = `
+                    <div class="result">
+                        <h3>哈希结果：</h3>
+                        <pre>${hash}</pre>
+                        <p style="margin-top: 10px; color: #666;">输入长度: ${input.length} 字符</p>
+                        <p style="color: #666;">哈希长度: ${hash.length} 字符 (256位)</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm3-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
         }
         
         function testSM4Encrypt() {
-            const key = document.getElementById('sm4-key').value;
-            const plaintext = document.getElementById('sm4-plaintext').value;
-            
-            if (key.length !== 32) {
-                alert('密钥必须是 32 位十六进制字符（16 字节）');
-                return;
+            try {
+                const key = document.getElementById('sm4-key').value;
+                const plaintext = document.getElementById('sm4-plaintext').value;
+                
+                if (key.length !== 32) {
+                    alert('密钥必须是 32 位十六进制字符（16 字节）');
+                    return;
+                }
+                
+                const ciphertext = window.smkitHelpers.sm4Encrypt(key, plaintext);
+                
+                document.getElementById('sm4-result').innerHTML = `
+                    <div class="result">
+                        <h3>加密结果：</h3>
+                        <pre>${ciphertext}</pre>
+                        <p style="margin-top: 10px; color: #666;">明文长度: ${plaintext.length} 字符</p>
+                        <p style="color: #666;">密文长度: ${ciphertext.length} 字符 (十六进制)</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm4-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
             }
-            
-            const ciphertext = window.smkit.sm4Encrypt(key, plaintext);
-            
-            document.getElementById('sm4-result').innerHTML = `
-                <div class="result">
-                    <h3>加密结果：</h3>
-                    <pre>${ciphertext}</pre>
-                </div>
-            `;
         }
         
         function testSM4Decrypt() {
-            const key = document.getElementById('sm4-key').value;
-            const resultDiv = document.getElementById('sm4-result');
-            
-            if (!resultDiv.textContent.includes('加密结果')) {
-                alert('请先加密');
-                return;
+            try {
+                const key = document.getElementById('sm4-key').value;
+                const resultDiv = document.getElementById('sm4-result');
+                
+                if (!resultDiv.textContent.includes('加密结果')) {
+                    alert('请先加密');
+                    return;
+                }
+                
+                const ciphertext = resultDiv.querySelector('pre').textContent.trim();
+                const plaintext = window.smkitHelpers.sm4Decrypt(key, ciphertext);
+                
+                document.getElementById('sm4-result').innerHTML = `
+                    <div class="result">
+                        <h3>解密结果：</h3>
+                        <pre>${plaintext}</pre>
+                        <p style="margin-top: 10px; color: #4CAF50;">✓ 解密成功</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm4-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
             }
-            
-            const ciphertext = resultDiv.querySelector('pre').textContent;
-            const plaintext = window.smkit.sm4Decrypt(key, ciphertext);
-            
-            document.getElementById('sm4-result').innerHTML = `
-                <div class="result">
-                    <h3>解密结果：</h3>
-                    <pre>${plaintext}</pre>
-                </div>
-            `;
         }
         
         function generateSM2KeyPair() {
-            const keyPair = window.smkit.generateKeyPair();
-            
-            document.getElementById('sm2-private-key').value = keyPair.privateKey;
-            document.getElementById('sm2-public-key').value = keyPair.publicKey;
-            
-            document.getElementById('sm2-result').innerHTML = `
-                <div class="result">
-                    <h3>密钥对已生成！</h3>
-                    <p>私钥长度: ${keyPair.privateKey.length} 位</p>
-                    <p>公钥长度: ${keyPair.publicKey.length} 位</p>
-                </div>
-            `;
+            try {
+                const keyPair = window.smkitHelpers.generateKeyPair();
+                
+                document.getElementById('sm2-private-key').value = keyPair.privateKey;
+                document.getElementById('sm2-public-key').value = keyPair.publicKey;
+                
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result">
+                        <h3>密钥对已生成！</h3>
+                        <p>私钥长度: ${keyPair.privateKey.length} 字符 (${keyPair.privateKey.length / 2} 字节)</p>
+                        <p>公钥长度: ${keyPair.publicKey.length} 字符 (${keyPair.publicKey.length / 2} 字节)</p>
+                        <p style="margin-top: 10px; color: #4CAF50;">✓ 基于 SM2 椭圆曲线算法</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
         }
         
         let currentSignature = '';
+        let currentCiphertext = '';
+        
+        function testSM2Encrypt() {
+            try {
+                const publicKey = document.getElementById('sm2-public-key').value;
+                const plaintext = document.getElementById('sm2-encrypt-text').value;
+                
+                if (!publicKey) {
+                    alert('请先生成密钥对');
+                    return;
+                }
+                
+                currentCiphertext = window.smkitHelpers.sm2Encrypt(publicKey, plaintext);
+                
+                document.getElementById('sm2-encrypt-result').innerHTML = `
+                    <div class="result">
+                        <h3>加密结果：</h3>
+                        <pre style="word-break: break-all;">${currentCiphertext}</pre>
+                        <p style="margin-top: 10px; color: #666;">明文长度: ${plaintext.length} 字符</p>
+                        <p style="color: #666;">密文长度: ${currentCiphertext.length} 字符 (${currentCiphertext.length / 2} 字节)</p>
+                        <p style="color: #4CAF50;">✓ 使用公钥加密</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm2-encrypt-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        function testSM2Decrypt() {
+            try {
+                const privateKey = document.getElementById('sm2-private-key').value;
+                
+                if (!privateKey) {
+                    alert('请先生成密钥对');
+                    return;
+                }
+                
+                if (!currentCiphertext) {
+                    alert('请先加密');
+                    return;
+                }
+                
+                const plaintext = window.smkitHelpers.sm2Decrypt(privateKey, currentCiphertext);
+                
+                document.getElementById('sm2-encrypt-result').innerHTML = `
+                    <div class="result">
+                        <h3>解密结果：</h3>
+                        <pre>${plaintext}</pre>
+                        <p style="margin-top: 10px; color: #4CAF50;">✓ 使用私钥解密成功</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm2-encrypt-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
         
         function testSM2Sign() {
-            const privateKey = document.getElementById('sm2-private-key').value;
-            const message = document.getElementById('sm2-message').value;
-            
-            if (!privateKey) {
-                alert('请先生成密钥对');
-                return;
+            try {
+                const privateKey = document.getElementById('sm2-private-key').value;
+                const message = document.getElementById('sm2-message').value;
+                
+                if (!privateKey) {
+                    alert('请先生成密钥对');
+                    return;
+                }
+                
+                currentSignature = window.smkitHelpers.sign(privateKey, message);
+                
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result">
+                        <h3>签名结果：</h3>
+                        <pre>${currentSignature}</pre>
+                        <p style="margin-top: 10px; color: #666;">签名长度: ${currentSignature.length} 字符 (${currentSignature.length / 2} 字节)</p>
+                        <p style="color: #666;">使用 SM3 哈希算法</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
             }
-            
-            currentSignature = window.smkit.sign(privateKey, message);
-            
-            document.getElementById('sm2-result').innerHTML = `
-                <div class="result">
-                    <h3>签名结果：</h3>
-                    <pre>${currentSignature}</pre>
-                </div>
-            `;
         }
         
         function testSM2Verify() {
-            const publicKey = document.getElementById('sm2-public-key').value;
-            const message = document.getElementById('sm2-message').value;
-            
-            if (!publicKey) {
-                alert('请先生成密钥对');
-                return;
+            try {
+                const publicKey = document.getElementById('sm2-public-key').value;
+                const message = document.getElementById('sm2-message').value;
+                
+                if (!publicKey) {
+                    alert('请先生成密钥对');
+                    return;
+                }
+                
+                if (!currentSignature) {
+                    alert('请先签名');
+                    return;
+                }
+                
+                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature);
+                
+                const statusColor = isValid ? '#4CAF50' : '#f44336';
+                const statusIcon = isValid ? '✅' : '❌';
+                
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result" style="border-left-color: ${statusColor};">
+                        <h3 style="color: ${statusColor};">验证结果：</h3>
+                        <pre style="font-size: 18px; font-weight: bold;">签名${statusIcon} ${isValid ? '有效' : '无效'}</pre>
+                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('sm2-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
             }
-            
-            if (!currentSignature) {
-                alert('请先签名');
-                return;
-            }
-            
-            const isValid = window.smkit.verify(publicKey, message, currentSignature);
-            
-            document.getElementById('sm2-result').innerHTML = `
-                <div class="result">
-                    <h3>验证结果：</h3>
-                    <pre>签名${isValid ? '✅ 有效' : '❌ 无效'}</pre>
-                </div>
-            `;
         }
     </script>
 </body>
