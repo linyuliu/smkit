@@ -63,14 +63,27 @@ import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'smkit';
 const key = '0123456789abcdeffedcba9876543210'; // 128 位密钥（32 个十六进制字符）
 const plaintext = 'Hello, SM4!';
 
-// ECB 模式
+// ECB 模式（电码本模式）
 const encrypted = sm4Encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 
-// CBC 模式
+// CBC 模式（分组链接模式）
 const iv = 'fedcba98765432100123456789abcdef'; // 128 位 IV（32 个十六进制字符）
 const encryptedCBC = sm4Encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
 const decryptedCBC = sm4Decrypt(key, encryptedCBC, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+
+// CTR 模式（计数器模式）- 流密码模式，无需填充
+const counter = '00000000000000000000000000000000'; // 128 位计数器/随机数
+const encryptedCTR = sm4Encrypt(key, plaintext, { mode: CipherMode.CTR, iv: counter });
+const decryptedCTR = sm4Decrypt(key, encryptedCTR, { mode: CipherMode.CTR, iv: counter });
+
+// CFB 模式（密文反馈模式）- 流密码模式，无需填充
+const encryptedCFB = sm4Encrypt(key, plaintext, { mode: CipherMode.CFB, iv });
+const decryptedCFB = sm4Decrypt(key, encryptedCFB, { mode: CipherMode.CFB, iv });
+
+// OFB 模式（输出反馈模式）- 流密码模式，无需填充
+const encryptedOFB = sm4Encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
+const decryptedOFB = sm4Decrypt(key, encryptedOFB, { mode: CipherMode.OFB, iv });
 ```
 
 #### SM2 椭圆曲线密码
@@ -146,6 +159,7 @@ const result = sm3.digest();
 import { SM4, CipherMode, PaddingMode } from 'smkit';
 
 const key = '0123456789abcdeffedcba9876543210';
+const iv = 'fedcba98765432100123456789abcdef';
 
 // 使用构造函数
 const sm4 = new SM4(key, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
@@ -155,10 +169,13 @@ const decrypted = sm4.decrypt(encrypted);
 // 使用工厂方法
 const sm4ecb = SM4.ECB(key);
 const sm4cbc = SM4.CBC(key, iv);
+const sm4ctr = SM4.CTR(key, '00000000000000000000000000000000');
+const sm4cfb = SM4.CFB(key, iv);
+const sm4ofb = SM4.OFB(key, iv);
 
 // 配置设置
 sm4.setMode(CipherMode.CBC);
-sm4.setIV('fedcba98765432100123456789abcdef');
+sm4.setIV(iv);
 sm4.setPadding(PaddingMode.PKCS7);
 ```
 
@@ -214,8 +231,11 @@ const str = bytesToString(strBytes);
 ```typescript
 import { CipherMode } from 'smkit';
 
-CipherMode.ECB  // 'ECB'
-CipherMode.CBC  // 'CBC'
+CipherMode.ECB  // 'ecb' - 电码本模式
+CipherMode.CBC  // 'cbc' - 分组链接模式
+CipherMode.CTR  // 'ctr' - 计数器模式
+CipherMode.CFB  // 'cfb' - 密文反馈模式
+CipherMode.OFB  // 'ofb' - 输出反馈模式
 ```
 
 ### 填充模式
