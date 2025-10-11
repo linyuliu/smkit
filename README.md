@@ -76,23 +76,51 @@ const decryptedCBC = sm4Decrypt(key, encryptedCBC, { mode: CipherMode.CBC, paddi
 #### SM2 椭圆曲线密码
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
+import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
 
-// 生成密钥对
+// 生成密钥对（使用 @noble/curves 提供的安全随机数生成）
 const keyPair = generateKeyPair();
-console.log(keyPair.publicKey);
-console.log(keyPair.privateKey);
+console.log(keyPair.publicKey);  // 十六进制字符串，04 开头的非压缩格式
+console.log(keyPair.privateKey); // 十六进制字符串，32 字节
+
+// 从私钥派生公钥
+const publicKey = getPublicKeyFromPrivateKey(keyPair.privateKey);
 
 // 加密/解密
 const plaintext = 'Hello, SM2!';
+// 支持两种密文模式：C1C3C2（默认）和 C1C2C3
 const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
 const decrypted = sm2Decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C3C2);
 
-// 签名/验证
+// 签名/验证（使用 SM3 哈希和 Z 值计算）
 const data = 'Message to sign';
 const signature = sign(keyPair.privateKey, data);
 const isValid = verify(keyPair.publicKey, data, signature);
 console.log(isValid); // true
+
+// DER 编码签名（ASN.1 DER 格式）
+const signatureDER = sign(keyPair.privateKey, data, { der: true });
+const isValidDER = verify(keyPair.publicKey, data, signatureDER, { der: true });
+
+// 自定义用户 ID（默认为 '1234567812345678'）
+const signatureCustom = sign(keyPair.privateKey, data, { userId: 'user@example.com' });
+const isValidCustom = verify(keyPair.publicKey, data, signatureCustom, { userId: 'user@example.com' });
+
+// 自动识别输入格式
+// 支持：
+// - 十六进制字符串（带或不带 0x 前缀）
+// - 大写或小写十六进制
+// - 压缩或非压缩公钥格式
+// - DER 编码或原始格式签名
+const privateKeyWith0x = '0x' + keyPair.privateKey;
+const publicKeyUpper = keyPair.publicKey.toUpperCase();
+const sig = sign(privateKeyWith0x, 'test');
+const valid = verify(publicKeyUpper, 'test', sig); // 自动识别格式
+
+// 支持 Uint8Array 输入
+const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
+const signatureBinary = sign(keyPair.privateKey, binaryData);
 ```
 
 ### 面向对象 API
