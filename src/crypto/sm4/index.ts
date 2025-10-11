@@ -1,4 +1,11 @@
-import { normalizeInput, bytesToHex, hexToBytes, xor } from '../../core/utils';
+import { 
+  normalizeInput, 
+  bytesToHex, 
+  hexToBytes, 
+  xor,
+  bytes4ToUint32BE,
+  uint32ToBytes4BE 
+} from '../../core/utils';
 import { PaddingMode, CipherMode, type PaddingModeType, type CipherModeType } from '../../types/constants';
 
 // SM4 S盒（置换盒）- 用于非线性变换
@@ -79,30 +86,6 @@ function t(a: number): number {
  */
 function tPrime(a: number): number {
   return lPrime(tau(a));
-}
-
-/**
- * 将 4 个字节转换为 32 位大端整数
- */
-function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number {
-  return (
-    (bytes[offset] << 24) |
-    (bytes[offset + 1] << 16) |
-    (bytes[offset + 2] << 8) |
-    bytes[offset + 3]
-  ) >>> 0;
-}
-
-/**
- * 将 32 位大端整数转换为 4 个字节
- */
-function uint32ToBytes4BE(value: number): Uint8Array {
-  return new Uint8Array([
-    (value >>> 24) & 0xff,
-    (value >>> 16) & 0xff,
-    (value >>> 8) & 0xff,
-    value & 0xff,
-  ]);
 }
 
 /**
