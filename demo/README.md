@@ -12,10 +12,10 @@
 
 ```bash
 # 在项目根目录运行
-npx serve demo
+npm run demo
 ```
 
-然后在浏览器中访问 `http://localhost:3000`
+然后在浏览器中访问 `http://localhost:3000/demo/`
 
 ### 方式三：与实际构建集成
 
