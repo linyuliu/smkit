@@ -59,15 +59,44 @@ export {
   uint32ToBytes4BE,
 } from './utils';
 
-// Export OOP classes
-export { SM2 as SM2Class } from './sm2-class';
-export { SM3 as SM3Class } from './sm3-class';
-export { SM4 as SM4Class } from './sm4-class';
+// Export ASN.1 utilities
+export {
+  encodeInteger,
+  decodeInteger,
+  encodeSequence,
+  decodeSequence,
+  encodeSignature,
+  decodeSignature,
+  rawToDer,
+  derToRaw,
+  ASN1Tag,
+} from './asn1';
 
-// Namespace exports for convenience
-import * as SM2Funcs from './sm2';
-import * as SM3Funcs from './sm3';
-import * as SM4Funcs from './sm4';
+// Export elliptic curve utilities
+export {
+  SM2_CURVE,
+  isInfinity,
+  decompressPublicKey,
+  compressPublicKey,
+  isPointOnCurve,
+  isValidPublicKey,
+  parsePublicKey,
+  formatPublicKey,
+  pointAdd,
+  pointDouble,
+  pointMultiply,
+  getBasePoint,
+  computePublicKey,
+  type Point,
+} from './ec-utils';
+
+// Export OOP classes - named as SM2, SM3, SM4 to match Java conventions
+export { SM2 } from './sm2-class';
+export { SM3 } from './sm3-class';
+export { SM4 } from './sm4-class';
+
+// Export utility functions namespace
 import * as Utils from './utils';
-
-export { SM2Funcs as SM2, SM3Funcs as SM3, SM4Funcs as SM4, Utils };
+import * as ASN1 from './asn1';
+import * as ECUtils from './ec-utils';
+export { Utils, ASN1, ECUtils };

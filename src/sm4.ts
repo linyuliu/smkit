@@ -167,8 +167,8 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM4Options
 ): string {
-  const mode = options?.mode || CipherMode.ECB;
-  const padding = options?.padding || PaddingMode.PKCS7;
+  const mode = (options?.mode || CipherMode.ECB).toLowerCase();
+  const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
   
   const keyBytes = hexToBytes(key);
   if (keyBytes.length !== 16) {
@@ -177,8 +177,8 @@ export function encrypt(
 
   let dataBytes = normalizeInput(data);
   
-  // Apply padding
-  if (padding === PaddingMode.PKCS7) {
+  // Apply padding (support both 'pkcs7' and 'PKCS7' for backward compatibility)
+  if (padding === 'pkcs7') {
     dataBytes = pkcs7Pad(dataBytes, 16);
   } else if (dataBytes.length % 16 !== 0) {
     throw new Error('Data length must be multiple of 16 bytes when padding is None');
@@ -187,13 +187,13 @@ export function encrypt(
   const roundKeys = expandKey(keyBytes);
   const result = new Uint8Array(dataBytes.length);
 
-  if (mode === CipherMode.ECB) {
+  if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
       const block = dataBytes.slice(i, i + 16);
       const encrypted = encryptBlock(block, roundKeys);
       result.set(encrypted, i);
     }
-  } else if (mode === CipherMode.CBC) {
+  } else if (mode === 'cbc') {
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
@@ -226,8 +226,8 @@ export function decrypt(
   encryptedData: string,
   options?: SM4Options
 ): string {
-  const mode = options?.mode || CipherMode.ECB;
-  const padding = options?.padding || PaddingMode.PKCS7;
+  const mode = (options?.mode || CipherMode.ECB).toLowerCase();
+  const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
   
   const keyBytes = hexToBytes(key);
   if (keyBytes.length !== 16) {
@@ -242,13 +242,13 @@ export function decrypt(
   const roundKeys = expandKey(keyBytes);
   const result = new Uint8Array(dataBytes.length);
 
-  if (mode === CipherMode.ECB) {
+  if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
       const block = dataBytes.slice(i, i + 16);
       const decrypted = decryptBlock(block, roundKeys);
       result.set(decrypted, i);
     }
-  } else if (mode === CipherMode.CBC) {
+  } else if (mode === 'cbc') {
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
@@ -266,8 +266,8 @@ export function decrypt(
     }
   }
 
-  // Remove padding
-  const unpadded = padding === PaddingMode.PKCS7 ? pkcs7Unpad(result) : result;
+  // Remove padding (support both 'pkcs7' and 'PKCS7' for backward compatibility)
+  const unpadded = padding === 'pkcs7' ? pkcs7Unpad(result) : result;
   
   return new TextDecoder().decode(unpadded);
 }
