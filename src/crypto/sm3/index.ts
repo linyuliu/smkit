@@ -54,11 +54,14 @@ function p1(x: number): number {
   return x ^ rotl(x, 15) ^ rotl(x, 23);
 }
 
+/**
+ * 填充函数 - 将消息填充到 512 位的倍数
+ */
 function pad(data: Uint8Array): Uint8Array {
   const msgLen = data.length;
   const bitLen = msgLen * 8;
   
-  // Calculate padding length
+  // 计算填充长度
   const k = (448 - ((bitLen + 1) % 512) + 512) % 512;
   const paddingLen = (k + 1) / 8;
   const totalLen = msgLen + paddingLen + 8;
@@ -67,7 +70,7 @@ function pad(data: Uint8Array): Uint8Array {
   padded.set(data);
   padded[msgLen] = 0x80;
   
-  // Append length as 64-bit big-endian
+  // 附加长度（64 位大端格式）
   const view = new DataView(padded.buffer, padded.byteOffset, padded.byteLength);
   view.setUint32(totalLen - 8, Math.floor(bitLen / 0x100000000), false);
   view.setUint32(totalLen - 4, bitLen >>> 0, false);
@@ -75,11 +78,14 @@ function pad(data: Uint8Array): Uint8Array {
   return padded;
 }
 
+/**
+ * 压缩函数 CF
+ */
 function cf(v: number[], b: Uint8Array): number[] {
   const w: number[] = new Array(68);
   const wPrime: number[] = new Array(64);
   
-  // Expand message
+  // 消息扩展
   for (let i = 0; i < 16; i++) {
     w[i] = bytes4ToUint32BE(b, i * 4);
   }
@@ -93,10 +99,10 @@ function cf(v: number[], b: Uint8Array): number[] {
     wPrime[i] = (w[i] ^ w[i + 4]) >>> 0;
   }
   
-  // Initialize working variables
+  // 初始化工作变量
   let [a, b2, c, d, e, f, g, h] = v;
   
-  // Main loop
+  // 主循环
   for (let j = 0; j < 64; j++) {
     const t = j < 16 ? 0x79cc4519 : 0x7a879d8a;
     const ss1 = rotl((rotl(a, 12) + e + rotl(t, j % 32)) >>> 0, 7);
@@ -127,9 +133,9 @@ function cf(v: number[], b: Uint8Array): number[] {
 }
 
 /**
- * Compute SM3 hash digest
- * @param data - Input data (string or Uint8Array)
- * @returns Lowercase hex string of the hash digest (64 characters)
+ * 计算 SM3 哈希摘要
+ * @param data - 输入数据（字符串或 Uint8Array）
+ * @returns 小写十六进制字符串形式的哈希摘要（64 个字符）
  */
 export function digest(data: string | Uint8Array): string {
   const bytes = normalizeInput(data);
@@ -137,13 +143,13 @@ export function digest(data: string | Uint8Array): string {
   
   let v = [...IV];
   
-  // Process each 512-bit block
+  // 处理每个 512 位块
   for (let i = 0; i < padded.length; i += 64) {
     const block = padded.slice(i, i + 64);
     v = cf(v, block);
   }
   
-  // Convert result to bytes
+  // 将结果转换为字节
   const result = new Uint8Array(32);
   for (let i = 0; i < 8; i++) {
     const bytes = uint32ToBytes4BE(v[i]);
@@ -154,27 +160,27 @@ export function digest(data: string | Uint8Array): string {
 }
 
 /**
- * Compute SM3-HMAC
- * @param key - Key (string or Uint8Array)
- * @param data - Data to authenticate (string or Uint8Array)
- * @returns Lowercase hex string of the HMAC (64 characters)
+ * 计算 SM3-HMAC
+ * @param key - 密钥（字符串或 Uint8Array）
+ * @param data - 要认证的数据（字符串或 Uint8Array）
+ * @returns 小写十六进制字符串形式的 HMAC（64 个字符）
  */
 export function hmac(key: string | Uint8Array, data: string | Uint8Array): string {
   let keyBytes = normalizeInput(key);
   const dataBytes = normalizeInput(data);
   
-  const blockSize = 64; // SM3 block size in bytes
+  const blockSize = 64; // SM3 块大小（字节）
   
-  // If key is longer than block size, hash it
+  // 如果密钥长度超过块大小，先进行哈希
   if (keyBytes.length > blockSize) {
     keyBytes = new Uint8Array(hexToBytes(digest(keyBytes)));
   }
   
-  // Pad key to block size
+  // 将密钥填充到块大小
   const paddedKey = new Uint8Array(blockSize);
   paddedKey.set(keyBytes);
   
-  // Create ipad and opad
+  // 创建 ipad 和 opad
   const ipad = new Uint8Array(blockSize);
   const opad = new Uint8Array(blockSize);
   
@@ -183,13 +189,13 @@ export function hmac(key: string | Uint8Array, data: string | Uint8Array): strin
     opad[i] = paddedKey[i] ^ 0x5c;
   }
   
-  // Inner hash: H(ipad || data)
+  // 内部哈希: H(ipad || data)
   const innerData = new Uint8Array(blockSize + dataBytes.length);
   innerData.set(ipad);
   innerData.set(dataBytes, blockSize);
   const innerHash = digest(innerData);
   
-  // Outer hash: H(opad || innerHash)
+  // 外部哈希: H(opad || innerHash)
   const outerData = new Uint8Array(blockSize + 32);
   outerData.set(opad);
   outerData.set(hexToBytes(innerHash), blockSize);
