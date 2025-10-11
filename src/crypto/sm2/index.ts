@@ -87,7 +87,7 @@ export function getPublicKeyFromPrivateKey(privateKey: string): string {
  * @returns 加密后的数据（十六进制字符串）
  */
 export function encrypt(
-  publicKey: string,
+  _publicKey: string,
   data: string | Uint8Array,
   mode: SM2CipherModeType = SM2CipherMode.C1C3C2
 ): string {
