@@ -1,7 +1,7 @@
 import { normalizeInput, bytesToHex, hexToBytes, xor } from '../../core/utils';
 import { PaddingMode, CipherMode, type PaddingModeType, type CipherModeType } from '../../types/constants';
 
-// SM4 S盒（置换盒） - 用于非线性变换
+// SM4 S盒（置换盒）- 用于非线性变换
 const SBOX: number[] = [
   0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d, 0xb7, 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05,
   0x2b, 0x67, 0x9a, 0x76, 0x2a, 0xbe, 0x04, 0xc3, 0xaa, 0x44, 0x13, 0x26, 0x49, 0x86, 0x06, 0x99,
@@ -81,6 +81,9 @@ function tPrime(a: number): number {
   return lPrime(tau(a));
 }
 
+/**
+ * 将 4 个字节转换为 32 位大端整数
+ */
 function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number {
   return (
     (bytes[offset] << 24) |
@@ -90,6 +93,9 @@ function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number {
   ) >>> 0;
 }
 
+/**
+ * 将 32 位大端整数转换为 4 个字节
+ */
 function uint32ToBytes4BE(value: number): Uint8Array {
   return new Uint8Array([
     (value >>> 24) & 0xff,
@@ -99,6 +105,9 @@ function uint32ToBytes4BE(value: number): Uint8Array {
   ]);
 }
 
+/**
+ * 密钥扩展 - 从主密钥生成轮密钥
+ */
 function expandKey(key: Uint8Array): number[] {
   const mk: number[] = [];
   for (let i = 0; i < 4; i++) {
@@ -120,6 +129,9 @@ function expandKey(key: Uint8Array): number[] {
   return rk;
 }
 
+/**
+ * 加密单个数据块（128 位）
+ */
 function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
   const x: number[] = [];
   for (let i = 0; i < 4; i++) {
@@ -139,11 +151,17 @@ function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
   return output;
 }
 
+/**
+ * 解密单个数据块（128 位）
+ */
 function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
   const reversedKeys = roundKeys.slice().reverse();
   return encryptBlock(input, reversedKeys);
 }
 
+/**
+ * PKCS7 填充
+ */
 function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
   const padding = blockSize - (data.length % blockSize);
   const padded = new Uint8Array(data.length + padding);
@@ -154,6 +172,9 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
   return padded;
 }
 
+/**
+ * 去除 PKCS7 填充
+ */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
   const padding = data[data.length - 1];
   if (padding < 1 || padding > 16) {
@@ -174,11 +195,11 @@ export interface SM4Options {
 }
 
 /**
- * Encrypt data using SM4
- * @param key - Encryption key as hex string (32 hex chars = 16 bytes)
- * @param data - Data to encrypt (string or Uint8Array)
- * @param options - Encryption options (mode, padding, iv)
- * @returns Lowercase hex string of encrypted data
+ * 使用 SM4 加密数据
+ * @param key - 加密密钥（十六进制字符串，32 个字符 = 16 字节）
+ * @param data - 要加密的数据（字符串或 Uint8Array）
+ * @param options - 加密选项（模式、填充、IV）
+ * @returns 小写十六进制字符串形式的加密数据
  */
 export function encrypt(
   key: string,
@@ -195,7 +216,7 @@ export function encrypt(
 
   let dataBytes = normalizeInput(data);
   
-  // Apply padding (support both 'pkcs7' and 'PKCS7' for backward compatibility)
+  // 应用填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
   if (padding === 'pkcs7') {
     dataBytes = pkcs7Pad(dataBytes, 16);
   } else if (dataBytes.length % 16 !== 0) {
@@ -233,11 +254,11 @@ export function encrypt(
 }
 
 /**
- * Decrypt data using SM4
- * @param key - Decryption key as hex string (32 hex chars = 16 bytes)
- * @param encryptedData - Encrypted data as hex string
- * @param options - Decryption options (mode, padding, iv)
- * @returns Decrypted data as UTF-8 string
+ * 使用 SM4 解密数据
+ * @param key - 解密密钥（十六进制字符串，32 个字符 = 16 字节）
+ * @param encryptedData - 加密的数据（十六进制字符串）
+ * @param options - 解密选项（模式、填充、IV）
+ * @returns 解密后的数据（UTF-8 字符串）
  */
 export function decrypt(
   key: string,
@@ -284,7 +305,7 @@ export function decrypt(
     }
   }
 
-  // Remove padding (support both 'pkcs7' and 'PKCS7' for backward compatibility)
+  // 去除填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
   const unpadded = padding === 'pkcs7' ? pkcs7Unpad(result) : result;
   
   return new TextDecoder().decode(unpadded);

@@ -1,15 +1,15 @@
 /**
- * Convert hexadecimal string to Uint8Array
- * @param hex - Hexadecimal string (with or without 0x prefix)
- * @returns Uint8Array representation of the hex string
+ * 将十六进制字符串转换为 Uint8Array
+ * @param hex - 十六进制字符串（可带或不带 0x 前缀）
+ * @returns 十六进制字符串的 Uint8Array 表示
  */
 export function hexToBytes(hex: string): Uint8Array {
-  // Remove 0x prefix if present
+  // 如果存在 0x 前缀则移除
   if (hex.startsWith('0x') || hex.startsWith('0X')) {
     hex = hex.slice(2);
   }
   
-  // Ensure even length
+  // 确保长度为偶数
   if (hex.length % 2 !== 0) {
     hex = '0' + hex;
   }
@@ -27,9 +27,9 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
- * Convert Uint8Array to lowercase hexadecimal string
- * @param bytes - Uint8Array to convert
- * @returns Lowercase hexadecimal string
+ * 将 Uint8Array 转换为小写十六进制字符串
+ * @param bytes - 要转换的 Uint8Array
+ * @returns 小写十六进制字符串
  */
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -38,26 +38,26 @@ export function bytesToHex(bytes: Uint8Array): string {
 }
 
 /**
- * Convert UTF-8 string to Uint8Array
- * @param str - String to convert
- * @returns Uint8Array representation of the string
+ * 将 UTF-8 字符串转换为 Uint8Array
+ * @param str - 要转换的字符串
+ * @returns 字符串的 Uint8Array 表示
  */
 export function stringToBytes(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }
 
 /**
- * Convert Uint8Array to UTF-8 string
- * @param bytes - Uint8Array to convert
- * @returns UTF-8 string
+ * 将 Uint8Array 转换为 UTF-8 字符串
+ * @param bytes - 要转换的 Uint8Array
+ * @returns UTF-8 字符串
  */
 export function bytesToString(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
 /**
- * Normalize input to Uint8Array
- * @param data - String or Uint8Array input
+ * 将输入规范化为 Uint8Array
+ * @param data - 字符串或 Uint8Array 输入
  * @returns Uint8Array
  */
 export function normalizeInput(data: string | Uint8Array): Uint8Array {
@@ -65,10 +65,10 @@ export function normalizeInput(data: string | Uint8Array): Uint8Array {
 }
 
 /**
- * XOR two Uint8Arrays
- * @param a - First array
- * @param b - Second array
- * @returns XOR result
+ * 对两个 Uint8Array 进行异或运算
+ * @param a - 第一个数组
+ * @param b - 第二个数组
+ * @returns 异或结果
  */
 export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
   if (a.length !== b.length) {
@@ -82,17 +82,17 @@ export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
 }
 
 /**
- * Left rotate a 32-bit value
- * @param value - 32-bit value
- * @param shift - Number of bits to rotate
- * @returns Rotated value
+ * 对 32 位值进行循环左移
+ * @param value - 32 位值
+ * @param shift - 要移动的位数
+ * @returns 移位后的值
  */
 export function rotl(value: number, shift: number): number {
   return ((value << shift) | (value >>> (32 - shift))) >>> 0;
 }
 
 /**
- * Convert 4 bytes to 32-bit big-endian integer
+ * 将 4 个字节转换为 32 位大端整数
  */
 export function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number {
   return (
@@ -104,7 +104,7 @@ export function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number 
 }
 
 /**
- * Convert 32-bit big-endian integer to 4 bytes
+ * 将 32 位大端整数转换为 4 个字节
  */
 export function uint32ToBytes4BE(value: number): Uint8Array {
   return new Uint8Array([
