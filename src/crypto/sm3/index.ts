@@ -1,6 +1,7 @@
 import {
   normalizeInput,
   bytesToHex,
+  hexToBytes,
   rotl,
   bytes4ToUint32BE,
   uint32ToBytes4BE,
@@ -201,12 +202,4 @@ export function hmac(key: string | Uint8Array, data: string | Uint8Array): strin
   outerData.set(hexToBytes(innerHash), blockSize);
   
   return digest(outerData);
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
 }
