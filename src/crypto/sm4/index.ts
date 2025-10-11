@@ -199,11 +199,16 @@ export function encrypt(
 
   let dataBytes = normalizeInput(data);
   
+  // Stream cipher modes (CTR, CFB, OFB) don't require padding
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb';
+  
   // 应用填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
-  if (padding === 'pkcs7') {
-    dataBytes = pkcs7Pad(dataBytes, 16);
-  } else if (dataBytes.length % 16 !== 0) {
-    throw new Error('Data length must be multiple of 16 bytes when padding is None');
+  if (!isStreamMode) {
+    if (padding === 'pkcs7') {
+      dataBytes = pkcs7Pad(dataBytes, 16);
+    } else if (dataBytes.length % 16 !== 0) {
+      throw new Error('Data length must be multiple of 16 bytes when padding is None');
+    }
   }
 
   const roundKeys = expandKey(keyBytes);
@@ -231,6 +236,64 @@ export function encrypt(
       result.set(encrypted, i);
       ivBytes = encrypted;
     }
+  } else if (mode === 'ctr') {
+    if (!options?.iv) {
+      throw new Error('IV (nonce/counter) is required for CTR mode');
+    }
+    const counter = hexToBytes(options.iv);
+    if (counter.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    const counterBlock = new Uint8Array(counter);
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(counterBlock, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ keystream[j];
+      }
+      // Increment counter (big-endian)
+      for (let j = 15; j >= 0; j--) {
+        if (++counterBlock[j] !== 0) break;
+      }
+    }
+  } else if (mode === 'cfb') {
+    if (!options?.iv) {
+      throw new Error('IV is required for CFB mode');
+    }
+    let shift = hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(shift, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      const cipherBlock = new Uint8Array(16);
+      for (let j = 0; j < blockSize; j++) {
+        cipherBlock[j] = dataBytes[i + j] ^ keystream[j];
+        result[i + j] = cipherBlock[j];
+      }
+      shift = cipherBlock;
+    }
+  } else if (mode === 'ofb') {
+    if (!options?.iv) {
+      throw new Error('IV is required for OFB mode');
+    }
+    let shift = hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      shift = encryptBlock(shift, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ shift[j];
+      }
+    }
+  } else {
+    throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
   return bytesToHex(result);
@@ -257,7 +320,10 @@ export function decrypt(
   }
 
   const dataBytes = hexToBytes(encryptedData);
-  if (dataBytes.length % 16 !== 0) {
+  
+  // Stream cipher modes don't require data to be a multiple of block size
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb';
+  if (!isStreamMode && dataBytes.length % 16 !== 0) {
     throw new Error('Encrypted data length must be multiple of 16 bytes');
   }
 
@@ -286,10 +352,71 @@ export function decrypt(
       result.set(xored, i);
       ivBytes = block;
     }
+  } else if (mode === 'ctr') {
+    // CTR decryption is identical to encryption (XOR with keystream)
+    if (!options?.iv) {
+      throw new Error('IV (nonce/counter) is required for CTR mode');
+    }
+    const counter = hexToBytes(options.iv);
+    if (counter.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    const counterBlock = new Uint8Array(counter);
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(counterBlock, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ keystream[j];
+      }
+      // Increment counter (big-endian)
+      for (let j = 15; j >= 0; j--) {
+        if (++counterBlock[j] !== 0) break;
+      }
+    }
+  } else if (mode === 'cfb') {
+    if (!options?.iv) {
+      throw new Error('IV is required for CFB mode');
+    }
+    let shift = hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(shift, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      const cipherBlock = new Uint8Array(16);
+      for (let j = 0; j < blockSize; j++) {
+        cipherBlock[j] = dataBytes[i + j];
+        result[i + j] = dataBytes[i + j] ^ keystream[j];
+      }
+      shift = cipherBlock;
+    }
+  } else if (mode === 'ofb') {
+    // OFB decryption is identical to encryption (XOR with keystream)
+    if (!options?.iv) {
+      throw new Error('IV is required for OFB mode');
+    }
+    let shift = hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
+
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      shift = encryptBlock(shift, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ shift[j];
+      }
+    }
+  } else {
+    throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
   // 去除填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
-  const unpadded = padding === 'pkcs7' ? pkcs7Unpad(result) : result;
+  // Stream cipher modes don't use padding
+  const unpadded = (!isStreamMode && padding === 'pkcs7') ? pkcs7Unpad(result) : result;
   
   return new TextDecoder().decode(unpadded);
 }
