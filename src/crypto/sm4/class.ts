@@ -31,7 +31,7 @@ export class SM4 {
   }
 
   /**
-   * Set initialization vector for CBC mode
+   * Set initialization vector for CBC/CTR/CFB/OFB modes
    * @param iv - IV as hex string (32 hex chars = 16 bytes)
    */
   setIV(iv: string): void {
@@ -47,7 +47,7 @@ export class SM4 {
 
   /**
    * Set cipher mode
-   * @param mode - Cipher mode (ECB or CBC)
+   * @param mode - Cipher mode (ECB, CBC, CTR, CFB, OFB)
    */
   setMode(mode: CipherModeType): void {
     this.mode = mode;
@@ -120,5 +120,32 @@ export class SM4 {
    */
   static CBC(key: string, iv: string, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.CBC, padding, iv });
+  }
+
+  /**
+   * Create SM4 instance with CTR mode
+   * @param key - Encryption key as hex string
+   * @param iv - Counter/nonce as hex string
+   */
+  static CTR(key: string, iv: string): SM4 {
+    return new SM4(key, { mode: CipherMode.CTR, padding: PaddingMode.NONE, iv });
+  }
+
+  /**
+   * Create SM4 instance with CFB mode
+   * @param key - Encryption key as hex string
+   * @param iv - Initialization vector as hex string
+   */
+  static CFB(key: string, iv: string): SM4 {
+    return new SM4(key, { mode: CipherMode.CFB, padding: PaddingMode.NONE, iv });
+  }
+
+  /**
+   * Create SM4 instance with OFB mode
+   * @param key - Encryption key as hex string
+   * @param iv - Initialization vector as hex string
+   */
+  static OFB(key: string, iv: string): SM4 {
+    return new SM4(key, { mode: CipherMode.OFB, padding: PaddingMode.NONE, iv });
   }
 }

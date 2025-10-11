@@ -18,6 +18,9 @@ export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
 export const CipherMode = {
   ECB: 'ecb',
   CBC: 'cbc',
+  CTR: 'ctr',
+  CFB: 'cfb',
+  OFB: 'ofb',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];

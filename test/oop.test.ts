@@ -199,5 +199,38 @@ describe('Object-Oriented API', () => {
       const decrypted = sm4.decrypt(encrypted);
       expect(decrypted).toBe('Hello');
     });
+
+    it('should create with CTR factory method', () => {
+      const iv = '00000000000000000000000000000000';
+      const sm4 = SM4.CTR(key, iv);
+      const plaintext = 'Hello, CTR!';
+      
+      expect(sm4.getMode()).toBe(CipherMode.CTR);
+      const encrypted = sm4.encrypt(plaintext);
+      const decrypted = sm4.decrypt(encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should create with CFB factory method', () => {
+      const iv = 'fedcba98765432100123456789abcdef';
+      const sm4 = SM4.CFB(key, iv);
+      const plaintext = 'Hello, CFB!';
+      
+      expect(sm4.getMode()).toBe(CipherMode.CFB);
+      const encrypted = sm4.encrypt(plaintext);
+      const decrypted = sm4.decrypt(encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should create with OFB factory method', () => {
+      const iv = 'fedcba98765432100123456789abcdef';
+      const sm4 = SM4.OFB(key, iv);
+      const plaintext = 'Hello, OFB!';
+      
+      expect(sm4.getMode()).toBe(CipherMode.OFB);
+      const encrypted = sm4.encrypt(plaintext);
+      const decrypted = sm4.decrypt(encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
   });
 });
