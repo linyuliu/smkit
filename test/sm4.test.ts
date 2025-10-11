@@ -194,4 +194,110 @@ describe('SM4', () => {
       expect(decrypted2).toBe(plaintext2);
     });
   });
+
+  describe('GCM mode', () => {
+    const iv = '000000000000000000000000'; // 96-bit IV (12 bytes)
+
+    it('should encrypt and decrypt with GCM mode', () => {
+      const plaintext = 'Hello, SM4 GCM mode!';
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv });
+      
+      expect(typeof result).toBe('object');
+      expect(result).toHaveProperty('ciphertext');
+      expect(result).toHaveProperty('tag');
+      expect((result as any).ciphertext).toMatch(/^[0-9a-f]+$/);
+      expect((result as any).tag).toMatch(/^[0-9a-f]+$/);
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should support AAD (Additional Authenticated Data)', () => {
+      const plaintext = 'Secret message';
+      const aad = 'Additional data';
+      
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv, aad });
+      expect(typeof result).toBe('object');
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv, aad });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should fail authentication with wrong tag', () => {
+      const plaintext = 'Secret message';
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv });
+      
+      // Corrupt the tag
+      const corruptedResult = {
+        ciphertext: (result as any).ciphertext,
+        tag: '00000000000000000000000000000000'
+      };
+      
+      expect(() => decrypt(key, corruptedResult, { mode: CipherMode.GCM, iv })).toThrow('Authentication tag verification failed');
+    });
+
+    it('should fail authentication with wrong AAD', () => {
+      const plaintext = 'Secret message';
+      const aad = 'Additional data';
+      
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv, aad });
+      
+      // Try to decrypt with different AAD
+      expect(() => decrypt(key, result, { mode: CipherMode.GCM, iv, aad: 'Wrong AAD' })).toThrow('Authentication tag verification failed');
+    });
+
+    it('should require IV for GCM mode', () => {
+      const plaintext = 'Hello';
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.GCM })).toThrow('IV is required');
+    });
+
+    it('should validate IV length (must be 12 bytes)', () => {
+      const plaintext = 'Hello';
+      const wrongIv = '00000000000000000000000000000000'; // 16 bytes instead of 12
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.GCM, iv: wrongIv })).toThrow('IV must be 12 bytes');
+    });
+
+    it('should handle non-block-aligned data in GCM mode', () => {
+      const plaintext = 'Hi!'; // 3 bytes, not multiple of 16
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv });
+      
+      expect(typeof result).toBe('object');
+      expect((result as any).ciphertext).toHaveLength(6); // 3 bytes = 6 hex chars
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should support custom tag length', () => {
+      const plaintext = 'Test message';
+      const tagLength = 12; // 96-bit tag instead of default 128-bit
+      
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv, tagLength });
+      expect(typeof result).toBe('object');
+      expect((result as any).tag).toHaveLength(24); // 12 bytes = 24 hex chars
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should handle empty plaintext', () => {
+      const plaintext = '';
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv });
+      
+      expect(typeof result).toBe('object');
+      expect((result as any).ciphertext).toBe('');
+      expect((result as any).tag).toMatch(/^[0-9a-f]+$/);
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should handle large data in GCM mode', () => {
+      const plaintext = 'a'.repeat(1000);
+      const result = encrypt(key, plaintext, { mode: CipherMode.GCM, iv });
+      
+      const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+  });
 });

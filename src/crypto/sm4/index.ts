@@ -49,6 +49,75 @@ function rotl(value: number, shift: number): number {
 }
 
 /**
+ * GCM模式：Galois field multiplication in GF(2^128)
+ * 伽罗瓦域乘法 GF(2^128)
+ */
+function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
+  const result = new Uint8Array(16);
+  
+  // Process data in 16-byte blocks
+  for (let i = 0; i < data.length; i += 16) {
+    const block = data.slice(i, i + 16);
+    
+    // XOR with previous result
+    for (let j = 0; j < 16 && j < block.length; j++) {
+      result[j] ^= block[j];
+    }
+    
+    // Galois field multiplication
+    result.set(gfMul(result, h));
+  }
+  
+  return result;
+}
+
+/**
+ * Galois field multiplication for GCM
+ * 伽罗瓦域乘法（用于GCM模式）
+ */
+function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
+  const result = new Uint8Array(16);
+  const v = new Uint8Array(y);
+  
+  for (let i = 0; i < 16; i++) {
+    for (let j = 0; j < 8; j++) {
+      if (x[i] & (1 << (7 - j))) {
+        for (let k = 0; k < 16; k++) {
+          result[k] ^= v[k];
+        }
+      }
+      
+      // Check if LSB is 1
+      const lsb = v[15] & 1;
+      
+      // Right shift v by 1 bit
+      for (let k = 15; k > 0; k--) {
+        v[k] = (v[k] >> 1) | ((v[k - 1] & 1) << 7);
+      }
+      v[0] >>= 1;
+      
+      // If LSB was 1, XOR with R
+      if (lsb) {
+        v[0] ^= 0xe1;
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Increment counter for GCM mode (32-bit counter in rightmost 4 bytes)
+ * GCM模式的计数器递增（最右边4字节的32位计数器）
+ */
+function incrementGCMCounter(counter: Uint8Array): void {
+  // Increment the rightmost 32 bits (big-endian)
+  for (let i = 15; i >= 12; i--) {
+    if (++counter[i] !== 0) break;
+  }
+}
+
+/**
  * 非线性变换 τ - 使用 S盒进行字节替换
  */
 function tau(a: number): number {
@@ -175,6 +244,13 @@ export interface SM4Options {
   mode?: CipherModeType;
   padding?: PaddingModeType;
   iv?: string;
+  aad?: string | Uint8Array; // Additional Authenticated Data for GCM
+  tagLength?: number; // Authentication tag length for GCM (default: 16 bytes)
+}
+
+export interface SM4GCMResult {
+  ciphertext: string;
+  tag: string;
 }
 
 /**
@@ -182,13 +258,13 @@ export interface SM4Options {
  * @param key - 加密密钥（十六进制字符串，32 个字符 = 16 字节）
  * @param data - 要加密的数据（字符串或 Uint8Array）
  * @param options - 加密选项（模式、填充、IV）
- * @returns 小写十六进制字符串形式的加密数据
+ * @returns 小写十六进制字符串形式的加密数据，或GCM模式下返回包含密文和标签的对象
  */
 export function encrypt(
   key: string,
   data: string | Uint8Array,
   options?: SM4Options
-): string {
+): string | SM4GCMResult {
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
   
@@ -199,8 +275,8 @@ export function encrypt(
 
   let dataBytes = normalizeInput(data);
   
-  // Stream cipher modes (CTR, CFB, OFB) don't require padding
-  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb';
+  // Stream cipher modes (CTR, CFB, OFB, GCM) don't require padding
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   
   // 应用填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
   if (!isStreamMode) {
@@ -292,6 +368,85 @@ export function encrypt(
         result[i + j] = dataBytes[i + j] ^ shift[j];
       }
     }
+  } else if (mode === 'gcm') {
+    // GCM mode: Galois/Counter Mode with authenticated encryption
+    if (!options?.iv) {
+      throw new Error('IV is required for GCM mode');
+    }
+    const ivBytes = hexToBytes(options.iv);
+    if (ivBytes.length !== 12) {
+      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    }
+
+    const tagLength = options.tagLength || 16; // Default 128-bit tag
+    if (tagLength < 12 || tagLength > 16) {
+      throw new Error('Tag length must be between 12 and 16 bytes');
+    }
+
+    // Compute H = E(K, 0^128)
+    const h = encryptBlock(new Uint8Array(16), roundKeys);
+
+    // Construct initial counter block: IV || 0^31 || 1
+    const j0 = new Uint8Array(16);
+    j0.set(ivBytes, 0);
+    j0[15] = 1;
+
+    // Encrypt the initial counter to get the pre-counter block
+    const preCounterBlock = encryptBlock(j0, roundKeys);
+
+    // Prepare counter for CTR mode encryption
+    const counterBlock = new Uint8Array(j0);
+    incrementGCMCounter(counterBlock);
+
+    // Encrypt plaintext using CTR mode
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(counterBlock, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ keystream[j];
+      }
+      incrementGCMCounter(counterBlock);
+    }
+
+    // Process Additional Authenticated Data (AAD)
+    let aadBytes: Uint8Array = new Uint8Array(0);
+    if (options.aad) {
+      aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
+    }
+
+    // Pad AAD and ciphertext to 16-byte blocks for GHASH
+    const aadLen = aadBytes.length;
+    const cLen = result.length;
+    const aadPadded = new Uint8Array(Math.ceil(aadLen / 16) * 16);
+    aadPadded.set(aadBytes);
+    const cPadded = new Uint8Array(Math.ceil(cLen / 16) * 16);
+    cPadded.set(result);
+
+    // Construct the data for GHASH: AAD || C || len(AAD) || len(C)
+    const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
+    ghashData.set(aadPadded, 0);
+    ghashData.set(cPadded, aadPadded.length);
+    
+    // Append lengths in bits (64-bit big-endian)
+    const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
+    view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
+    view.setUint32(ghashData.length - 12, (aadLen * 8) >>> 0, false);
+    view.setUint32(ghashData.length - 8, Math.floor((cLen * 8) / 0x100000000), false);
+    view.setUint32(ghashData.length - 4, (cLen * 8) >>> 0, false);
+
+    // Compute GHASH
+    const ghashResult = ghash(h, ghashData);
+
+    // Compute authentication tag: GHASH(H, A, C) XOR E(K, J0)
+    const tag = new Uint8Array(tagLength);
+    for (let i = 0; i < tagLength; i++) {
+      tag[i] = ghashResult[i] ^ preCounterBlock[i];
+    }
+
+    return {
+      ciphertext: bytesToHex(result),
+      tag: bytesToHex(tag)
+    };
   } else {
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
@@ -302,14 +457,14 @@ export function encrypt(
 /**
  * 使用 SM4 解密数据
  * @param key - 解密密钥（十六进制字符串，32 个字符 = 16 字节）
- * @param encryptedData - 加密的数据（十六进制字符串）
- * @param options - 解密选项（模式、填充、IV）
+ * @param encryptedData - 加密的数据（十六进制字符串或GCM结果对象）
+ * @param options - 解密选项（模式、填充、IV、tag用于GCM）
  * @returns 解密后的数据（UTF-8 字符串）
  */
 export function decrypt(
   key: string,
-  encryptedData: string,
-  options?: SM4Options
+  encryptedData: string | SM4GCMResult,
+  options?: SM4Options & { tag?: string }
 ): string {
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
@@ -319,10 +474,28 @@ export function decrypt(
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
 
-  const dataBytes = hexToBytes(encryptedData);
+  // Handle GCM mode with tag
+  let ciphertextHex: string;
+  let authTag: Uint8Array | undefined;
+  
+  if (mode === 'gcm') {
+    if (typeof encryptedData === 'object' && 'ciphertext' in encryptedData) {
+      ciphertextHex = encryptedData.ciphertext;
+      authTag = hexToBytes(encryptedData.tag);
+    } else if (typeof encryptedData === 'string' && options?.tag) {
+      ciphertextHex = encryptedData;
+      authTag = hexToBytes(options.tag);
+    } else {
+      throw new Error('GCM mode requires authentication tag');
+    }
+  } else {
+    ciphertextHex = typeof encryptedData === 'string' ? encryptedData : encryptedData.ciphertext;
+  }
+
+  const dataBytes = hexToBytes(ciphertextHex);
   
   // Stream cipher modes don't require data to be a multiple of block size
-  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb';
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   if (!isStreamMode && dataBytes.length % 16 !== 0) {
     throw new Error('Encrypted data length must be multiple of 16 bytes');
   }
@@ -409,6 +582,90 @@ export function decrypt(
       for (let j = 0; j < blockSize; j++) {
         result[i + j] = dataBytes[i + j] ^ shift[j];
       }
+    }
+  } else if (mode === 'gcm') {
+    // GCM mode: Galois/Counter Mode with authenticated decryption
+    if (!options?.iv) {
+      throw new Error('IV is required for GCM mode');
+    }
+    if (!authTag) {
+      throw new Error('Authentication tag is required for GCM mode');
+    }
+
+    const ivBytes = hexToBytes(options.iv);
+    if (ivBytes.length !== 12) {
+      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    }
+
+    // Compute H = E(K, 0^128)
+    const h = encryptBlock(new Uint8Array(16), roundKeys);
+
+    // Construct initial counter block: IV || 0^31 || 1
+    const j0 = new Uint8Array(16);
+    j0.set(ivBytes, 0);
+    j0[15] = 1;
+
+    // Encrypt the initial counter to get the pre-counter block
+    const preCounterBlock = encryptBlock(j0, roundKeys);
+
+    // Process Additional Authenticated Data (AAD)
+    let aadBytes: Uint8Array = new Uint8Array(0);
+    if (options.aad) {
+      aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
+    }
+
+    // Pad AAD and ciphertext to 16-byte blocks for GHASH
+    const aadLen = aadBytes.length;
+    const cLen = dataBytes.length;
+    const aadPadded = new Uint8Array(Math.ceil(aadLen / 16) * 16);
+    aadPadded.set(aadBytes);
+    const cPadded = new Uint8Array(Math.ceil(cLen / 16) * 16);
+    cPadded.set(dataBytes);
+
+    // Construct the data for GHASH: AAD || C || len(AAD) || len(C)
+    const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
+    ghashData.set(aadPadded, 0);
+    ghashData.set(cPadded, aadPadded.length);
+    
+    // Append lengths in bits (64-bit big-endian)
+    const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
+    view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
+    view.setUint32(ghashData.length - 12, (aadLen * 8) >>> 0, false);
+    view.setUint32(ghashData.length - 8, Math.floor((cLen * 8) / 0x100000000), false);
+    view.setUint32(ghashData.length - 4, (cLen * 8) >>> 0, false);
+
+    // Compute GHASH
+    const ghashResult = ghash(h, ghashData);
+
+    // Compute expected authentication tag: GHASH(H, A, C) XOR E(K, J0)
+    const expectedTag = new Uint8Array(authTag.length);
+    for (let i = 0; i < authTag.length; i++) {
+      expectedTag[i] = ghashResult[i] ^ preCounterBlock[i];
+    }
+
+    // Verify authentication tag (constant-time comparison)
+    let tagMatch = true;
+    for (let i = 0; i < authTag.length; i++) {
+      if (authTag[i] !== expectedTag[i]) {
+        tagMatch = false;
+      }
+    }
+
+    if (!tagMatch) {
+      throw new Error('Authentication tag verification failed');
+    }
+
+    // Decrypt ciphertext using CTR mode
+    const counterBlock = new Uint8Array(j0);
+    incrementGCMCounter(counterBlock);
+
+    for (let i = 0; i < dataBytes.length; i += 16) {
+      const keystream = encryptBlock(counterBlock, roundKeys);
+      const blockSize = Math.min(16, dataBytes.length - i);
+      for (let j = 0; j < blockSize; j++) {
+        result[i + j] = dataBytes[i + j] ^ keystream[j];
+      }
+      incrementGCMCounter(counterBlock);
     }
   } else {
     throw new Error(`Unsupported cipher mode: ${mode}`);

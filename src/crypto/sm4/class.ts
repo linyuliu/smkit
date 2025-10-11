@@ -2,6 +2,7 @@ import {
   encrypt as encryptFunc, 
   decrypt as decryptFunc,
   type SM4Options as FuncSM4Options,
+  type SM4GCMResult,
 } from './index';
 import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } from '../../types/constants';
 
@@ -31,8 +32,8 @@ export class SM4 {
   }
 
   /**
-   * Set initialization vector for CBC/CTR/CFB/OFB modes
-   * @param iv - IV as hex string (32 hex chars = 16 bytes)
+   * Set initialization vector for CBC/CTR/CFB/OFB/GCM modes
+   * @param iv - IV as hex string (32 hex chars = 16 bytes for most modes, 24 hex chars = 12 bytes for GCM)
    */
   setIV(iv: string): void {
     this.iv = iv;
@@ -47,7 +48,7 @@ export class SM4 {
 
   /**
    * Set cipher mode
-   * @param mode - Cipher mode (ECB, CBC, CTR, CFB, OFB)
+   * @param mode - Cipher mode (ECB, CBC, CTR, CFB, OFB, GCM)
    */
   setMode(mode: CipherModeType): void {
     this.mode = mode;
@@ -78,9 +79,9 @@ export class SM4 {
   /**
    * Encrypt data
    * @param data - Data to encrypt
-   * @returns Encrypted data as hex string
+   * @returns Encrypted data as hex string or SM4GCMResult for GCM mode
    */
-  encrypt(data: string | Uint8Array): string {
+  encrypt(data: string | Uint8Array): string | SM4GCMResult {
     const options: FuncSM4Options = {
       mode: this.mode,
       padding: this.padding,
@@ -91,10 +92,10 @@ export class SM4 {
 
   /**
    * Decrypt data
-   * @param encryptedData - Encrypted data as hex string
+   * @param encryptedData - Encrypted data as hex string or SM4GCMResult for GCM mode
    * @returns Decrypted data as string
    */
-  decrypt(encryptedData: string): string {
+  decrypt(encryptedData: string | SM4GCMResult): string {
     const options: FuncSM4Options = {
       mode: this.mode,
       padding: this.padding,
@@ -147,5 +148,14 @@ export class SM4 {
    */
   static OFB(key: string, iv: string): SM4 {
     return new SM4(key, { mode: CipherMode.OFB, padding: PaddingMode.NONE, iv });
+  }
+
+  /**
+   * Create SM4 instance with GCM mode
+   * @param key - Encryption key as hex string
+   * @param iv - Initialization vector as hex string (24 hex chars = 12 bytes)
+   */
+  static GCM(key: string, iv: string): SM4 {
+    return new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv });
   }
 }
