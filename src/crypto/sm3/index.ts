@@ -3,8 +3,6 @@ import {
   bytesToHex,
   hexToBytes,
   rotl,
-  bytes4ToUint32BE,
-  uint32ToBytes4BE,
 } from '../../core/utils';
 
 // SM3 常量 - 初始值 IV
@@ -13,47 +11,9 @@ const IV: number[] = [
   0xa96f30bc, 0x163138aa, 0xe38dee4d, 0xb0fb0e4e,
 ];
 
-/**
- * 布尔函数 FF - 用于压缩函数
- * @param x 输入 x
- * @param y 输入 y
- * @param z 输入 z
- * @param j 轮数
- */
-function ff(x: number, y: number, z: number, j: number): number {
-  if (j < 16) {
-    return x ^ y ^ z;  // 前 16 轮
-  }
-  return (x & y) | (x & z) | (y & z);  // 后 48 轮
-}
-
-/**
- * 布尔函数 GG - 用于压缩函数
- * @param x 输入 x
- * @param y 输入 y
- * @param z 输入 z
- * @param j 轮数
- */
-function gg(x: number, y: number, z: number, j: number): number {
-  if (j < 16) {
-    return x ^ y ^ z;  // 前 16 轮
-  }
-  return (x & y) | (~x & z);  // 后 48 轮
-}
-
-/**
- * 置换函数 P0
- */
-function p0(x: number): number {
-  return x ^ rotl(x, 9) ^ rotl(x, 17);
-}
-
-/**
- * 置换函数 P1
- */
-function p1(x: number): number {
-  return x ^ rotl(x, 15) ^ rotl(x, 23);
-}
+// 预计算 T 常量
+const T_0_15 = 0x79cc4519;
+const T_16_63 = 0x7a879d8a;
 
 /**
  * 填充函数 - 将消息填充到 512 位的倍数
@@ -80,36 +40,45 @@ function pad(data: Uint8Array): Uint8Array {
 }
 
 /**
- * 压缩函数 CF
+ * 压缩函数 CF - 优化版本
+ * Optimized compression function with inlined operations and reduced allocations
  */
 function cf(v: number[], b: Uint8Array): number[] {
   const w: number[] = new Array(68);
   const wPrime: number[] = new Array(64);
   
-  // 消息扩展
+  // 消息扩展 - 优化：使用 DataView 一次性读取
+  const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
   for (let i = 0; i < 16; i++) {
-    w[i] = bytes4ToUint32BE(b, i * 4);
+    w[i] = view.getUint32(i * 4, false); // false = big-endian
   }
   
+  // 消息扩展 - 优化：内联 p1 函数减少函数调用开销
   for (let i = 16; i < 68; i++) {
-    w[i] = p1(w[i - 16] ^ w[i - 9] ^ rotl(w[i - 3], 15)) ^ rotl(w[i - 13], 7) ^ w[i - 6];
-    w[i] = w[i] >>> 0;
+    const temp = w[i - 16] ^ w[i - 9] ^ rotl(w[i - 3], 15);
+    // 内联 p1: x ^ rotl(x, 15) ^ rotl(x, 23)
+    w[i] = (temp ^ rotl(temp, 15) ^ rotl(temp, 23) ^ rotl(w[i - 13], 7) ^ w[i - 6]) >>> 0;
   }
   
+  // 计算 W' - 优化：减少中间变量
   for (let i = 0; i < 64; i++) {
     wPrime[i] = (w[i] ^ w[i + 4]) >>> 0;
   }
   
   // 初始化工作变量
-  let [a, b2, c, d, e, f, g, h] = v;
+  let a = v[0], b2 = v[1], c = v[2], d = v[3];
+  let e = v[4], f = v[5], g = v[6], h = v[7];
   
-  // 主循环
-  for (let j = 0; j < 64; j++) {
-    const t = j < 16 ? 0x79cc4519 : 0x7a879d8a;
-    const ss1 = rotl((rotl(a, 12) + e + rotl(t, j % 32)) >>> 0, 7);
-    const ss2 = (ss1 ^ rotl(a, 12)) >>> 0;
-    const tt1 = (ff(a, b2, c, j) + d + ss2 + wPrime[j]) >>> 0;
-    const tt2 = (gg(e, f, g, j) + h + ss1 + w[j]) >>> 0;
+  // 主循环 - 分成两部分以减少条件判断
+  // 前 16 轮 (j = 0-15)
+  for (let j = 0; j < 16; j++) {
+    const rotA12 = rotl(a, 12);
+    const ss1 = rotl((rotA12 + e + rotl(T_0_15, j % 32)) >>> 0, 7);
+    const ss2 = (ss1 ^ rotA12) >>> 0;
+    // 内联 ff: x ^ y ^ z (前16轮)
+    const tt1 = ((a ^ b2 ^ c) + d + ss2 + wPrime[j]) >>> 0;
+    // 内联 gg: x ^ y ^ z (前16轮)
+    const tt2 = ((e ^ f ^ g) + h + ss1 + w[j]) >>> 0;
     
     d = c;
     c = rotl(b2, 9);
@@ -118,7 +87,29 @@ function cf(v: number[], b: Uint8Array): number[] {
     h = g;
     g = rotl(f, 19);
     f = e;
-    e = p0(tt2);
+    // 内联 p0: x ^ rotl(x, 9) ^ rotl(x, 17)
+    e = (tt2 ^ rotl(tt2, 9) ^ rotl(tt2, 17)) >>> 0;
+  }
+  
+  // 后 48 轮 (j = 16-63)
+  for (let j = 16; j < 64; j++) {
+    const rotA12 = rotl(a, 12);
+    const ss1 = rotl((rotA12 + e + rotl(T_16_63, j % 32)) >>> 0, 7);
+    const ss2 = (ss1 ^ rotA12) >>> 0;
+    // 内联 ff: (x & y) | (x & z) | (y & z) (后48轮)
+    const tt1 = (((a & b2) | (a & c) | (b2 & c)) + d + ss2 + wPrime[j]) >>> 0;
+    // 内联 gg: (x & y) | (~x & z) (后48轮)
+    const tt2 = (((e & f) | (~e & g)) + h + ss1 + w[j]) >>> 0;
+    
+    d = c;
+    c = rotl(b2, 9);
+    b2 = a;
+    a = tt1;
+    h = g;
+    g = rotl(f, 19);
+    f = e;
+    // 内联 p0: x ^ rotl(x, 9) ^ rotl(x, 17)
+    e = (tt2 ^ rotl(tt2, 9) ^ rotl(tt2, 17)) >>> 0;
   }
   
   return [
@@ -134,7 +125,8 @@ function cf(v: number[], b: Uint8Array): number[] {
 }
 
 /**
- * 计算 SM3 哈希摘要
+ * 计算 SM3 哈希摘要 - 优化版本
+ * Optimized digest function with reduced allocations and direct buffer manipulation
  * @param data - 输入数据（字符串或 Uint8Array）
  * @returns 小写十六进制字符串形式的哈希摘要（64 个字符）
  */
@@ -142,19 +134,20 @@ export function digest(data: string | Uint8Array): string {
   const bytes = normalizeInput(data);
   const padded = pad(bytes);
   
+  // 优化：避免每次循环都复制数组
   let v = [...IV];
   
-  // 处理每个 512 位块
+  // 处理每个 512 位块 - 优化：直接传递视图而不是切片
   for (let i = 0; i < padded.length; i += 64) {
-    const block = padded.slice(i, i + 64);
+    const block = padded.subarray(i, i + 64);
     v = cf(v, block);
   }
   
-  // 将结果转换为字节
+  // 将结果转换为字节 - 优化：使用 DataView 直接写入
   const result = new Uint8Array(32);
+  const view = new DataView(result.buffer);
   for (let i = 0; i < 8; i++) {
-    const bytes = uint32ToBytes4BE(v[i]);
-    result.set(bytes, i * 4);
+    view.setUint32(i * 4, v[i], false); // false = big-endian
   }
   
   return bytesToHex(result);
