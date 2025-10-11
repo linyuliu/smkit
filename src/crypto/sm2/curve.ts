@@ -8,7 +8,6 @@
 import { weierstrass, ecdsa } from '@noble/curves/abstract/weierstrass.js';
 import { Field } from '@noble/curves/abstract/modular.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { randomBytes } from '@noble/hashes/utils.js';
 
 /**
  * SM2 推荐曲线参数 (GM/T 0003-2012)
@@ -48,6 +47,21 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
   return value.toString(16).padStart(length, '0');
 }
 
+/**
+ * 生成随机字节的跨平台函数
+ * 优雅地处理 Node.js 和浏览器环境
+ * 
+ * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
+ * 在浏览器环境中，直接使用 Web Crypto API
+ */
+function getRandomBytes(bytesLength: number = 32): Uint8Array {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    return globalThis.crypto.getRandomValues(new Uint8Array(bytesLength));
+  }
+  
+  throw new Error('crypto.getRandomValues is not available. Please ensure crypto is available in your environment.');
+}
+
 // SM2 曲线参数（BigInt格式）
 const sm2CurveConfig = {
   p: hexToBigInt(SM2_CURVE_PARAMS.p),
@@ -72,5 +86,5 @@ const sm2Point = weierstrass(sm2CurveConfig, {
  * 使用 @noble/curves 的 ecdsa 包装器
  */
 export const sm2 = ecdsa(sm2Point, sha256, {
-  randomBytes,
+  randomBytes: getRandomBytes,
 });
