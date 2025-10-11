@@ -193,6 +193,38 @@ export function getPublicKeyFromPrivateKey(privateKey: string): string {
 }
 
 /**
+ * KDF（密钥派生函数）
+ * 使用 SM3 作为哈希函数
+ */
+function kdf(z: Uint8Array, klen: number): Uint8Array {
+  const ct = new Uint8Array(4);
+  const k = new Uint8Array(klen);
+  let offset = 0;
+  
+  for (let i = 1; offset < klen; i++) {
+    // 将计数器转换为 32 位大端字节
+    ct[0] = (i >> 24) & 0xff;
+    ct[1] = (i >> 16) & 0xff;
+    ct[2] = (i >> 8) & 0xff;
+    ct[3] = i & 0xff;
+    
+    // 计算 SM3(Z || ct)
+    const input = new Uint8Array(z.length + ct.length);
+    input.set(z, 0);
+    input.set(ct, z.length);
+    const hashHex = sm3Digest(input);
+    const hash = hexToBytes(hashHex);
+    
+    // 将哈希结果追加到密钥流
+    const toCopy = Math.min(hash.length, klen - offset);
+    k.set(hash.slice(0, toCopy), offset);
+    offset += toCopy;
+  }
+  
+  return k;
+}
+
+/**
  * 使用 SM2 加密数据
  * @param publicKey - 公钥（十六进制字符串）
  * @param data - 要加密的数据（字符串或 Uint8Array）
@@ -200,15 +232,69 @@ export function getPublicKeyFromPrivateKey(privateKey: string): string {
  * @returns 加密后的数据（十六进制字符串）
  */
 export function encrypt(
-  _publicKey: string,
+  publicKey: string,
   data: string | Uint8Array,
   mode: SM2CipherModeType = SM2CipherMode.C1C3C2
 ): string {
+  // 自动识别并规范化公钥输入
+  const cleanPublicKey = normalizePublicKeyInput(publicKey);
   const plainBytes = normalizeInput(data);
   
-  // 占位实现：使用 SM3 哈希作为示例
-  const hash = sm3Digest(plainBytes);
-  return mode + hash;
+  // 解析公钥点
+  const publicKeyPoint = sm2.Point.fromHex(cleanPublicKey);
+  
+  // 生成随机数 k
+  const k = sm2.keygen().secretKey;
+  
+  // 计算 C1 = k·G（椭圆曲线点乘）
+  const c1Point = sm2.Point.BASE.multiply(BigInt('0x' + bytesToHex(k)));
+  const c1Bytes = c1Point.toBytes(false); // 非压缩格式
+  
+  // 计算 S = h·Pb（其中 h=1）
+  // 计算 [k]PB
+  const kPbPoint = publicKeyPoint.multiply(BigInt('0x' + bytesToHex(k)));
+  const kPbBytes = kPbPoint.toBytes(false);
+  
+  // x2, y2 是 [k]PB 的坐标
+  const x2 = kPbBytes.slice(1, 33);
+  const y2 = kPbBytes.slice(33, 65);
+  
+  // 计算 t = KDF(x2 || y2, klen)
+  const kdfInput = new Uint8Array(x2.length + y2.length);
+  kdfInput.set(x2, 0);
+  kdfInput.set(y2, x2.length);
+  const t = kdf(kdfInput, plainBytes.length);
+  
+  // 计算 C2 = M ⊕ t
+  const c2 = new Uint8Array(plainBytes.length);
+  for (let i = 0; i < plainBytes.length; i++) {
+    c2[i] = plainBytes[i] ^ t[i];
+  }
+  
+  // 计算 C3 = SM3(x2 || M || y2)
+  const c3Input = new Uint8Array(x2.length + plainBytes.length + y2.length);
+  c3Input.set(x2, 0);
+  c3Input.set(plainBytes, x2.length);
+  c3Input.set(y2, x2.length + plainBytes.length);
+  const c3Hex = sm3Digest(c3Input);
+  const c3 = hexToBytes(c3Hex);
+  
+  // 根据模式组合密文
+  if (mode === SM2CipherMode.C1C2C3) {
+    // C1 || C2 || C3
+    const ciphertext = new Uint8Array(c1Bytes.length + c2.length + c3.length);
+    ciphertext.set(c1Bytes, 0);
+    ciphertext.set(c2, c1Bytes.length);
+    ciphertext.set(c3, c1Bytes.length + c2.length);
+    return bytesToHex(ciphertext);
+  } else {
+    // C1 || C3 || C2（默认）
+    const ciphertext = new Uint8Array(c1Bytes.length + c3.length + c2.length);
+    ciphertext.set(c1Bytes, 0);
+    ciphertext.set(c3, c1Bytes.length);
+    ciphertext.set(c2, c1Bytes.length + c3.length);
+    return bytesToHex(ciphertext);
+  }
 }
 
 /**
@@ -219,12 +305,82 @@ export function encrypt(
  * @returns 解密后的数据（UTF-8 字符串）
  */
 export function decrypt(
-  _privateKey: string,
-  _encryptedData: string,
-  _mode: SM2CipherModeType = SM2CipherMode.C1C3C2
+  privateKey: string,
+  encryptedData: string,
+  mode: SM2CipherModeType = SM2CipherMode.C1C3C2
 ): string {
-  // 占位实现：返回固定字符串
-  return 'decrypted data';
+  // 自动识别并规范化私钥输入
+  const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
+  const cipherBytes = hexToBytes(encryptedData);
+  
+  // 解析密文：C1（65字节，非压缩格式）|| C3（32字节）|| C2（剩余）或 C1 || C2 || C3
+  const c1Length = 65; // 非压缩格式的椭圆曲线点
+  const c3Length = 32; // SM3 哈希长度
+  
+  if (cipherBytes.length < c1Length + c3Length) {
+    throw new Error('Invalid ciphertext: too short');
+  }
+  
+  // 提取 C1
+  const c1Bytes = cipherBytes.slice(0, c1Length);
+  const c1Point = sm2.Point.fromHex(bytesToHex(c1Bytes));
+  
+  // 根据模式提取 C2 和 C3
+  let c2: Uint8Array;
+  let c3: Uint8Array;
+  
+  if (mode === SM2CipherMode.C1C2C3) {
+    // C1 || C2 || C3
+    c2 = cipherBytes.slice(c1Length, cipherBytes.length - c3Length);
+    c3 = cipherBytes.slice(cipherBytes.length - c3Length);
+  } else {
+    // C1 || C3 || C2（默认）
+    c3 = cipherBytes.slice(c1Length, c1Length + c3Length);
+    c2 = cipherBytes.slice(c1Length + c3Length);
+  }
+  
+  // 计算 [dB]C1
+  const privateKeyBigInt = BigInt('0x' + cleanPrivateKey);
+  const s = c1Point.multiply(privateKeyBigInt);
+  const sBytes = s.toBytes(false);
+  
+  // x2, y2 是 [dB]C1 的坐标
+  const x2 = sBytes.slice(1, 33);
+  const y2 = sBytes.slice(33, 65);
+  
+  // 计算 t = KDF(x2 || y2, klen)
+  const kdfInput = new Uint8Array(x2.length + y2.length);
+  kdfInput.set(x2, 0);
+  kdfInput.set(y2, x2.length);
+  const t = kdf(kdfInput, c2.length);
+  
+  // 计算 M' = C2 ⊕ t
+  const plainBytes = new Uint8Array(c2.length);
+  for (let i = 0; i < c2.length; i++) {
+    plainBytes[i] = c2[i] ^ t[i];
+  }
+  
+  // 计算 u = SM3(x2 || M' || y2) 并验证 u === C3
+  const c3VerifyInput = new Uint8Array(x2.length + plainBytes.length + y2.length);
+  c3VerifyInput.set(x2, 0);
+  c3VerifyInput.set(plainBytes, x2.length);
+  c3VerifyInput.set(y2, x2.length + plainBytes.length);
+  const c3VerifyHex = sm3Digest(c3VerifyInput);
+  const c3Verify = hexToBytes(c3VerifyHex);
+  
+  // 验证 C3
+  if (c3.length !== c3Verify.length) {
+    throw new Error('Decryption failed: invalid C3');
+  }
+  
+  for (let i = 0; i < c3.length; i++) {
+    if (c3[i] !== c3Verify[i]) {
+      throw new Error('Decryption failed: C3 verification failed');
+    }
+  }
+  
+  // 将字节转换为 UTF-8 字符串
+  return new TextDecoder().decode(plainBytes);
 }
 
 /**
