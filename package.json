@@ -1,7 +1,7 @@
 {
   "name": "smkit",
   "version": "0.1.0",
-  "description": "Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4)",
+  "description": "中国国密算法（SM2、SM3、SM4）的纯 TypeScript 实现 / Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4)",
   "type": "module",
   "main": "./dist/smkit.cjs",
   "module": "./dist/smkit.js",
@@ -20,7 +20,8 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "demo": "npx serve demo"
   },
   "keywords": [
     "sm2",
@@ -39,5 +40,9 @@
     "vite": "^5.0.0",
     "vite-plugin-dts": "^3.0.0",
     "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1"
   }
 }

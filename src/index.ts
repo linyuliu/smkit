@@ -1,25 +1,9 @@
 /**
- * SMKit - Pure TypeScript implementation of Chinese national cryptographic algorithms
- * 
- * This library provides implementations of:
- * - SM2: Elliptic curve public key cryptography
- * - SM3: Cryptographic hash function
- * - SM4: Block cipher
+ * SMKit - 中国国密算法库
+ * 纯 TypeScript 实现的 SM2、SM3、SM4 算法
  */
 
-// Export constants
-export {
-  PaddingMode,
-  CipherMode,
-  SM2CipherMode,
-  OID,
-  DEFAULT_USER_ID,
-  type PaddingModeType,
-  type CipherModeType,
-  type SM2CipherModeType,
-} from './constants';
-
-// Export SM2 functions
+// SM2 椭圆曲线密码算法
 export {
   generateKeyPair,
   getPublicKeyFromPrivateKey,
@@ -31,22 +15,40 @@ export {
   type SignOptions,
   type VerifyOptions,
   type SM2CurveParams,
-} from './sm2';
+} from './crypto/sm2';
 
-// Export SM3 functions
+export { SM2 } from './crypto/sm2/class';
+
+// SM3 哈希算法
 export {
   digest,
   hmac,
-} from './sm3';
+} from './crypto/sm3';
 
-// Export SM4 functions
+export { SM3 } from './crypto/sm3/class';
+
+// SM4 分组密码算法
 export {
   encrypt as sm4Encrypt,
   decrypt as sm4Decrypt,
   type SM4Options,
-} from './sm4';
+} from './crypto/sm4';
 
-// Export utility functions
+export { SM4 } from './crypto/sm4/class';
+
+// 常量
+export {
+  CipherMode,
+  PaddingMode,
+  SM2CipherMode,
+  OID,
+  DEFAULT_USER_ID,
+  type CipherModeType,
+  type PaddingModeType,
+  type SM2CipherModeType,
+} from './types/constants';
+
+// 工具函数
 export {
   hexToBytes,
   bytesToHex,
@@ -55,48 +57,10 @@ export {
   normalizeInput,
   xor,
   rotl,
-  bytes4ToUint32BE,
-  uint32ToBytes4BE,
-} from './utils';
+} from './core/utils';
 
-// Export ASN.1 utilities
+// ASN.1 工具
 export {
-  encodeInteger,
-  decodeInteger,
-  encodeSequence,
-  decodeSequence,
   encodeSignature,
   decodeSignature,
-  rawToDer,
-  derToRaw,
-  ASN1Tag,
-} from './asn1';
-
-// Export elliptic curve utilities
-export {
-  SM2_CURVE,
-  isInfinity,
-  decompressPublicKey,
-  compressPublicKey,
-  isPointOnCurve,
-  isValidPublicKey,
-  parsePublicKey,
-  formatPublicKey,
-  pointAdd,
-  pointDouble,
-  pointMultiply,
-  getBasePoint,
-  computePublicKey,
-  type Point,
-} from './ec-utils';
-
-// Export OOP classes - named as SM2, SM3, SM4 to match Java conventions
-export { SM2 } from './sm2-class';
-export { SM3 } from './sm3-class';
-export { SM4 } from './sm4-class';
-
-// Export utility functions namespace
-import * as Utils from './utils';
-import * as ASN1 from './asn1';
-import * as ECUtils from './ec-utils';
-export { Utils, ASN1, ECUtils };
+} from './core/asn1';
