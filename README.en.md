@@ -56,23 +56,51 @@ const decryptedCBC = sm4Decrypt(key, encryptedCBC, { mode: CipherMode.CBC, paddi
 #### SM2 Elliptic Curve Cryptography
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
+import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
 
-// Generate key pair
+// Generate key pair (using secure random number generation from @noble/curves)
 const keyPair = generateKeyPair();
-console.log(keyPair.publicKey);
-console.log(keyPair.privateKey);
+console.log(keyPair.publicKey);  // Hex string, uncompressed format starting with 04
+console.log(keyPair.privateKey); // Hex string, 32 bytes
+
+// Derive public key from private key
+const publicKey = getPublicKeyFromPrivateKey(keyPair.privateKey);
 
 // Encrypt/Decrypt
 const plaintext = 'Hello, SM2!';
+// Supports two cipher modes: C1C3C2 (default) and C1C2C3
 const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
 const decrypted = sm2Decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C3C2);
 
-// Sign/Verify
+// Sign/Verify (using SM3 hash and Z-value calculation)
 const data = 'Message to sign';
 const signature = sign(keyPair.privateKey, data);
 const isValid = verify(keyPair.publicKey, data, signature);
 console.log(isValid); // true
+
+// DER-encoded signatures (ASN.1 DER format)
+const signatureDER = sign(keyPair.privateKey, data, { der: true });
+const isValidDER = verify(keyPair.publicKey, data, signatureDER, { der: true });
+
+// Custom user ID (default is '1234567812345678')
+const signatureCustom = sign(keyPair.privateKey, data, { userId: 'user@example.com' });
+const isValidCustom = verify(keyPair.publicKey, data, signatureCustom, { userId: 'user@example.com' });
+
+// Automatic input format detection
+// Supports:
+// - Hex strings (with or without 0x prefix)
+// - Uppercase or lowercase hex
+// - Compressed or uncompressed public key formats
+// - DER-encoded or raw format signatures
+const privateKeyWith0x = '0x' + keyPair.privateKey;
+const publicKeyUpper = keyPair.publicKey.toUpperCase();
+const sig = sign(privateKeyWith0x, 'test');
+const valid = verify(publicKeyUpper, 'test', sig); // Auto-detects format
+
+// Support for Uint8Array input
+const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
+const signatureBinary = sign(keyPair.privateKey, binaryData);
 ```
 
 ### Object-Oriented API
