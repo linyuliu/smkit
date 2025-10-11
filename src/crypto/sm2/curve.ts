@@ -2,9 +2,13 @@
  * SM2 椭圆曲线参数和工具函数
  * 基于 GM/T 0003-2012 标准
  * 
- * 注意：当前为过渡实现，已准备好使用 @noble/curves 的结构
- * 未来版本将使用 @noble/curves 进行高效的椭圆曲线运算
+ * 使用 @noble/curves 进行高效的椭圆曲线运算
  */
+
+import { weierstrass, ecdsa } from '@noble/curves/abstract/weierstrass.js';
+import { Field } from '@noble/curves/abstract/modular.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { randomBytes } from '@noble/hashes/utils.js';
 
 /**
  * SM2 推荐曲线参数 (GM/T 0003-2012)
@@ -43,3 +47,30 @@ export function hexToBigInt(hex: string): bigint {
 export function bigIntToHex(value: bigint, length: number = 64): string {
   return value.toString(16).padStart(length, '0');
 }
+
+// SM2 曲线参数（BigInt格式）
+const sm2CurveConfig = {
+  p: hexToBigInt(SM2_CURVE_PARAMS.p),
+  a: hexToBigInt(SM2_CURVE_PARAMS.a),
+  b: hexToBigInt(SM2_CURVE_PARAMS.b),
+  Gx: hexToBigInt(SM2_CURVE_PARAMS.Gx),
+  Gy: hexToBigInt(SM2_CURVE_PARAMS.Gy),
+  n: hexToBigInt(SM2_CURVE_PARAMS.n),
+  h: BigInt(SM2_CURVE_PARAMS.h),
+};
+
+// 创建有限域
+const Fp = Field(sm2CurveConfig.p);
+
+// 创建椭圆曲线点
+const sm2Point = weierstrass(sm2CurveConfig, {
+  Fp,
+});
+
+/**
+ * SM2 椭圆曲线实例（带签名/验签功能）
+ * 使用 @noble/curves 的 ecdsa 包装器
+ */
+export const sm2 = ecdsa(sm2Point, sha256, {
+  randomBytes,
+});
