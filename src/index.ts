@@ -32,6 +32,7 @@ export {
   encrypt as sm4Encrypt,
   decrypt as sm4Decrypt,
   type SM4Options,
+  type SM4GCMResult,
 } from './crypto/sm4';
 
 export { SM4 } from './crypto/sm4/class';

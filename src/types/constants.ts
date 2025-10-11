@@ -21,6 +21,7 @@ export const CipherMode = {
   CTR: 'ctr',
   CFB: 'cfb',
   OFB: 'ofb',
+  GCM: 'gcm',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];
