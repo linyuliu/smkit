@@ -8,7 +8,7 @@ import {
   decodeSignature,
   rawToDer,
   derToRaw,
-} from '../src/asn1';
+} from '../src/core/asn1';
 
 describe('ASN.1 Utilities', () => {
   describe('Integer encoding/decoding', () => {

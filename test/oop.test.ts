@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SM2, SM3, SM4 } from '../src/index';
-import { CipherMode, PaddingMode, SM2CipherMode } from '../src/constants';
+import { CipherMode, PaddingMode, SM2CipherMode } from '../src/types/constants';
 
 describe('Object-Oriented API', () => {
   describe('SM2', () => {

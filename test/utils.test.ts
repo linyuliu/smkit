@@ -7,7 +7,7 @@ import {
   normalizeInput,
   xor,
   rotl,
-} from '../src/utils';
+} from '../src/core/utils';
 
 describe('Utils', () => {
   describe('hexToBytes', () => {
