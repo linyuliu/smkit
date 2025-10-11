@@ -104,6 +104,22 @@ function normalizePublicKeyInput(publicKey: string): string {
 }
 
 /**
+ * 常量时间比较两个 Uint8Array（防止时序攻击）
+ */
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  
+  return result === 0;
+}
+
+/**
  * 计算 Z 值（用于签名）
  * Z = SM3(ENTL || ID || a || b || xG || yG || xA || yA)
  */
@@ -219,6 +235,19 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
     const toCopy = Math.min(hash.length, klen - offset);
     k.set(hash.slice(0, toCopy), offset);
     offset += toCopy;
+  }
+  
+  // 验证派生的密钥不全为零
+  let isZero = true;
+  for (let i = 0; i < k.length; i++) {
+    if (k[i] !== 0) {
+      isZero = false;
+      break;
+    }
+  }
+  
+  if (isZero) {
+    throw new Error('KDF derived key is all zeros - invalid point multiplication result');
   }
   
   return k;
@@ -368,15 +397,9 @@ export function decrypt(
   const c3VerifyHex = sm3Digest(c3VerifyInput);
   const c3Verify = hexToBytes(c3VerifyHex);
   
-  // 验证 C3
-  if (c3.length !== c3Verify.length) {
-    throw new Error('Decryption failed: invalid C3');
-  }
-  
-  for (let i = 0; i < c3.length; i++) {
-    if (c3[i] !== c3Verify[i]) {
-      throw new Error('Decryption failed: C3 verification failed');
-    }
+  // 验证 C3（使用常量时间比较防止时序攻击）
+  if (!constantTimeEqual(c3, c3Verify)) {
+    throw new Error('Decryption failed: C3 verification failed');
   }
   
   // 将字节转换为 UTF-8 字符串
