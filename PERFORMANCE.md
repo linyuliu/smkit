@@ -1,6 +1,46 @@
-# SM4 Performance Optimization 性能优化说明
+# Performance Optimization 性能优化说明
 
-## Implemented Optimizations 已实现的优化
+## SM3 Hash Algorithm Optimizations SM3哈希算法优化
+
+### ✅ Implemented Optimizations 已实现的优化
+
+#### 1. Inlined Functions 内联函数
+**Status 状态: ✅ Implemented 已实现**
+
+The Boolean functions (FF, GG) and permutation functions (P0, P1) are now inlined directly in the compression function to reduce function call overhead.
+
+布尔函数（FF、GG）和置换函数（P0、P1）现在直接内联在压缩函数中，以减少函数调用开销。
+
+#### 2. Pre-computed Constants 预计算常量
+**Status 状态: ✅ Implemented 已实现**
+
+The T constants (0x79cc4519 and 0x7a879d8a) are pre-computed and the main loop is split into two sections to eliminate conditional checks.
+
+T常量（0x79cc4519和0x7a879d8a）已预计算，主循环分为两部分以消除条件检查。
+
+#### 3. DataView for Buffer Operations 使用DataView进行缓冲区操作
+**Status 状态: ✅ Implemented 已实现**
+
+Using DataView for direct buffer manipulation reduces intermediate allocations and improves memory access patterns.
+
+使用DataView进行直接缓冲区操作减少了中间分配，改善了内存访问模式。
+
+#### 4. Reduced Array Allocations 减少数组分配
+**Status 状态: ✅ Implemented 已实现**
+
+Using `subarray()` instead of `slice()` for block processing avoids unnecessary memory copies.
+
+在块处理中使用`subarray()`而不是`slice()`避免了不必要的内存复制。
+
+**Performance Impact 性能影响:**
+- Throughput: ~26 MB/s on typical hardware
+- 吞吐量：在典型硬件上约26 MB/s
+- Suitable for most cryptographic applications
+- 适用于大多数加密应用
+
+## SM4 Block Cipher Optimizations SM4分组密码优化
+
+### Implemented Optimizations 已实现的优化
 
 ### 1. S-box and L Transform Pre-computation S盒和L转换预计算
 **Status 状态: ✅ Implemented 已实现**
@@ -91,17 +131,42 @@ function tau(a: number): number {
 ## Cipher Modes Not Yet Implemented 尚未实现的密码模式
 
 ### 1. GCM (Galois/Counter Mode)
-**Status 状态: ⏳ Planned 计划中**
+**Status 状态: ✅ Implemented 已实现**
 
-**Reason for not implementing yet 暂未实现的原因:**
-- GCM requires Galois field multiplication (GF(2^128))
-- GCM需要伽罗瓦域乘法（GF(2^128)）
-- Proper implementation requires authenticated encryption with associated data (AEAD)
-- 正确实现需要带关联数据的认证加密（AEAD）
-- More complex than basic stream modes
-- 比基本流模式更复杂
-- Will be implemented in a future update
-- 将在未来更新中实现
+**Features 功能:**
+- Authenticated Encryption with Associated Data (AEAD)
+- 带关联数据的认证加密（AEAD）
+- Galois field multiplication in GF(2^128)
+- 伽罗瓦域乘法（GF(2^128)）
+- Configurable authentication tag length (12-16 bytes)
+- 可配置的认证标签长度（12-16字节）
+- Support for Additional Authenticated Data (AAD)
+- 支持额外认证数据（AAD）
+
+**Usage 使用方法:**
+```typescript
+import { sm4Encrypt, sm4Decrypt, CipherMode } from 'smkit';
+
+const key = '0123456789abcdeffedcba9876543210';
+const iv = '000000000000000000000000'; // 12 bytes for GCM
+const plaintext = 'Secret message';
+const aad = 'Additional authenticated data';
+
+// Encrypt
+const result = sm4Encrypt(key, plaintext, { 
+  mode: CipherMode.GCM, 
+  iv, 
+  aad 
+});
+console.log(result); // { ciphertext: '...', tag: '...' }
+
+// Decrypt with authentication
+const decrypted = sm4Decrypt(key, result, { 
+  mode: CipherMode.GCM, 
+  iv, 
+  aad 
+});
+```
 
 ### 2. XTS (XEX-based tweaked-codebook mode with ciphertext stealing)
 **Status 状态: ⏳ Planned 计划中**

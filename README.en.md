@@ -64,6 +64,13 @@ const decryptedCFB = sm4Decrypt(key, encryptedCFB, { mode: CipherMode.CFB, iv })
 // OFB mode (Output Feedback) - stream cipher mode, no padding required
 const encryptedOFB = sm4Encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
 const decryptedOFB = sm4Decrypt(key, encryptedOFB, { mode: CipherMode.OFB, iv });
+
+// GCM mode (Galois/Counter Mode) - authenticated encryption with associated data
+const gcmIv = '000000000000000000000000'; // 96-bit IV (24 hex chars, required for GCM)
+const aad = 'Additional Authenticated Data'; // Optional additional authenticated data
+const gcmResult = sm4Encrypt(key, plaintext, { mode: CipherMode.GCM, iv: gcmIv, aad });
+console.log(gcmResult); // { ciphertext: '...', tag: '...' }
+const decryptedGCM = sm4Decrypt(key, gcmResult, { mode: CipherMode.GCM, iv: gcmIv, aad });
 ```
 
 #### SM2 Elliptic Curve Cryptography
@@ -216,6 +223,7 @@ CipherMode.CBC  // 'cbc' - Cipher Block Chaining
 CipherMode.CTR  // 'ctr' - Counter
 CipherMode.CFB  // 'cfb' - Cipher Feedback
 CipherMode.OFB  // 'ofb' - Output Feedback
+CipherMode.GCM  // 'gcm' - Galois/Counter Mode (Authenticated Encryption)
 ```
 
 ### Padding Modes

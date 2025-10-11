@@ -84,6 +84,13 @@ const decryptedCFB = sm4Decrypt(key, encryptedCFB, { mode: CipherMode.CFB, iv })
 // OFB 模式（输出反馈模式）- 流密码模式，无需填充
 const encryptedOFB = sm4Encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
 const decryptedOFB = sm4Decrypt(key, encryptedOFB, { mode: CipherMode.OFB, iv });
+
+// GCM 模式（伽罗瓦/计数器模式）- 认证加密模式
+const gcmIv = '000000000000000000000000'; // 96 位 IV（24 个十六进制字符，GCM 专用）
+const aad = 'Additional Authenticated Data'; // 可选的额外认证数据
+const gcmResult = sm4Encrypt(key, plaintext, { mode: CipherMode.GCM, iv: gcmIv, aad });
+console.log(gcmResult); // { ciphertext: '...', tag: '...' }
+const decryptedGCM = sm4Decrypt(key, gcmResult, { mode: CipherMode.GCM, iv: gcmIv, aad });
 ```
 
 #### SM2 椭圆曲线密码
@@ -236,6 +243,7 @@ CipherMode.CBC  // 'cbc' - 分组链接模式
 CipherMode.CTR  // 'ctr' - 计数器模式
 CipherMode.CFB  // 'cfb' - 密文反馈模式
 CipherMode.OFB  // 'ofb' - 输出反馈模式
+CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（认证加密）
 ```
 
 ### 填充模式
