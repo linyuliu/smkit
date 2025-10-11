@@ -32,6 +32,29 @@ export interface KeyPair {
 }
 
 /**
+ * 验证字符串是否为有效的十六进制字符串（不使用正则表达式）
+ */
+function isValidHexString(str: string): boolean {
+  if (str.length === 0) {
+    return false;
+  }
+  
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    // 检查是否为 0-9, a-f, A-F
+    const isDigit = c >= 48 && c <= 57;  // 0-9
+    const isLowerHex = c >= 97 && c <= 102;  // a-f
+    const isUpperHex = c >= 65 && c <= 70;  // A-F
+    
+    if (!isDigit && !isLowerHex && !isUpperHex) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
  * 自动识别并规范化私钥输入
  * 支持：hex字符串（带或不带0x前缀）
  */
@@ -44,7 +67,7 @@ function normalizePrivateKeyInput(privateKey: string): string {
   }
   
   // 验证是否为有效的十六进制字符串
-  if (!/^[0-9a-fA-F]+$/.test(cleaned)) {
+  if (!isValidHexString(cleaned)) {
     throw new Error('Invalid private key: must be a hexadecimal string');
   }
   
@@ -74,7 +97,7 @@ function normalizePublicKeyInput(publicKey: string): string {
   }
   
   // 验证是否为有效的十六进制字符串
-  if (!/^[0-9a-fA-F]+$/.test(cleaned)) {
+  if (!isValidHexString(cleaned)) {
     throw new Error('Invalid public key: must be a hexadecimal string');
   }
   
