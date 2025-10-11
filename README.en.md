@@ -43,14 +43,27 @@ import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'smkit';
 const key = '0123456789abcdeffedcba9876543210'; // 128-bit key (32 hex chars)
 const plaintext = 'Hello, SM4!';
 
-// ECB mode
+// ECB mode (Electronic Codebook)
 const encrypted = sm4Encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 
-// CBC mode
+// CBC mode (Cipher Block Chaining)
 const iv = 'fedcba98765432100123456789abcdef'; // 128-bit IV (32 hex chars)
 const encryptedCBC = sm4Encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
 const decryptedCBC = sm4Decrypt(key, encryptedCBC, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+
+// CTR mode (Counter) - stream cipher mode, no padding required
+const counter = '00000000000000000000000000000000'; // 128-bit counter/nonce
+const encryptedCTR = sm4Encrypt(key, plaintext, { mode: CipherMode.CTR, iv: counter });
+const decryptedCTR = sm4Decrypt(key, encryptedCTR, { mode: CipherMode.CTR, iv: counter });
+
+// CFB mode (Cipher Feedback) - stream cipher mode, no padding required
+const encryptedCFB = sm4Encrypt(key, plaintext, { mode: CipherMode.CFB, iv });
+const decryptedCFB = sm4Decrypt(key, encryptedCFB, { mode: CipherMode.CFB, iv });
+
+// OFB mode (Output Feedback) - stream cipher mode, no padding required
+const encryptedOFB = sm4Encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
+const decryptedOFB = sm4Decrypt(key, encryptedOFB, { mode: CipherMode.OFB, iv });
 ```
 
 #### SM2 Elliptic Curve Cryptography
@@ -126,6 +139,7 @@ const result = sm3.digest();
 import { SM4, CipherMode, PaddingMode } from 'smkit';
 
 const key = '0123456789abcdeffedcba9876543210';
+const iv = 'fedcba98765432100123456789abcdef';
 
 // Using constructor
 const sm4 = new SM4(key, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
@@ -135,10 +149,13 @@ const decrypted = sm4.decrypt(encrypted);
 // Using factory methods
 const sm4ecb = SM4.ECB(key);
 const sm4cbc = SM4.CBC(key, iv);
+const sm4ctr = SM4.CTR(key, '00000000000000000000000000000000');
+const sm4cfb = SM4.CFB(key, iv);
+const sm4ofb = SM4.OFB(key, iv);
 
 // Configuration setters
 sm4.setMode(CipherMode.CBC);
-sm4.setIV('fedcba98765432100123456789abcdef');
+sm4.setIV(iv);
 sm4.setPadding(PaddingMode.PKCS7);
 ```
 
@@ -194,8 +211,11 @@ const str = bytesToString(strBytes);
 ```typescript
 import { CipherMode } from 'smkit';
 
-CipherMode.ECB  // 'ECB'
-CipherMode.CBC  // 'CBC'
+CipherMode.ECB  // 'ecb' - Electronic Codebook
+CipherMode.CBC  // 'cbc' - Cipher Block Chaining
+CipherMode.CTR  // 'ctr' - Counter
+CipherMode.CFB  // 'cfb' - Cipher Feedback
+CipherMode.OFB  // 'ofb' - Output Feedback
 ```
 
 ### Padding Modes
