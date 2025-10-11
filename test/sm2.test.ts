@@ -6,8 +6,8 @@ import {
   decrypt,
   sign,
   verify,
-} from '../src/sm2';
-import { SM2CipherMode, DEFAULT_USER_ID } from '../src/constants';
+} from '../src/crypto/sm2';
+import { SM2CipherMode, DEFAULT_USER_ID } from '../src/types/constants';
 
 describe('SM2', () => {
   describe('generateKeyPair', () => {

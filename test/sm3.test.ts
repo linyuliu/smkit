@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { digest, hmac } from '../src/sm3';
+import { digest, hmac } from '../src/crypto/sm3';
 
 describe('SM3', () => {
   describe('digest', () => {

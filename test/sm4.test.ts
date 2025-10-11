@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { encrypt, decrypt } from '../src/sm4';
-import { CipherMode, PaddingMode } from '../src/constants';
+import { encrypt, decrypt } from '../src/crypto/sm4';
+import { CipherMode, PaddingMode } from '../src/types/constants';
 
 describe('SM4', () => {
   const key = '0123456789abcdeffedcba9876543210'; // 128-bit key
