@@ -6,8 +6,8 @@
  * Padding modes
  */
 export const PaddingMode = {
-  PKCS7: 'PKCS7',
-  NONE: 'NONE',
+  PKCS7: 'pkcs7',
+  NONE: 'none',
 } as const;
 
 export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
@@ -16,8 +16,8 @@ export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
  * Cipher modes
  */
 export const CipherMode = {
-  ECB: 'ECB',
-  CBC: 'CBC',
+  ECB: 'ecb',
+  CBC: 'cbc',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];

@@ -77,36 +77,36 @@ console.log(isValid); // true
 
 ### Object-Oriented API
 
-#### SM3Class - Hash Operations
+#### SM3 - Hash Operations
 
 ```typescript
-import { SM3Class } from 'smkit';
+import { SM3 } from 'smkit';
 
 // Static methods
-const hash = SM3Class.digest('Hello, SM3!');
-const mac = SM3Class.hmac('secret-key', 'data');
+const hash = SM3.digest('Hello, SM3!');
+const mac = SM3.hmac('secret-key', 'data');
 
 // Incremental hashing
-const sm3 = new SM3Class();
+const sm3 = new SM3();
 sm3.update('Hello, ').update('SM3!');
 const result = sm3.digest();
 ```
 
-#### SM4Class - Block Cipher
+#### SM4 - Block Cipher
 
 ```typescript
-import { SM4Class, CipherMode, PaddingMode } from 'smkit';
+import { SM4, CipherMode, PaddingMode } from 'smkit';
 
 const key = '0123456789abcdeffedcba9876543210';
 
 // Using constructor
-const sm4 = new SM4Class(key, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
+const sm4 = new SM4(key, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 const encrypted = sm4.encrypt('Hello, SM4!');
 const decrypted = sm4.decrypt(encrypted);
 
 // Using factory methods
-const sm4ecb = SM4Class.ECB(key);
-const sm4cbc = SM4Class.CBC(key, iv);
+const sm4ecb = SM4.ECB(key);
+const sm4cbc = SM4.CBC(key, iv);
 
 // Configuration setters
 sm4.setMode(CipherMode.CBC);
@@ -114,17 +114,17 @@ sm4.setIV('fedcba98765432100123456789abcdef');
 sm4.setPadding(PaddingMode.PKCS7);
 ```
 
-#### SM2Class - Elliptic Curve Cryptography
+#### SM2 - Elliptic Curve Cryptography
 
 ```typescript
-import { SM2Class, SM2CipherMode } from 'smkit';
+import { SM2, SM2CipherMode } from 'smkit';
 
 // Generate key pair
-const sm2 = SM2Class.generateKeyPair();
+const sm2 = SM2.generateKeyPair();
 
 // Create from existing keys
-const sm2FromPrivate = SM2Class.fromPrivateKey(privateKey);
-const sm2FromPublic = SM2Class.fromPublicKey(publicKey);
+const sm2FromPrivate = SM2.fromPrivateKey(privateKey);
+const sm2FromPublic = SM2.fromPublicKey(publicKey);
 
 // Encrypt/Decrypt
 const encrypted = sm2.encrypt('Hello, SM2!', SM2CipherMode.C1C3C2);
@@ -143,7 +143,7 @@ const curveParams = {
   Gy: 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0',
   n: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123',
 };
-const sm2Custom = SM2Class.generateKeyPair(curveParams);
+const sm2Custom = SM2.generateKeyPair(curveParams);
 ```
 
 ### Utility Functions
@@ -212,9 +212,9 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 - `hmac(key: string | Uint8Array, data: string | Uint8Array): string` - Compute SM3-HMAC
 
 **Object-Oriented API:**
-- `SM3Class.digest(data)` - Static method to compute hash
-- `SM3Class.hmac(key, data)` - Static method to compute HMAC
-- `new SM3Class()` - Create instance for incremental hashing
+- `SM3.digest(data)` - Static method to compute hash
+- `SM3.hmac(key, data)` - Static method to compute HMAC
+- `new SM3()` - Create instance for incremental hashing
   - `.update(data)` - Add data to hash
   - `.digest()` - Finalize and return hash
   - `.reset()` - Reset state
@@ -231,9 +231,9 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 - `iv?: string` - Initialization vector for CBC mode (32 hex chars)
 
 **Object-Oriented API:**
-- `new SM4Class(key, options?)` - Create SM4 instance
-- `SM4Class.ECB(key, padding?)` - Create ECB mode instance
-- `SM4Class.CBC(key, iv, padding?)` - Create CBC mode instance
+- `new SM4(key, options?)` - Create SM4 instance
+- `SM4.ECB(key, padding?)` - Create ECB mode instance
+- `SM4.CBC(key, iv, padding?)` - Create CBC mode instance
 - Instance methods:
   - `.encrypt(data)` - Encrypt data
   - `.decrypt(encryptedData)` - Decrypt data
@@ -265,9 +265,9 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 - `n?: string` - Order n
 
 **Object-Oriented API:**
-- `SM2Class.generateKeyPair(curveParams?)` - Generate key pair
-- `SM2Class.fromPrivateKey(privateKey, curveParams?)` - Create from private key
-- `SM2Class.fromPublicKey(publicKey, curveParams?)` - Create from public key
+- `SM2.generateKeyPair(curveParams?)` - Generate key pair
+- `SM2.fromPrivateKey(privateKey, curveParams?)` - Create from private key
+- `SM2.fromPublicKey(publicKey, curveParams?)` - Create from public key
 - Instance methods:
   - `.encrypt(data, mode?)` - Encrypt data
   - `.decrypt(encryptedData, mode?)` - Decrypt data

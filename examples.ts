@@ -17,9 +17,9 @@ import {
   hexToBytes,
   bytesToHex,
   // Object-Oriented API
-  SM2Class,
-  SM3Class,
-  SM4Class,
+  SM2,
+  SM3,
+  SM4,
   // Constants
   CipherMode,
   PaddingMode,
@@ -53,13 +53,13 @@ console.log();
 
 // SM3 Object-Oriented API Examples
 console.log('--- SM3 Hash (OOP API) ---');
-const hash3 = SM3Class.digest('abc');
-console.log('SM3Class.digest("abc"):', hash3);
+const hash3 = SM3.digest('abc');
+console.log('SM3.digest("abc"):', hash3);
 
-const sm3 = new SM3Class();
+const sm3 = new SM3();
 sm3.update('Hello, ').update('World!');
 const hash4 = sm3.digest();
-console.log('SM3Class incremental hash:', hash4);
+console.log('SM3 incremental hash:', hash4);
 console.log();
 
 // SM4 Functional API Examples
@@ -83,17 +83,17 @@ console.log();
 
 // SM4 Object-Oriented API Examples
 console.log('--- SM4 Block Cipher (OOP API) ---');
-const sm4ecb = SM4Class.ECB(sm4Key);
+const sm4ecb = SM4.ECB(sm4Key);
 const encrypted1 = sm4ecb.encrypt('Hello, SM4 OOP!');
-console.log('SM4Class ECB Encrypted:', encrypted1);
+console.log('SM4 ECB Encrypted:', encrypted1);
 const decrypted1 = sm4ecb.decrypt(encrypted1);
-console.log('SM4Class ECB Decrypted:', decrypted1);
+console.log('SM4 ECB Decrypted:', decrypted1);
 
-const sm4cbc = SM4Class.CBC(sm4Key, iv);
+const sm4cbc = SM4.CBC(sm4Key, iv);
 const encrypted2 = sm4cbc.encrypt('Hello, SM4 OOP!');
-console.log('SM4Class CBC Encrypted:', encrypted2);
+console.log('SM4 CBC Encrypted:', encrypted2);
 const decrypted2 = sm4cbc.decrypt(encrypted2);
-console.log('SM4Class CBC Decrypted:', decrypted2);
+console.log('SM4 CBC Decrypted:', decrypted2);
 console.log();
 
 // SM2 Functional API Examples
@@ -118,20 +118,20 @@ console.log();
 
 // SM2 Object-Oriented API Examples
 console.log('--- SM2 Elliptic Curve (OOP API) ---');
-const sm2 = SM2Class.generateKeyPair();
-console.log('SM2Class generated key pair:');
+const sm2 = SM2.generateKeyPair();
+console.log('SM2 generated key pair:');
 console.log('  Public Key:', sm2.getPublicKey().slice(0, 40) + '...');
 console.log('  Private Key:', sm2.getPrivateKey().slice(0, 40) + '...');
 
 const encrypted3 = sm2.encrypt('Hello, SM2 OOP!');
-console.log('SM2Class Encrypted:', encrypted3.slice(0, 40) + '...');
+console.log('SM2 Encrypted:', encrypted3.slice(0, 40) + '...');
 const decrypted3 = sm2.decrypt(encrypted3);
-console.log('SM2Class Decrypted:', decrypted3);
+console.log('SM2 Decrypted:', decrypted3);
 
 const signature2 = sm2.sign('Message to sign');
-console.log('SM2Class Signature:', signature2.slice(0, 40) + '...');
+console.log('SM2 Signature:', signature2.slice(0, 40) + '...');
 const isValid2 = sm2.verify('Message to sign', signature2);
-console.log('SM2Class Signature Valid:', isValid2);
+console.log('SM2 Signature Valid:', isValid2);
 console.log();
 
 // Utility Examples
