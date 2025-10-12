@@ -429,7 +429,6 @@ export function decompressPublicKey(publicKey: string): string {
  */
 function kdf(z: Uint8Array, klen: number): Uint8Array {
   const k = new Uint8Array(klen);
-  const ct = new Uint8Array(4);
   // 预分配输入缓冲区，避免每次迭代都分配内存
   const input = new Uint8Array(z.length + 4);
   input.set(z, 0);
