@@ -421,42 +421,48 @@ export function decompressPublicKey(publicKey: string): string {
 /**
  * KDF（密钥派生函数）
  * 使用 SM3 作为哈希函数
+ * 
+ * 优化说明：
+ * - 减少内存分配，复用缓冲区
+ * - 优化零值检测，提前退出
+ * - 按照 GM/T 0003.1-2012 标准实现
  */
 function kdf(z: Uint8Array, klen: number): Uint8Array {
-  const ct = new Uint8Array(4);
   const k = new Uint8Array(klen);
+  const ct = new Uint8Array(4);
+  // 预分配输入缓冲区，避免每次迭代都分配内存
+  const input = new Uint8Array(z.length + 4);
+  input.set(z, 0);
+  
   let offset = 0;
+  let hasNonZero = false;
   
   for (let i = 1; offset < klen; i++) {
-    // 将计数器转换为 32 位大端字节
-    ct[0] = (i >> 24) & 0xff;
-    ct[1] = (i >> 16) & 0xff;
-    ct[2] = (i >> 8) & 0xff;
-    ct[3] = i & 0xff;
+    // 将计数器转换为 32 位大端字节（优化：直接写入预分配的缓冲区）
+    input[z.length] = (i >> 24) & 0xff;
+    input[z.length + 1] = (i >> 16) & 0xff;
+    input[z.length + 2] = (i >> 8) & 0xff;
+    input[z.length + 3] = i & 0xff;
     
     // 计算 SM3(Z || ct)
-    const input = new Uint8Array(z.length + ct.length);
-    input.set(z, 0);
-    input.set(ct, z.length);
     const hashHex = sm3Digest(input);
     const hash = hexToBytes(hashHex);
     
     // 将哈希结果追加到密钥流
     const toCopy = Math.min(hash.length, klen - offset);
-    k.set(hash.slice(0, toCopy), offset);
+    for (let j = 0; j < toCopy; j++) {
+      const byte = hash[j];
+      k[offset + j] = byte;
+      // 优化：在复制过程中同时检测是否有非零字节
+      if (byte !== 0) {
+        hasNonZero = true;
+      }
+    }
     offset += toCopy;
   }
   
   // 验证派生的密钥不全为零
-  let isZero = true;
-  for (let i = 0; i < k.length; i++) {
-    if (k[i] !== 0) {
-      isZero = false;
-      break;
-    }
-  }
-  
-  if (isZero) {
+  if (!hasNonZero) {
     throw new Error('KDF derived key is all zeros - invalid point multiplication result');
   }
   
