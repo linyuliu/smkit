@@ -242,12 +242,60 @@
         <div id="sm4" class="tab-content">
             <div class="info-box">
                 <h4>SM4 分组密码算法</h4>
-                <p>SM4 是中国国家密码管理局发布的分组密码算法，密钥长度 128 位。支持 ECB 和 CBC 模式。</p>
+                <p>SM4 是中国国家密码管理局发布的分组密码算法，密钥长度 128 位。支持多种加密模式。</p>
             </div>
             
             <div class="form-group">
-                <label for="sm4-key">密钥（32 位十六进制字符）：</label>
+                <label for="sm4-key">密钥 (128比特)：</label>
                 <input type="text" id="sm4-key" value="0123456789abcdeffedcba9876543210" placeholder="请输入 16 字节的密钥（32 位十六进制）">
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-key-format">密钥数据格式：</label>
+                <select id="sm4-key-format">
+                    <option value="hex" selected>十六进制 (Hex)</option>
+                    <option value="text">文本 (Text)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-iv">IV (CBC/CFB/OFB 加密模式下可用)：</label>
+                <input type="text" id="sm4-iv" value="fedcba98765432100123456789abcdef" placeholder="请输入 16 字节的 IV（32 位十六进制）">
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-iv-format">IV 数据格式：</label>
+                <select id="sm4-iv-format">
+                    <option value="hex" selected>十六进制 (Hex)</option>
+                    <option value="text">文本 (Text)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-mode">加密模式：</label>
+                <select id="sm4-mode">
+                    <option value="ecb" selected>ECB (电码本模式)</option>
+                    <option value="cbc">CBC (密码分组链接模式)</option>
+                    <option value="ctr">CTR (计数器模式)</option>
+                    <option value="cfb">CFB (密码反馈模式)</option>
+                    <option value="ofb">OFB (输出反馈模式)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-padding">填充模式：</label>
+                <select id="sm4-padding">
+                    <option value="pkcs7" selected>PKCS7</option>
+                    <option value="none">None</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm4-result-format">加密结果数据格式：</label>
+                <select id="sm4-result-format">
+                    <option value="hex" selected>十六进制 (Hex)</option>
+                    <option value="base64">Base64</option>
+                </select>
             </div>
             
             <div class="form-group">
@@ -487,24 +535,71 @@ const keyPair = generateKeyPair();</code>
         
         function testSM4Encrypt() {
             try {
-                const key = document.getElementById('sm4-key').value;
+                let key = document.getElementById('sm4-key').value;
+                const keyFormat = document.getElementById('sm4-key-format').value;
                 const plaintext = document.getElementById('sm4-plaintext').value;
+                const mode = document.getElementById('sm4-mode').value;
+                const padding = document.getElementById('sm4-padding').value;
+                let iv = document.getElementById('sm4-iv').value;
+                const ivFormat = document.getElementById('sm4-iv-format').value;
+                const resultFormat = document.getElementById('sm4-result-format').value;
+                
+                // 处理密钥格式
+                if (keyFormat === 'text') {
+                    key = window.smkitHelpers.bytesToHex(new TextEncoder().encode(key));
+                }
                 
                 if (key.length !== 32) {
                     alert('密钥必须是 32 位十六进制字符（16 字节）');
                     return;
                 }
                 
-                const ciphertext = window.smkitHelpers.sm4Encrypt(key, plaintext);
+                // 处理 IV 格式
+                if (ivFormat === 'text') {
+                    iv = window.smkitHelpers.bytesToHex(new TextEncoder().encode(iv));
+                }
+                
+                // 构建选项
+                const options = { 
+                    mode: window.smkit.CipherMode[mode.toUpperCase()], 
+                    padding: window.smkit.PaddingMode[padding.toUpperCase()]
+                };
+                
+                if (mode !== 'ecb' && iv) {
+                    if (iv.length !== 32) {
+                        alert('IV 必须是 32 位十六进制字符（16 字节）');
+                        return;
+                    }
+                    options.iv = iv;
+                }
+                
+                const ciphertext = window.smkit.sm4Encrypt(key, plaintext, options);
+                
+                // 处理输出格式
+                let displayResult = ciphertext;
+                if (resultFormat === 'base64') {
+                    // 将十六进制转换为 base64
+                    const bytes = new Uint8Array(ciphertext.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+                    displayResult = btoa(String.fromCharCode.apply(null, bytes));
+                }
                 
                 document.getElementById('sm4-result').innerHTML = `
                     <div class="result">
                         <h3>加密结果：</h3>
-                        <pre>${ciphertext}</pre>
+                        <pre style="word-break: break-all;">${displayResult}</pre>
                         <p style="margin-top: 10px; color: #666;">明文长度: ${plaintext.length} 字符</p>
-                        <p style="color: #666;">密文长度: ${ciphertext.length} 字符 (十六进制)</p>
+                        <p style="color: #666;">加密模式: ${mode.toUpperCase()}</p>
+                        <p style="color: #666;">填充模式: ${padding.toUpperCase()}</p>
+                        <p style="color: #666;">输出格式: ${resultFormat === 'hex' ? '十六进制' : 'Base64'}</p>
+                        <p style="color: #666;">密文长度: ${displayResult.length} 字符</p>
                     </div>
                 `;
+                
+                // 保存密文以供解密使用
+                window.currentSM4Ciphertext = ciphertext;
+                window.currentSM4Mode = mode;
+                window.currentSM4Padding = padding;
+                window.currentSM4IV = iv;
             } catch (error) {
                 document.getElementById('sm4-result').innerHTML = `
                     <div class="result" style="border-left-color: #f44336;">
@@ -517,22 +612,43 @@ const keyPair = generateKeyPair();</code>
         
         function testSM4Decrypt() {
             try {
-                const key = document.getElementById('sm4-key').value;
-                const resultDiv = document.getElementById('sm4-result');
+                let key = document.getElementById('sm4-key').value;
+                const keyFormat = document.getElementById('sm4-key-format').value;
                 
-                if (!resultDiv.textContent.includes('加密结果')) {
+                if (!window.currentSM4Ciphertext) {
                     alert('请先加密');
                     return;
                 }
                 
-                const ciphertext = resultDiv.querySelector('pre').textContent.trim();
-                const plaintext = window.smkitHelpers.sm4Decrypt(key, ciphertext);
+                // 处理密钥格式
+                if (keyFormat === 'text') {
+                    key = window.smkitHelpers.bytesToHex(new TextEncoder().encode(key));
+                }
+                
+                if (key.length !== 32) {
+                    alert('密钥必须是 32 位十六进制字符（16 字节）');
+                    return;
+                }
+                
+                // 构建选项
+                const options = { 
+                    mode: window.smkit.CipherMode[window.currentSM4Mode.toUpperCase()], 
+                    padding: window.smkit.PaddingMode[window.currentSM4Padding.toUpperCase()]
+                };
+                
+                if (window.currentSM4Mode !== 'ecb' && window.currentSM4IV) {
+                    options.iv = window.currentSM4IV;
+                }
+                
+                const plaintext = window.smkit.sm4Decrypt(key, window.currentSM4Ciphertext, options);
                 
                 document.getElementById('sm4-result').innerHTML = `
                     <div class="result">
                         <h3>解密结果：</h3>
                         <pre>${plaintext}</pre>
                         <p style="margin-top: 10px; color: #4CAF50;">✓ 解密成功</p>
+                        <p style="color: #666;">加密模式: ${window.currentSM4Mode.toUpperCase()}</p>
+                        <p style="color: #666;">填充模式: ${window.currentSM4Padding.toUpperCase()}</p>
                     </div>
                 `;
             } catch (error) {
@@ -555,12 +671,22 @@ const keyPair = generateKeyPair();</code>
                 const format = compressed ? '压缩格式' : '非压缩格式';
                 const prefix = keyPair.publicKey.substring(0, 2);
                 
+                // 生成压缩和非压缩格式
+                const compressedKey = compressed ? keyPair.publicKey : window.smkitHelpers.compressPublicKey(keyPair.publicKey);
+                const uncompressedKey = compressed ? window.smkitHelpers.decompressPublicKey(keyPair.publicKey) : keyPair.publicKey;
+                
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
                         <h3>密钥对已生成！</h3>
                         <p>私钥长度: ${keyPair.privateKey.length} 字符 (${keyPair.privateKey.length / 2} 字节)</p>
-                        <p>公钥长度: ${keyPair.publicKey.length} 字符 (${keyPair.publicKey.length / 2} 字节)</p>
                         <p>公钥格式: ${format} (前缀: ${prefix})</p>
+                        <p>公钥长度: ${keyPair.publicKey.length} 字符 (${keyPair.publicKey.length / 2} 字节)</p>
+                        <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                            <strong>非压缩公钥 (04前缀):</strong>
+                            <pre style="margin: 5px 0; word-break: break-all; font-size: 12px;">${uncompressedKey}</pre>
+                            <strong>压缩公钥 (02/03前缀):</strong>
+                            <pre style="margin: 5px 0; word-break: break-all; font-size: 12px;">${compressedKey}</pre>
+                        </div>
                         <p style="margin-top: 10px; color: #4CAF50;">✓ 基于 SM2 椭圆曲线算法</p>
                     </div>
                 `;
