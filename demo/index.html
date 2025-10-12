@@ -214,15 +214,71 @@
         <p class="subtitle">中国国密算法（SM2、SM3、SM4）在线测试工具</p>
         
         <div class="tabs">
-            <button class="tab active" onclick="showTab('sm3')">SM3 哈希</button>
+            <button class="tab active" onclick="showTab('sm2')">SM2 加密验签</button>
+            <button class="tab" onclick="showTab('sm3')">SM3 哈希</button>
             <button class="tab" onclick="showTab('sm4')">SM4 加解密</button>
-            <button class="tab" onclick="showTab('sm2')">SM2 签名验签</button>
             <button class="tab" onclick="showTab('tools')">调试工具</button>
             <button class="tab" onclick="showTab('about')">关于</button>
         </div>
         
+        <!-- SM2 Tab -->
+        <div id="sm2" class="tab-content active">
+            <div class="info-box">
+                <h4>SM2 椭圆曲线公钥密码算法</h4>
+                <p>SM2 是中国国家密码管理局发布的椭圆曲线公钥密码算法，基于 256 位椭圆曲线。</p>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="generateSM2KeyPair()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; padding: 14px 28px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">🔑 生成密钥对</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm2-private-key">私钥：</label>
+                <input type="text" id="sm2-private-key" placeholder="点击"生成密钥对"按钮生成" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm2-public-key">公钥：</label>
+                <input type="text" id="sm2-public-key" placeholder="点击"生成密钥对"按钮生成" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="sm2-message">消息：</label>
+                <textarea id="sm2-message" placeholder="输入要签名的消息...">Hello, SM2!</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="sm2-skip-z" style="width: auto; margin-right: 5px;">
+                    跳过 Z 值计算（用于测试，不推荐在生产环境使用）
+                </label>
+            </div>
+            <div class="button-group">
+                <button onclick="testSM2Sign()">签名</button>
+                <button onclick="testSM2Verify()">验证签名</button>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                <h3 style="margin-bottom: 15px;">SM2 加解密</h3>
+                
+                <div class="form-group">
+                    <label for="sm2-encrypt-text">明文：</label>
+                    <textarea id="sm2-encrypt-text" placeholder="输入要加密的文本...">Hello, SM2 Encryption!</textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="testSM2Encrypt()">加密</button>
+                    <button onclick="testSM2Decrypt()">解密</button>
+                </div>
+                
+                <div id="sm2-encrypt-result"></div>
+            </div>
+            
+            <div id="sm2-result"></div>
+        </div>
+        
         <!-- SM3 Tab -->
-        <div id="sm3" class="tab-content active">
+        <div id="sm3" class="tab-content">
             <div class="info-box">
                 <h4>SM3 密码哈希算法</h4>
                 <p>SM3 是中国国家密码管理局发布的密码哈希算法，输出 256 位（32 字节）哈希值。</p>
@@ -309,62 +365,6 @@
             </div>
             
             <div id="sm4-result"></div>
-        </div>
-        
-        <!-- SM2 Tab -->
-        <div id="sm2" class="tab-content">
-            <div class="info-box">
-                <h4>SM2 椭圆曲线公钥密码算法</h4>
-                <p>SM2 是中国国家密码管理局发布的椭圆曲线公钥密码算法，基于 256 位椭圆曲线。</p>
-            </div>
-            
-            <div class="button-group">
-                <button onclick="generateSM2KeyPair()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; padding: 14px 28px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">🔑 生成密钥对</button>
-            </div>
-            
-            <div class="form-group">
-                <label for="sm2-private-key">私钥：</label>
-                <input type="text" id="sm2-private-key" placeholder="点击"生成密钥对"按钮生成" readonly>
-            </div>
-            
-            <div class="form-group">
-                <label for="sm2-public-key">公钥：</label>
-                <input type="text" id="sm2-public-key" placeholder="点击"生成密钥对"按钮生成" readonly>
-            </div>
-            
-            <div class="form-group">
-                <label for="sm2-message">消息：</label>
-                <textarea id="sm2-message" placeholder="输入要签名的消息...">Hello, SM2!</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="sm2-skip-z" style="width: auto; margin-right: 5px;">
-                    跳过 Z 值计算（用于测试，不推荐在生产环境使用）
-                </label>
-            </div>
-            <div class="button-group">
-                <button onclick="testSM2Sign()">签名</button>
-                <button onclick="testSM2Verify()">验证签名</button>
-            </div>
-            
-            <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
-                <h3 style="margin-bottom: 15px;">SM2 加解密</h3>
-                
-                <div class="form-group">
-                    <label for="sm2-encrypt-text">明文：</label>
-                    <textarea id="sm2-encrypt-text" placeholder="输入要加密的文本...">Hello, SM2 Encryption!</textarea>
-                </div>
-                
-                <div class="button-group">
-                    <button onclick="testSM2Encrypt()">加密</button>
-                    <button onclick="testSM2Decrypt()">解密</button>
-                </div>
-                
-                <div id="sm2-encrypt-result"></div>
-            </div>
-            
-            <div id="sm2-result"></div>
         </div>
         
         <!-- Tools Tab -->
