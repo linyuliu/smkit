@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   generateKeyPair,
   getPublicKeyFromPrivateKey,
+  compressPublicKey,
+  decompressPublicKey,
   encrypt,
   decrypt,
   sign,
@@ -32,6 +34,44 @@ describe('SM2', () => {
       const publicKey = getPublicKeyFromPrivateKey(privateKey);
       expect(publicKey).toBeTruthy();
       expect(publicKey).toMatch(/^[0-9a-f]+$/);
+      expect(publicKey.startsWith('04')).toBe(true); // 非压缩格式
+      expect(publicKey.length).toBe(130); // 65 bytes = 130 hex chars
+    });
+
+    it('should derive compressed public key from private key', () => {
+      const privateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const publicKey = getPublicKeyFromPrivateKey(privateKey, true);
+      expect(publicKey).toBeTruthy();
+      expect(publicKey).toMatch(/^[0-9a-f]+$/);
+      expect(publicKey.startsWith('02') || publicKey.startsWith('03')).toBe(true); // 压缩格式
+      expect(publicKey.length).toBe(66); // 33 bytes = 66 hex chars
+    });
+  });
+
+  describe('compressPublicKey/decompressPublicKey', () => {
+    it('should compress uncompressed public key', () => {
+      const keyPair = generateKeyPair();
+      const compressed = compressPublicKey(keyPair.publicKey);
+      expect(compressed).toBeTruthy();
+      expect(compressed.startsWith('02') || compressed.startsWith('03')).toBe(true);
+      expect(compressed.length).toBe(66); // 33 bytes
+    });
+
+    it('should decompress compressed public key', () => {
+      const keyPair = generateKeyPair();
+      const uncompressed = keyPair.publicKey;
+      const compressed = compressPublicKey(uncompressed);
+      const decompressed = decompressPublicKey(compressed);
+      expect(decompressed).toBeTruthy();
+      expect(decompressed.startsWith('04')).toBe(true);
+      expect(decompressed.length).toBe(130); // 65 bytes
+      expect(decompressed).toBe(uncompressed);
+    });
+
+    it('should handle already decompressed public key', () => {
+      const keyPair = generateKeyPair();
+      const result = decompressPublicKey(keyPair.publicKey);
+      expect(result).toBe(keyPair.publicKey.toLowerCase());
     });
   });
 
@@ -98,6 +138,33 @@ describe('SM2', () => {
       expect(signature).toBeTruthy();
       
       const isValid = verify(keyPair.publicKey, data, signature, { der: true, userId: DEFAULT_USER_ID });
+      expect(isValid).toBe(true);
+    });
+
+    it('should support skipZComputation option', () => {
+      const keyPair = generateKeyPair();
+      const data = 'Hello, SM2!';
+      
+      // 签名时跳过 Z 值计算
+      const signature = sign(keyPair.privateKey, data, { skipZComputation: true });
+      expect(signature).toBeTruthy();
+      
+      // 验证时也需要跳过 Z 值计算
+      const isValid = verify(keyPair.publicKey, data, signature, { skipZComputation: true });
+      expect(isValid).toBe(true);
+      
+      // 如果验证时不跳过 Z 值计算，应该验证失败
+      const isInvalid = verify(keyPair.publicKey, data, signature, { skipZComputation: false });
+      expect(isInvalid).toBe(false);
+    });
+
+    it('should work with compressed public key', () => {
+      const keyPair = generateKeyPair();
+      const compressed = compressPublicKey(keyPair.publicKey);
+      const data = 'Hello, SM2!';
+      
+      const signature = sign(keyPair.privateKey, data);
+      const isValid = verify(compressed, data, signature);
       expect(isValid).toBe(true);
     });
   });

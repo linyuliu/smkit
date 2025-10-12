@@ -190,6 +190,7 @@ export interface SignOptions {
   der?: boolean;              // 是否使用 DER 编码
   userId?: string;            // 用户 ID（默认：'1234567812345678'）
   curveParams?: SM2CurveParams;  // 自定义曲线参数
+  skipZComputation?: boolean;  // 是否跳过 Z 值计算（如果为 true，则直接对数据进行签名，不计算 SM3(Z || M)）
 }
 
 /**
@@ -199,36 +200,93 @@ export interface VerifyOptions {
   der?: boolean;              // 是否使用 DER 编码
   userId?: string;            // 用户 ID（默认：'1234567812345678'）
   curveParams?: SM2CurveParams;  // 自定义曲线参数
+  skipZComputation?: boolean;  // 是否跳过 Z 值计算（必须与签名时保持一致）
 }
 
 /**
  * 生成 SM2 密钥对
+ * @param compressed - 是否返回压缩格式的公钥（默认 false，返回非压缩格式）
  * @returns 包含公钥和私钥的对象
  */
-export function generateKeyPair(): KeyPair {
+export function generateKeyPair(compressed: boolean = false): KeyPair {
   // 使用 @noble/curves 的 keygen
-  const keyPair = sm2.keygen();
+  const privateKey = sm2.keygen().secretKey;
+  
+  // 从私钥导出公钥，确保格式正确
+  const publicKeyBytes = sm2.getPublicKey(privateKey, compressed);
   
   return {
-    publicKey: bytesToHex(keyPair.publicKey),
-    privateKey: bytesToHex(keyPair.secretKey),
+    publicKey: bytesToHex(publicKeyBytes),
+    privateKey: bytesToHex(privateKey),
   };
 }
 
 /**
  * 从私钥导出公钥
  * @param privateKey - 私钥（十六进制字符串）
- * @returns 公钥（十六进制字符串，非压缩格式：04 + x + y）
+ * @param compressed - 是否返回压缩格式（默认 false，返回非压缩格式）
+ * @returns 公钥（十六进制字符串，压缩格式：02/03 + x，非压缩格式：04 + x + y）
  */
-export function getPublicKeyFromPrivateKey(privateKey: string): string {
+export function getPublicKeyFromPrivateKey(privateKey: string, compressed: boolean = false): string {
   // 自动识别输入格式
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   
   // 使用 @noble/curves 从私钥计算公钥
   const privateKeyBytes = hexToBytes(cleanPrivateKey);
-  const publicKeyBytes = sm2.getPublicKey(privateKeyBytes, false); // false = 非压缩格式
+  const publicKeyBytes = sm2.getPublicKey(privateKeyBytes, compressed);
   
   return bytesToHex(publicKeyBytes);
+}
+
+/**
+ * 压缩公钥（从非压缩格式转换为压缩格式）
+ * @param publicKey - 非压缩格式的公钥（十六进制字符串，04 + x + y）
+ * @returns 压缩格式的公钥（十六进制字符串，02/03 + x）
+ */
+export function compressPublicKey(publicKey: string): string {
+  // 规范化输入
+  const cleanPublicKey = normalizePublicKeyInput(publicKey);
+  
+  // 使用 @noble/curves 压缩公钥
+  const point = sm2.Point.fromHex(cleanPublicKey);
+  const compressedBytes = point.toBytes(true); // true = 压缩格式
+  
+  return bytesToHex(compressedBytes);
+}
+
+/**
+ * 解压公钥（从压缩格式转换为非压缩格式）
+ * @param publicKey - 压缩格式的公钥（十六进制字符串，02/03 + x）
+ * @returns 非压缩格式的公钥（十六进制字符串，04 + x + y）
+ */
+export function decompressPublicKey(publicKey: string): string {
+  let cleaned = publicKey.trim();
+  
+  // 移除 0x 前缀
+  if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
+    cleaned = cleaned.slice(2);
+  }
+  
+  // 验证是否为有效的十六进制字符串
+  if (!isValidHexString(cleaned)) {
+    throw new Error('Invalid public key: must be a hexadecimal string');
+  }
+  
+  cleaned = cleaned.toLowerCase();
+  
+  const prefix = cleaned.slice(0, 2);
+  
+  if (prefix === '04') {
+    // 已经是非压缩格式
+    return cleaned;
+  } else if (prefix === '02' || prefix === '03') {
+    // 压缩格式，需要解压
+    const point = sm2.Point.fromHex(cleaned);
+    const uncompressedBytes = point.toBytes(false); // false = 非压缩格式
+    return bytesToHex(uncompressedBytes);
+  } else {
+    throw new Error('Invalid public key prefix: must be 02, 03, or 04');
+  }
 }
 
 /**
@@ -445,25 +503,36 @@ export function sign(
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
   const useDer = options?.der || false;
-  
-  // 从私钥获取公钥
-  const publicKey = getPublicKeyFromPrivateKey(cleanPrivateKey);
-  
-  // 计算 Z 值
-  const z = computeZ(userId, publicKey);
-  
-  // 计算消息摘要 e = SM3(Z || M)
-  const dataBytes = normalizeInput(data);
-  const hashInput = new Uint8Array(z.length + dataBytes.length);
-  hashInput.set(z, 0);
-  hashInput.set(dataBytes, z.length);
-  const eHex = sm3Digest(hashInput);
-  const e = hexToBytes(eHex);
+  const skipZ = options?.skipZComputation || false;
   
   // 使用 @noble/curves 进行签名
   const privateKeyBytes = hexToBytes(cleanPrivateKey);
   
-  // prehash: false 因为我们已经计算了 SM3(Z || M)
+  let e: Uint8Array;
+  
+  if (skipZ) {
+    // 跳过 Z 值计算，直接对数据进行 SM3 哈希
+    const dataBytes = normalizeInput(data);
+    const eHex = sm3Digest(dataBytes);
+    e = hexToBytes(eHex);
+  } else {
+    // 标准流程：计算 Z 值并与数据一起哈希
+    // 从私钥获取公钥
+    const publicKey = getPublicKeyFromPrivateKey(cleanPrivateKey);
+    
+    // 计算 Z 值（使用本库实现的 SM3）
+    const z = computeZ(userId, publicKey);
+    
+    // 计算消息摘要 e = SM3(Z || M)（使用本库实现的 SM3）
+    const dataBytes = normalizeInput(data);
+    const hashInput = new Uint8Array(z.length + dataBytes.length);
+    hashInput.set(z, 0);
+    hashInput.set(dataBytes, z.length);
+    const eHex = sm3Digest(hashInput);
+    e = hexToBytes(eHex);
+  }
+  
+  // prehash: false 因为我们已经计算了 SM3 哈希
   const signatureBytes = sm2.sign(e, privateKeyBytes, { prehash: false });
   
   // 解析签名（compact 格式：r || s，各32字节）
@@ -498,17 +567,28 @@ export function verify(
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
     const userId = options?.userId || DEFAULT_USER_ID;
     const isDer = options?.der || false;
+    const skipZ = options?.skipZComputation || false;
     
-    // 计算 Z 值
-    const z = computeZ(userId, cleanPublicKey);
+    let e: Uint8Array;
     
-    // 计算消息摘要 e = SM3(Z || M)
-    const dataBytes = normalizeInput(data);
-    const hashInput = new Uint8Array(z.length + dataBytes.length);
-    hashInput.set(z, 0);
-    hashInput.set(dataBytes, z.length);
-    const eHex = sm3Digest(hashInput);
-    const e = hexToBytes(eHex);
+    if (skipZ) {
+      // 跳过 Z 值计算，直接对数据进行 SM3 哈希（使用本库实现的 SM3）
+      const dataBytes = normalizeInput(data);
+      const eHex = sm3Digest(dataBytes);
+      e = hexToBytes(eHex);
+    } else {
+      // 标准流程：计算 Z 值并与数据一起哈希
+      // 计算 Z 值（使用本库实现的 SM3）
+      const z = computeZ(userId, cleanPublicKey);
+      
+      // 计算消息摘要 e = SM3(Z || M)（使用本库实现的 SM3）
+      const dataBytes = normalizeInput(data);
+      const hashInput = new Uint8Array(z.length + dataBytes.length);
+      hashInput.set(z, 0);
+      hashInput.set(dataBytes, z.length);
+      const eHex = sm3Digest(hashInput);
+      e = hexToBytes(eHex);
+    }
     
     // 解析签名
     let r: string, s: string;
@@ -546,7 +626,7 @@ export function verify(
     signatureBytes.set(rBytes, 0);
     signatureBytes.set(sBytes, 32);
     
-    // prehash: false 因为我们已经计算了 SM3(Z || M)
+    // prehash: false 因为我们已经计算了 SM3 哈希
     return sm2.verify(signatureBytes, e, publicKeyBytes, { prehash: false });
   } catch (error) {
     // 验证失败
