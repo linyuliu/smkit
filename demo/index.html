@@ -319,8 +319,7 @@
             </div>
             
             <div class="button-group">
-                <button onclick="generateSM2KeyPair(false)">生成密钥对（非压缩）</button>
-                <button onclick="generateSM2KeyPair(true)">生成密钥对（压缩）</button>
+                <button onclick="generateSM2KeyPair()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; padding: 14px 28px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">🔑 生成密钥对</button>
             </div>
             
             <div class="form-group">
@@ -670,39 +669,70 @@ const keyPair = generateKeyPair();</code>
             }
         }
         
-        function generateSM2KeyPair(compressed) {
+        function generateSM2KeyPair() {
             try {
-                const keyPair = window.smkitHelpers.generateKeyPair(compressed);
+                // 生成非压缩格式的密钥对
+                const keyPair = window.smkitHelpers.generateKeyPair(false);
                 
+                // 填充输入框（使用非压缩公钥）
                 document.getElementById('sm2-private-key').value = keyPair.privateKey;
                 document.getElementById('sm2-public-key').value = keyPair.publicKey;
                 
-                const format = compressed ? '压缩格式' : '非压缩格式';
-                const prefix = keyPair.publicKey.substring(0, 2);
-                
-                // 生成压缩和非压缩格式
-                const compressedKey = compressed ? keyPair.publicKey : window.smkitHelpers.compressPublicKey(keyPair.publicKey);
-                const uncompressedKey = compressed ? window.smkitHelpers.decompressPublicKey(keyPair.publicKey) : keyPair.publicKey;
+                // 生成压缩格式的公钥
+                const compressedKey = window.smkitHelpers.compressPublicKey(keyPair.publicKey);
+                const uncompressedKey = keyPair.publicKey;
                 
                 document.getElementById('sm2-result').innerHTML = `
-                    <div class="result">
-                        <h3>密钥对已生成！</h3>
-                        <p>私钥长度: ${keyPair.privateKey.length} 字符 (${keyPair.privateKey.length / 2} 字节)</p>
-                        <p>公钥格式: ${format} (前缀: ${prefix})</p>
-                        <p>公钥长度: ${keyPair.publicKey.length} 字符 (${keyPair.publicKey.length / 2} 字节)</p>
-                        <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
-                            <strong>非压缩公钥 (04前缀):</strong>
-                            <pre style="margin: 5px 0; word-break: break-all; font-size: 12px;">${uncompressedKey}</pre>
-                            <strong>压缩公钥 (02/03前缀):</strong>
-                            <pre style="margin: 5px 0; word-break: break-all; font-size: 12px;">${compressedKey}</pre>
+                    <div class="result" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-left: 5px solid #667eea; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <h3 style="color: #667eea; font-size: 1.3em; margin-bottom: 15px;">✅ 密钥对生成成功</h3>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 24px; margin-right: 10px;">🔐</span>
+                                <strong style="color: #333; font-size: 1.1em;">私钥信息</strong>
+                            </div>
+                            <p style="color: #666; margin: 8px 0;">长度: <span style="color: #667eea; font-weight: 600;">${keyPair.privateKey.length}</span> 字符 (<span style="color: #667eea; font-weight: 600;">${keyPair.privateKey.length / 2}</span> 字节)</p>
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #667eea;">
+                                <code style="word-break: break-all; font-size: 13px; color: #495057;">${keyPair.privateKey}</code>
+                            </div>
                         </div>
-                        <p style="margin-top: 10px; color: #4CAF50;">✓ 基于 SM2 椭圆曲线算法</p>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 24px; margin-right: 10px;">🔑</span>
+                                <strong style="color: #333; font-size: 1.1em;">非压缩公钥</strong>
+                                <span style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">04前缀</span>
+                            </div>
+                            <p style="color: #666; margin: 8px 0;">长度: <span style="color: #1976d2; font-weight: 600;">${uncompressedKey.length}</span> 字符 (<span style="color: #1976d2; font-weight: 600;">${uncompressedKey.length / 2}</span> 字节)</p>
+                            <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #1976d2;">
+                                <code style="word-break: break-all; font-size: 13px; color: #1565c0;">${uncompressedKey}</code>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 24px; margin-right: 10px;">🗜️</span>
+                                <strong style="color: #333; font-size: 1.1em;">压缩公钥</strong>
+                                <span style="background: #e8f5e9; color: #388e3c; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">02/03前缀</span>
+                            </div>
+                            <p style="color: #666; margin: 8px 0;">长度: <span style="color: #388e3c; font-weight: 600;">${compressedKey.length}</span> 字符 (<span style="color: #388e3c; font-weight: 600;">${compressedKey.length / 2}</span> 字节)</p>
+                            <div style="background: #e8f5e9; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #388e3c;">
+                                <code style="word-break: break-all; font-size: 13px; color: #2e7d32;">${compressedKey}</code>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 6px; border-left: 3px solid #667eea;">
+                            <p style="color: #667eea; font-weight: 600; margin: 0;">
+                                <span style="font-size: 18px; margin-right: 8px;">✨</span>
+                                已同时生成压缩和非压缩格式的公钥
+                            </p>
+                        </div>
                     </div>
                 `;
             } catch (error) {
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result" style="border-left-color: #f44336;">
-                        <h3 style="color: #f44336;">错误：</h3>
+                        <h3 style="color: #f44336;">❌ 错误</h3>
                         <pre>${error.message}</pre>
                     </div>
                 `;
