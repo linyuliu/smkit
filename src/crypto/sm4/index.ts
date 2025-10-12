@@ -851,9 +851,11 @@ export function decrypt(
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
       // 去除 PKCS#7 填充
+      // Type assertion needed for TypeScript compatibility with different ArrayBuffer types
       unpadded = pkcs7Unpad(result) as Uint8Array;
     } else if (padding === 'zero') {
       // 去除零填充
+      // Type assertion needed for TypeScript compatibility with different ArrayBuffer types
       unpadded = zeroUnpad(result) as Uint8Array;
     }
     // padding === 'none' 时不需要去除填充
