@@ -4,16 +4,39 @@
 
 /**
  * 填充模式
+ * Padding modes for block cipher operations
+ * 
+ * - PKCS7: PKCS#7 填充 - 填充值为填充字节数 (Padding value equals number of padding bytes)
+ * - NONE: 无填充 - 数据长度必须是块大小的倍数 (No padding - data length must be multiple of block size)
+ * - ZERO: 零填充 - 用零字节填充到块大小 (Zero padding - pad with zero bytes to block size)
  */
 export const PaddingMode = {
   PKCS7: 'pkcs7',
   NONE: 'none',
+  ZERO: 'zero',
 } as const;
 
 export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
 
 /**
  * 加密模式
+ * Cipher modes for SM4 block cipher
+ * 
+ * 分组密码模式 (Block cipher modes):
+ * - ECB: 电码本模式 - 每个块独立加密 (Electronic Codebook - each block encrypted independently)
+ * - CBC: 分组链接模式 - 每个块与前一个密文块异或 (Cipher Block Chaining - each block XORed with previous ciphertext)
+ * 
+ * 流密码模式 (Stream cipher modes):
+ * - CTR: 计数器模式 - 加密计数器产生密钥流 (Counter mode - encrypts counter to produce keystream)
+ * - CFB: 密文反馈模式 - 加密前一个密文块产生密钥流 (Cipher Feedback - encrypts previous ciphertext to produce keystream)
+ * - OFB: 输出反馈模式 - 加密前一个输出块产生密钥流 (Output Feedback - encrypts previous output to produce keystream)
+ * 
+ * 认证加密模式 (Authenticated Encryption with Associated Data modes):
+ * - GCM: 伽罗瓦/计数器模式 - 提供加密和认证 (Galois/Counter Mode - provides encryption and authentication)
+ * - CCM: 计数器与CBC-MAC模式 - 提供加密和认证 (Counter with CBC-MAC - provides encryption and authentication) [计划中 Planned]
+ * 
+ * 磁盘加密模式 (Disk encryption modes):
+ * - XTS: 可调密码本模式 - 用于磁盘加密 (XEX-based tweaked-codebook mode - for disk encryption) [计划中 Planned]
  */
 export const CipherMode = {
   ECB: 'ecb',
@@ -22,6 +45,8 @@ export const CipherMode = {
   CFB: 'cfb',
   OFB: 'ofb',
   GCM: 'gcm',
+  CCM: 'ccm',
+  XTS: 'xts',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];

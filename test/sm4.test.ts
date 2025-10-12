@@ -32,6 +32,33 @@ describe('SM4', () => {
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.NONE });
       expect(decrypted).toBe(plaintext);
     });
+
+    it('should encrypt and decrypt with ZERO padding', () => {
+      const plaintext = 'Hello, SM4!';
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should handle ZERO padding with data ending in non-zero byte', () => {
+      const plaintext = 'Test123'; // 7 bytes, will be padded to 16
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
+      
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should handle ZERO padding with exactly 16 bytes', () => {
+      const plaintext = '0123456789abcdef'; // exactly 16 bytes
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
+      
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
+      expect(decrypted).toBe(plaintext);
+    });
   });
 
   describe('CBC mode', () => {
@@ -43,6 +70,15 @@ describe('SM4', () => {
       expect(encrypted).toMatch(/^[0-9a-f]+$/);
       
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should encrypt and decrypt with CBC mode and ZERO padding', () => {
+      const plaintext = 'Hello, SM4 CBC!';
+      const encrypted = encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.ZERO, iv });
+      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      
+      const decrypted = decrypt(key, encrypted, { mode: CipherMode.CBC, padding: PaddingMode.ZERO, iv });
       expect(decrypted).toBe(plaintext);
     });
 
