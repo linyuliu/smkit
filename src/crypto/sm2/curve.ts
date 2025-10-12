@@ -51,13 +51,31 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
  * 生成随机字节的跨平台函数
  * 优雅地处理 Node.js 和浏览器环境，提供多层回退机制
  * 
- * 优先级:
- * 1. Web Crypto API (crypto.getRandomValues) - 最安全
- * 2. Node.js Crypto Module - 次安全
- * 3. 时间戳 + Math.random() - 回退方案（仅用于测试，生产环境不推荐）
+ * 优先级（从高到低）:
+ * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
+ *    - 浏览器环境：window.crypto.getRandomValues
+ *    - Node.js 15+：globalThis.crypto.getRandomValues
+ *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
+ * 
+ * 2. Node.js Crypto Module (crypto.randomBytes) - Node.js 原生加密模块
+ *    - 适用于较旧的 Node.js 版本
+ *    - 同样使用操作系统的 CSPRNG
+ * 
+ * 3. 时间戳 + Math.random() - 应急回退方案
+ *    - ⚠️ 警告：这不是密码学安全的！
+ *    - 仅用于开发/测试环境
+ *    - 不应在生产环境中使用
+ *    - 会在控制台输出警告信息
+ * 
+ * 设计理念：
+ * - 优先使用最安全的随机数源
+ * - 在不可用时自动降级到次优方案
+ * - 确保在各种环境（浏览器、Node.js、小程序）中都能正常工作
+ * - 通过警告信息提醒开发者当前使用的随机数源质量
  * 
  * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
  * 在浏览器环境中，直接使用 Web Crypto API
+ * 在微信小程序等环境中，可能需要自行实现回退方案
  */
 function getRandomBytes(bytesLength: number = 32): Uint8Array {
   // 第一优先级: Web Crypto API (浏览器和现代 Node.js)

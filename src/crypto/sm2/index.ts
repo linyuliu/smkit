@@ -185,22 +185,98 @@ function computeZ(userId: string, publicKey: string): Uint8Array {
 
 /**
  * 签名选项
+ * 
+ * SM2 签名算法的可配置选项，用于控制签名过程的各个方面
  */
 export interface SignOptions {
-  der?: boolean;              // 是否使用 DER 编码
-  userId?: string;            // 用户 ID（默认：'1234567812345678'）
-  curveParams?: SM2CurveParams;  // 自定义曲线参数
-  skipZComputation?: boolean;  // 是否跳过 Z 值计算（如果为 true，则直接对数据进行签名，不计算 SM3(Z || M)）
+  /**
+   * 是否使用 DER 编码格式
+   * 
+   * - false（默认）: 返回 Raw 格式签名（r || s，64 字节，128 个十六进制字符）
+   * - true: 返回 DER 编码格式签名（符合 ASN.1 标准，长度可变）
+   * 
+   * DER 格式更标准，适合与其他系统互操作；Raw 格式更紧凑，适合存储
+   */
+  der?: boolean;
+  
+  /**
+   * 用户 ID（用于计算 Z 值）
+   * 
+   * 默认值：'1234567812345678'（16 字节）
+   * 
+   * Z 值是 SM2 签名算法的一个特殊部分，包含了用户身份信息和公钥信息，
+   * 用于将签名与特定用户绑定。不同的用户 ID 会产生不同的 Z 值，
+   * 从而产生不同的签名。
+   */
+  userId?: string;
+  
+  /**
+   * 自定义曲线参数（高级选项）
+   * 
+   * 一般情况下不需要设置，使用 GM/T 0003-2012 标准推荐的曲线参数。
+   * 仅在需要使用自定义椭圆曲线时才设置此选项。
+   */
+  curveParams?: SM2CurveParams;
+  
+  /**
+   * 是否跳过 Z 值计算
+   * 
+   * - false（默认）: 标准 SM2 签名流程，计算 e = SM3(Z || M)
+   * - true: 简化流程，直接计算 e = SM3(M)，跳过 Z 值
+   * 
+   * ⚠️ 注意：
+   * 1. 签名和验签必须使用相同的 skipZComputation 设置
+   * 2. 跳过 Z 值计算不符合 SM2 标准，仅用于特殊场景或测试
+   * 3. 跳过 Z 值会降低安全性，因为签名不再与用户身份绑定
+   * 
+   * 使用场景：
+   * - 与不支持 Z 值计算的系统互操作
+   * - 性能敏感场景（减少一次 SM3 计算）
+   * - 测试和调试
+   */
+  skipZComputation?: boolean;
 }
 
 /**
  * 验签选项
+ * 
+ * SM2 验签算法的可配置选项，必须与签名时使用的选项保持一致
  */
 export interface VerifyOptions {
-  der?: boolean;              // 是否使用 DER 编码
-  userId?: string;            // 用户 ID（默认：'1234567812345678'）
-  curveParams?: SM2CurveParams;  // 自定义曲线参数
-  skipZComputation?: boolean;  // 是否跳过 Z 值计算（必须与签名时保持一致）
+  /**
+   * 签名是否为 DER 编码格式
+   * 
+   * - false（默认）: 签名为 Raw 格式（r || s）
+   * - true: 签名为 DER 编码格式
+   * 
+   * 注意：函数会自动尝试识别签名格式（以 '30' 开头的视为 DER 格式）
+   */
+  der?: boolean;
+  
+  /**
+   * 用户 ID（必须与签名时使用的相同）
+   * 
+   * 默认值：'1234567812345678'
+   * 
+   * 如果签名时使用了自定义用户 ID，验签时必须使用相同的用户 ID，
+   * 否则验签会失败。
+   */
+  userId?: string;
+  
+  /**
+   * 自定义曲线参数（必须与签名时使用的相同）
+   */
+  curveParams?: SM2CurveParams;
+  
+  /**
+   * 是否跳过 Z 值计算（必须与签名时保持一致）
+   * 
+   * ⚠️ 重要：此选项必须与签名时使用的值完全一致，否则验签会失败
+   * 
+   * - false（默认）: 标准 SM2 验签流程
+   * - true: 跳过 Z 值计算
+   */
+  skipZComputation?: boolean;
 }
 
 /**
@@ -240,8 +316,39 @@ export function getPublicKeyFromPrivateKey(privateKey: string, compressed: boole
 
 /**
  * 压缩公钥（从非压缩格式转换为压缩格式）
+ * 
+ * SM2 公钥是椭圆曲线上的点 (x, y)，有两种表示格式：
+ * 
+ * 1. 非压缩格式（65 字节）：04 || x || y
+ *    - 前缀 04 表示非压缩格式
+ *    - x 坐标：32 字节
+ *    - y 坐标：32 字节
+ *    - 总长度：1 + 32 + 32 = 65 字节（130 个十六进制字符）
+ * 
+ * 2. 压缩格式（33 字节）：02/03 || x
+ *    - 前缀 02 表示 y 坐标为偶数
+ *    - 前缀 03 表示 y 坐标为奇数
+ *    - x 坐标：32 字节
+ *    - 总长度：1 + 32 = 33 字节（66 个十六进制字符）
+ * 
+ * 压缩的原理：
+ * 由于椭圆曲线方程 y² = x³ + ax + b，给定 x 坐标，可以计算出两个可能的 y 值
+ * （一个为正，一个为负，或者说一个为奇数，一个为偶数）。
+ * 因此只需要保存 x 坐标和 y 的奇偶性，就可以恢复完整的点坐标。
+ * 
+ * 优势：
+ * - 节省存储空间（从 65 字节减少到 33 字节，节省约 49%）
+ * - 节省网络传输带宽
+ * - 适合资源受限的环境（如物联网设备）
+ * 
  * @param publicKey - 非压缩格式的公钥（十六进制字符串，04 + x + y）
  * @returns 压缩格式的公钥（十六进制字符串，02/03 + x）
+ * 
+ * @example
+ * ```typescript
+ * const uncompressed = '04...'; // 130 个字符
+ * const compressed = compressPublicKey(uncompressed); // 66 个字符
+ * ```
  */
 export function compressPublicKey(publicKey: string): string {
   // 规范化输入
@@ -256,8 +363,30 @@ export function compressPublicKey(publicKey: string): string {
 
 /**
  * 解压公钥（从压缩格式转换为非压缩格式）
- * @param publicKey - 压缩格式的公钥（十六进制字符串，02/03 + x）
+ * 
+ * 从压缩格式恢复完整的公钥坐标。
+ * 
+ * 解压过程：
+ * 1. 读取 x 坐标（32 字节）
+ * 2. 读取前缀字节（02 或 03）确定 y 的奇偶性
+ * 3. 根据椭圆曲线方程 y² = x³ + ax + b 计算 y²
+ * 4. 对 y² 开平方得到两个可能的 y 值
+ * 5. 根据前缀字节选择正确的 y 值（奇数或偶数）
+ * 6. 组合 x 和 y 得到完整的非压缩公钥
+ * 
+ * 注意：
+ * - 如果输入已经是非压缩格式（前缀 04），则直接返回
+ * - 解压过程涉及模平方根计算，需要一定的计算量
+ * - 使用 @noble/curves 库进行高效的椭圆曲线运算
+ * 
+ * @param publicKey - 压缩格式的公钥（十六进制字符串，02/03 + x）或非压缩格式
  * @returns 非压缩格式的公钥（十六进制字符串，04 + x + y）
+ * 
+ * @example
+ * ```typescript
+ * const compressed = '02...'; // 66 个字符
+ * const uncompressed = decompressPublicKey(compressed); // 130 个字符
+ * ```
  */
 export function decompressPublicKey(publicKey: string): string {
   let cleaned = publicKey.trim();
