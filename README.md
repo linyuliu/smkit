@@ -238,21 +238,44 @@ const str = bytesToString(strBytes);
 ```typescript
 import { CipherMode } from 'smkit';
 
+// 分组密码模式
 CipherMode.ECB  // 'ecb' - 电码本模式
 CipherMode.CBC  // 'cbc' - 分组链接模式
+
+// 流密码模式
 CipherMode.CTR  // 'ctr' - 计数器模式
 CipherMode.CFB  // 'cfb' - 密文反馈模式
 CipherMode.OFB  // 'ofb' - 输出反馈模式
-CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（认证加密）
+
+// 认证加密模式
+CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（已实现）
+CipherMode.CCM  // 'ccm' - 计数器与CBC-MAC模式（计划中）
+
+// 磁盘加密模式
+CipherMode.XTS  // 'xts' - 可调密码本模式（计划中）
 ```
+
+**说明**：
+- **ECB**: 不推荐用于生产环境，每个块独立加密
+- **CBC**: 需要 IV，每个块与前一个密文块异或
+- **CTR/CFB/OFB**: 流密码模式，不需要填充，需要 IV
+- **GCM**: 认证加密，提供加密和认证，需要 12 字节 IV
+- **CCM/XTS**: 计划实现中
 
 ### 填充模式
 ```typescript
 import { PaddingMode } from 'smkit';
 
-PaddingMode.PKCS7  // 'PKCS7'
-PaddingMode.NONE   // 'NONE'
+PaddingMode.PKCS7  // 'pkcs7' - PKCS#7 填充（默认）
+PaddingMode.NONE   // 'none' - 无填充
+PaddingMode.ZERO   // 'zero' - 零填充
 ```
+
+**说明**：
+- **PKCS7**: 填充值为填充字节数（例如：填充 3 字节，则每个字节值为 0x03）
+- **NONE**: 无填充，数据长度必须是 16 字节的倍数
+- **ZERO**: 用零字节填充到 16 字节的倍数
+- 流密码模式（CTR/CFB/OFB/GCM）不使用填充
 
 ### SM2 密文模式
 ```typescript

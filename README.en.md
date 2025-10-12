@@ -218,21 +218,44 @@ const str = bytesToString(strBytes);
 ```typescript
 import { CipherMode } from 'smkit';
 
+// Block cipher modes
 CipherMode.ECB  // 'ecb' - Electronic Codebook
 CipherMode.CBC  // 'cbc' - Cipher Block Chaining
+
+// Stream cipher modes
 CipherMode.CTR  // 'ctr' - Counter
 CipherMode.CFB  // 'cfb' - Cipher Feedback
 CipherMode.OFB  // 'ofb' - Output Feedback
-CipherMode.GCM  // 'gcm' - Galois/Counter Mode (Authenticated Encryption)
+
+// Authenticated Encryption with Associated Data (AEAD) modes
+CipherMode.GCM  // 'gcm' - Galois/Counter Mode (Implemented)
+CipherMode.CCM  // 'ccm' - Counter with CBC-MAC (Planned)
+
+// Disk encryption modes
+CipherMode.XTS  // 'xts' - XEX-based tweaked-codebook mode (Planned)
 ```
+
+**Notes**:
+- **ECB**: Not recommended for production, encrypts each block independently
+- **CBC**: Requires IV, each block is XORed with previous ciphertext
+- **CTR/CFB/OFB**: Stream cipher modes, no padding required, requires IV
+- **GCM**: Authenticated encryption, provides both encryption and authentication, requires 12-byte IV
+- **CCM/XTS**: Planned for future implementation
 
 ### Padding Modes
 ```typescript
 import { PaddingMode } from 'smkit';
 
-PaddingMode.PKCS7  // 'PKCS7'
-PaddingMode.NONE   // 'NONE'
+PaddingMode.PKCS7  // 'pkcs7' - PKCS#7 padding (default)
+PaddingMode.NONE   // 'none' - No padding
+PaddingMode.ZERO   // 'zero' - Zero padding
 ```
+
+**Notes**:
+- **PKCS7**: Padding value equals the number of padding bytes (e.g., pad 3 bytes, each byte value is 0x03)
+- **NONE**: No padding, data length must be a multiple of 16 bytes
+- **ZERO**: Pad with zero bytes to a multiple of 16 bytes
+- Stream cipher modes (CTR/CFB/OFB/GCM) don't use padding
 
 ### SM2 Cipher Modes
 ```typescript

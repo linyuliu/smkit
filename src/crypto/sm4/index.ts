@@ -847,14 +847,14 @@ export function decrypt(
 
   // 去除填充 (Remove padding)
   // 流密码模式不使用填充 (Stream cipher modes don't use padding)
-  let unpadded = result;
+  let unpadded: Uint8Array = result;
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
       // 去除 PKCS#7 填充
-      unpadded = pkcs7Unpad(result);
+      unpadded = pkcs7Unpad(result) as Uint8Array;
     } else if (padding === 'zero') {
       // 去除零填充
-      unpadded = zeroUnpad(result);
+      unpadded = zeroUnpad(result) as Uint8Array;
     }
     // padding === 'none' 时不需要去除填充
     // No unpadding needed when padding === 'none'
