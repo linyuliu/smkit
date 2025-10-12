@@ -1,6 +1,24 @@
 /**
  * ASN.1 DER encoding/decoding utilities for SM2
  * Based on ITU-T X.690 standard
+ * 
+ * ASN.1 (Abstract Syntax Notation One) 是一种用于描述数据结构的标准。
+ * DER (Distinguished Encoding Rules) 是 ASN.1 的一种编码规则，确保相同数据只有唯一的编码形式。
+ * 
+ * 本模块提供以下功能：
+ * 1. 基本 ASN.1 类型的编码/解码（INTEGER, SEQUENCE 等）
+ * 2. SM2 签名的 DER 编码/解码
+ * 3. Raw 格式（r || s）与 DER 格式的相互转换
+ * 4. ASN.1 结构到 XML 的转换（用于调试和可视化）
+ * 
+ * 性能优化：
+ * - 使用 slice() 代替已废弃的 substr()，符合现代 JavaScript 标准
+ * - 直接操作 Uint8Array，减少内存分配和复制
+ * - 使用位运算进行长度编码/解码，提高效率
+ * 
+ * 参考标准：
+ * - ITU-T X.690: ASN.1 编码规则
+ * - GM/T 0009-2012: SM2 密码算法使用规范
  */
 
 /**

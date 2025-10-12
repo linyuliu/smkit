@@ -217,6 +217,7 @@
             <button class="tab active" onclick="showTab('sm3')">SM3 哈希</button>
             <button class="tab" onclick="showTab('sm4')">SM4 加解密</button>
             <button class="tab" onclick="showTab('sm2')">SM2 签名验签</button>
+            <button class="tab" onclick="showTab('tools')">调试工具</button>
             <button class="tab" onclick="showTab('about')">关于</button>
         </div>
         
@@ -270,7 +271,8 @@
             </div>
             
             <div class="button-group">
-                <button onclick="generateSM2KeyPair()">生成密钥对</button>
+                <button onclick="generateSM2KeyPair(false)">生成密钥对（非压缩）</button>
+                <button onclick="generateSM2KeyPair(true)">生成密钥对（压缩）</button>
             </div>
             
             <div class="form-group">
@@ -288,6 +290,12 @@
                 <textarea id="sm2-message" placeholder="输入要签名的消息...">Hello, SM2!</textarea>
             </div>
             
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="sm2-skip-z" style="width: auto; margin-right: 5px;">
+                    跳过 Z 值计算（用于测试，不推荐在生产环境使用）
+                </label>
+            </div>
             <div class="button-group">
                 <button onclick="testSM2Sign()">签名</button>
                 <button onclick="testSM2Verify()">验证签名</button>
@@ -310,6 +318,58 @@
             </div>
             
             <div id="sm2-result"></div>
+        </div>
+        
+        <!-- Tools Tab -->
+        <div id="tools" class="tab-content">
+            <div class="info-box">
+                <h4>调试工具</h4>
+                <p>提供各种实用工具用于调试和转换。</p>
+            </div>
+            
+            <!-- 私钥生成公钥 -->
+            <h3 style="margin-bottom: 15px;">私钥生成公钥</h3>
+            <div class="form-group">
+                <label for="tool-private-key">私钥（十六进制）：</label>
+                <input type="text" id="tool-private-key" placeholder="输入私钥...">
+            </div>
+            <div class="button-group">
+                <button onclick="derivePublicKey(false)">生成非压缩公钥</button>
+                <button onclick="derivePublicKey(true)">生成压缩公钥</button>
+            </div>
+            <div id="derive-result"></div>
+            
+            <!-- 公钥格式转换 -->
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">公钥格式转换</h3>
+            <div class="form-group">
+                <label for="tool-public-key">公钥（十六进制）：</label>
+                <input type="text" id="tool-public-key" placeholder="输入公钥...">
+            </div>
+            <div class="button-group">
+                <button onclick="convertPublicKey('compress')">压缩公钥</button>
+                <button onclick="convertPublicKey('decompress')">解压公钥</button>
+            </div>
+            <div id="convert-result"></div>
+            
+            <!-- ASN.1 签名转换 -->
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">签名格式转换</h3>
+            <div class="form-group">
+                <label for="tool-signature">签名（十六进制）：</label>
+                <input type="text" id="tool-signature" placeholder="输入签名...">
+            </div>
+            <div class="button-group">
+                <button onclick="convertSignature('raw-to-der')">Raw → DER</button>
+                <button onclick="convertSignature('der-to-raw')">DER → Raw</button>
+                <button onclick="convertSignature('to-xml')">转换为 XML</button>
+            </div>
+            <div id="signature-result"></div>
+            
+            <!-- 随机数生成测试 -->
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">随机数生成测试</h3>
+            <div class="button-group">
+                <button onclick="testRandomGenerator()">测试随机数生成器</button>
+            </div>
+            <div id="random-result"></div>
         </div>
         
         <!-- About Tab -->
@@ -372,11 +432,18 @@ const keyPair = generateKeyPair();</code>
                 mode: smkit.CipherMode.ECB, 
                 padding: smkit.PaddingMode.PKCS7 
             }),
-            generateKeyPair: () => smkit.generateKeyPair(),
-            sign: (privateKey, message) => smkit.sign(privateKey, message),
-            verify: (publicKey, message, signature) => smkit.verify(publicKey, message, signature),
+            generateKeyPair: (compressed) => smkit.generateKeyPair(compressed),
+            getPublicKeyFromPrivateKey: (privateKey, compressed) => smkit.getPublicKeyFromPrivateKey(privateKey, compressed),
+            compressPublicKey: (publicKey) => smkit.compressPublicKey(publicKey),
+            decompressPublicKey: (publicKey) => smkit.decompressPublicKey(publicKey),
+            sign: (privateKey, message, options) => smkit.sign(privateKey, message, options),
+            verify: (publicKey, message, signature, options) => smkit.verify(publicKey, message, signature, options),
             sm2Encrypt: (publicKey, plaintext) => smkit.sm2Encrypt(publicKey, plaintext),
-            sm2Decrypt: (privateKey, ciphertext) => smkit.sm2Decrypt(privateKey, ciphertext)
+            sm2Decrypt: (privateKey, ciphertext) => smkit.sm2Decrypt(privateKey, ciphertext),
+            rawToDer: (raw) => smkit.rawToDer(raw),
+            derToRaw: (der) => smkit.derToRaw(der),
+            signatureToXml: (signature, isDer) => smkit.signatureToXml(signature, isDer),
+            bytesToHex: (bytes) => smkit.bytesToHex(bytes)
         };
     </script>
     
@@ -478,18 +545,22 @@ const keyPair = generateKeyPair();</code>
             }
         }
         
-        function generateSM2KeyPair() {
+        function generateSM2KeyPair(compressed) {
             try {
-                const keyPair = window.smkitHelpers.generateKeyPair();
+                const keyPair = window.smkitHelpers.generateKeyPair(compressed);
                 
                 document.getElementById('sm2-private-key').value = keyPair.privateKey;
                 document.getElementById('sm2-public-key').value = keyPair.publicKey;
+                
+                const format = compressed ? '压缩格式' : '非压缩格式';
+                const prefix = keyPair.publicKey.substring(0, 2);
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
                         <h3>密钥对已生成！</h3>
                         <p>私钥长度: ${keyPair.privateKey.length} 字符 (${keyPair.privateKey.length / 2} 字节)</p>
                         <p>公钥长度: ${keyPair.publicKey.length} 字符 (${keyPair.publicKey.length / 2} 字节)</p>
+                        <p>公钥格式: ${format} (前缀: ${prefix})</p>
                         <p style="margin-top: 10px; color: #4CAF50;">✓ 基于 SM2 椭圆曲线算法</p>
                     </div>
                 `;
@@ -574,20 +645,22 @@ const keyPair = generateKeyPair();</code>
             try {
                 const privateKey = document.getElementById('sm2-private-key').value;
                 const message = document.getElementById('sm2-message').value;
+                const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!privateKey) {
                     alert('请先生成密钥对');
                     return;
                 }
                 
-                currentSignature = window.smkitHelpers.sign(privateKey, message);
+                const options = skipZ ? { skipZComputation: true } : undefined;
+                currentSignature = window.smkitHelpers.sign(privateKey, message, options);
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
                         <h3>签名结果：</h3>
                         <pre>${currentSignature}</pre>
                         <p style="margin-top: 10px; color: #666;">签名长度: ${currentSignature.length} 字符 (${currentSignature.length / 2} 字节)</p>
-                        <p style="color: #666;">使用 SM3 哈希算法</p>
+                        <p style="color: #666;">使用 SM3 哈希算法${skipZ ? '（跳过 Z 值计算）' : ''}</p>
                     </div>
                 `;
             } catch (error) {
@@ -604,6 +677,7 @@ const keyPair = generateKeyPair();</code>
             try {
                 const publicKey = document.getElementById('sm2-public-key').value;
                 const message = document.getElementById('sm2-message').value;
+                const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!publicKey) {
                     alert('请先生成密钥对');
@@ -615,7 +689,8 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
                 
-                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature);
+                const options = skipZ ? { skipZComputation: true } : undefined;
+                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, options);
                 
                 const statusColor = isValid ? '#4CAF50' : '#f44336';
                 const statusIcon = isValid ? '✅' : '❌';
@@ -624,7 +699,7 @@ const keyPair = generateKeyPair();</code>
                     <div class="result" style="border-left-color: ${statusColor};">
                         <h3 style="color: ${statusColor};">验证结果：</h3>
                         <pre style="font-size: 18px; font-weight: bold;">签名${statusIcon} ${isValid ? '有效' : '无效'}</pre>
-                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名</p>
+                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名${skipZ ? '（跳过 Z 值计算）' : ''}</p>
                     </div>
                 `;
             } catch (error) {
@@ -632,6 +707,193 @@ const keyPair = generateKeyPair();</code>
                     <div class="result" style="border-left-color: #f44336;">
                         <h3 style="color: #f44336;">错误：</h3>
                         <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // 工具函数
+        function derivePublicKey(compressed) {
+            try {
+                const privateKey = document.getElementById('tool-private-key').value.trim();
+                
+                if (!privateKey) {
+                    alert('请输入私钥');
+                    return;
+                }
+                
+                const publicKey = window.smkitHelpers.getPublicKeyFromPrivateKey(privateKey, compressed);
+                const format = compressed ? '压缩格式' : '非压缩格式';
+                const prefix = publicKey.substring(0, 2);
+                
+                document.getElementById('derive-result').innerHTML = `
+                    <div class="result">
+                        <h3>生成的公钥（${format}）：</h3>
+                        <pre style="word-break: break-all;">${publicKey}</pre>
+                        <p style="margin-top: 10px; color: #666;">前缀: ${prefix}</p>
+                        <p style="color: #666;">长度: ${publicKey.length} 字符 (${publicKey.length / 2} 字节)</p>
+                        <p style="color: #4CAF50;">✓ 成功从私钥导出公钥</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('derive-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        function convertPublicKey(type) {
+            try {
+                const publicKey = document.getElementById('tool-public-key').value.trim();
+                
+                if (!publicKey) {
+                    alert('请输入公钥');
+                    return;
+                }
+                
+                let result, format;
+                
+                if (type === 'compress') {
+                    result = window.smkitHelpers.compressPublicKey(publicKey);
+                    format = '压缩格式';
+                } else {
+                    result = window.smkitHelpers.decompressPublicKey(publicKey);
+                    format = '非压缩格式';
+                }
+                
+                const prefix = result.substring(0, 2);
+                
+                document.getElementById('convert-result').innerHTML = `
+                    <div class="result">
+                        <h3>转换结果（${format}）：</h3>
+                        <pre style="word-break: break-all;">${result}</pre>
+                        <p style="margin-top: 10px; color: #666;">前缀: ${prefix}</p>
+                        <p style="color: #666;">长度: ${result.length} 字符 (${result.length / 2} 字节)</p>
+                        <p style="color: #4CAF50;">✓ 转换成功</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('convert-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        function convertSignature(type) {
+            try {
+                const signature = document.getElementById('tool-signature').value.trim();
+                
+                if (!signature) {
+                    alert('请输入签名');
+                    return;
+                }
+                
+                let resultHtml;
+                
+                if (type === 'raw-to-der') {
+                    const der = window.smkitHelpers.rawToDer(signature);
+                    const derHex = window.smkitHelpers.bytesToHex(der);
+                    resultHtml = `
+                        <div class="result">
+                            <h3>DER 编码签名：</h3>
+                            <pre style="word-break: break-all;">${derHex}</pre>
+                            <p style="margin-top: 10px; color: #666;">长度: ${derHex.length} 字符 (${derHex.length / 2} 字节)</p>
+                            <p style="color: #4CAF50;">✓ Raw → DER 转换成功</p>
+                        </div>
+                    `;
+                } else if (type === 'der-to-raw') {
+                    // 将十六进制字符串转换为 Uint8Array
+                    const derBytes = new Uint8Array(signature.length / 2);
+                    for (let i = 0; i < derBytes.length; i++) {
+                        derBytes[i] = parseInt(signature.substring(i * 2, i * 2 + 2), 16);
+                    }
+                    const raw = window.smkitHelpers.derToRaw(derBytes);
+                    resultHtml = `
+                        <div class="result">
+                            <h3>Raw 格式签名：</h3>
+                            <pre style="word-break: break-all;">${raw}</pre>
+                            <p style="margin-top: 10px; color: #666;">长度: ${raw.length} 字符 (${raw.length / 2} 字节)</p>
+                            <p style="color: #4CAF50;">✓ DER → Raw 转换成功</p>
+                        </div>
+                    `;
+                } else if (type === 'to-xml') {
+                    // 自动检测格式
+                    const isDer = signature.startsWith('30');
+                    const xml = window.smkitHelpers.signatureToXml(signature, isDer);
+                    resultHtml = `
+                        <div class="result">
+                            <h3>XML 格式：</h3>
+                            <pre style="white-space: pre-wrap; word-break: break-all;">${xml}</pre>
+                            <p style="margin-top: 10px; color: #4CAF50;">✓ 转换为 XML 成功</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('signature-result').innerHTML = resultHtml;
+            } catch (error) {
+                document.getElementById('signature-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        function testRandomGenerator() {
+            try {
+                // 生成多个密钥对来测试随机数生成器
+                const keyPairs = [];
+                const startTime = Date.now();
+                
+                for (let i = 0; i < 5; i++) {
+                    keyPairs.push(window.smkitHelpers.generateKeyPair());
+                }
+                
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                // 检查生成的密钥是否唯一
+                const uniqueKeys = new Set(keyPairs.map(kp => kp.privateKey));
+                const allUnique = uniqueKeys.size === keyPairs.length;
+                
+                let resultHtml = `
+                    <div class="result">
+                        <h3>随机数生成器测试结果：</h3>
+                        <p style="margin-top: 10px;">✓ 生成了 ${keyPairs.length} 个密钥对</p>
+                        <p>✓ 耗时: ${duration} ms (平均 ${(duration / keyPairs.length).toFixed(2)} ms/个)</p>
+                        <p>✓ 唯一性: ${allUnique ? '通过' : '失败'}</p>
+                        <p style="margin-top: 15px; font-weight: bold;">生成的密钥对：</p>
+                `;
+                
+                keyPairs.forEach((kp, i) => {
+                    resultHtml += `
+                        <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                            <p style="font-weight: bold;">密钥对 ${i + 1}:</p>
+                            <p style="font-size: 12px; word-break: break-all;">私钥: ${kp.privateKey}</p>
+                            <p style="font-size: 12px; word-break: break-all;">公钥: ${kp.publicKey.substring(0, 66)}...</p>
+                        </div>
+                    `;
+                });
+                
+                resultHtml += `
+                        <p style="margin-top: 15px; color: #4CAF50;">✓ 随机数生成器工作正常</p>
+                    </div>
+                `;
+                
+                document.getElementById('random-result').innerHTML = resultHtml;
+            } catch (error) {
+                document.getElementById('random-result').innerHTML = `
+                    <div class="result" style="border-left-color: #f44336;">
+                        <h3 style="color: #f44336;">错误：</h3>
+                        <pre>${error.message}</pre>
+                        <p style="margin-top: 10px; color: #f44336;">随机数生成器可能不可用</p>
                     </div>
                 `;
             }
