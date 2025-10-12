@@ -213,6 +213,12 @@ function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
 
 /**
  * PKCS7 填充
+ * PKCS#7 padding - 填充值等于填充字节数
+ * Padding value equals the number of padding bytes added
+ * 
+ * @param data - 要填充的数据 (Data to pad)
+ * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
+ * @returns 填充后的数据 (Padded data)
  */
 function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
   const padding = blockSize - (data.length % blockSize);
@@ -226,6 +232,10 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
 
 /**
  * 去除 PKCS7 填充
+ * Remove PKCS#7 padding
+ * 
+ * @param data - 要去除填充的数据 (Data to unpad)
+ * @returns 去除填充后的数据 (Unpadded data)
  */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
   const padding = data[data.length - 1];
@@ -240,25 +250,152 @@ function pkcs7Unpad(data: Uint8Array): Uint8Array {
   return data.slice(0, data.length - padding);
 }
 
-export interface SM4Options {
-  mode?: CipherModeType;
-  padding?: PaddingModeType;
-  iv?: string;
-  aad?: string | Uint8Array; // Additional Authenticated Data for GCM
-  tagLength?: number; // Authentication tag length for GCM (default: 16 bytes)
+/**
+ * 零填充
+ * Zero padding - 用零字节填充到块大小的倍数
+ * Pad with zero bytes to multiple of block size
+ * 
+ * @param data - 要填充的数据 (Data to pad)
+ * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
+ * @returns 填充后的数据 (Padded data)
+ */
+function zeroPad(data: Uint8Array, blockSize: number): Uint8Array {
+  const padding = blockSize - (data.length % blockSize);
+  if (padding === blockSize) {
+    // 数据已经是块大小的倍数，无需填充
+    // Data is already a multiple of block size, no padding needed
+    return data;
+  }
+  const padded = new Uint8Array(data.length + padding);
+  padded.set(data);
+  // 剩余字节自动为0，无需显式设置
+  // Remaining bytes are automatically 0, no need to set explicitly
+  return padded;
 }
 
+/**
+ * 去除零填充
+ * Remove zero padding - 移除尾部的零字节
+ * Remove trailing zero bytes
+ * 
+ * @param data - 要去除填充的数据 (Data to unpad)
+ * @returns 去除填充后的数据 (Unpadded data)
+ */
+function zeroUnpad(data: Uint8Array): Uint8Array {
+  let length = data.length;
+  // 从尾部开始查找第一个非零字节
+  // Find first non-zero byte from the end
+  while (length > 0 && data[length - 1] === 0) {
+    length--;
+  }
+  return data.slice(0, length);
+}
+
+/**
+ * SM4 加密选项
+ * SM4 encryption options
+ */
+export interface SM4Options {
+  /**
+   * 加密模式 (Cipher mode)
+   * - ECB: 电码本模式，不需要IV (Electronic Codebook, no IV required)
+   * - CBC: 分组链接模式，需要IV (Cipher Block Chaining, IV required)
+   * - CTR: 计数器模式，需要IV，无需填充 (Counter mode, IV required, no padding)
+   * - CFB: 密文反馈模式，需要IV，无需填充 (Cipher Feedback, IV required, no padding)
+   * - OFB: 输出反馈模式，需要IV，无需填充 (Output Feedback, IV required, no padding)
+   * - GCM: 伽罗瓦/计数器模式，需要IV，无需填充，提供认证 (Galois/Counter Mode, IV required, no padding, provides authentication)
+   * 
+   * 默认: ECB (Default: ECB)
+   */
+  mode?: CipherModeType;
+  
+  /**
+   * 填充模式 (Padding mode)
+   * - PKCS7: PKCS#7 填充，填充值为填充字节数 (PKCS#7 padding, padding value equals padding length)
+   * - NONE: 无填充，数据长度必须是块大小倍数 (No padding, data length must be multiple of block size)
+   * - ZERO: 零填充，用零字节填充 (Zero padding, pad with zero bytes)
+   * 
+   * 注意：流密码模式（CTR/CFB/OFB/GCM）不使用填充
+   * Note: Stream cipher modes (CTR/CFB/OFB/GCM) don't use padding
+   * 
+   * 默认: PKCS7 (Default: PKCS7)
+   */
+  padding?: PaddingModeType;
+  
+  /**
+   * 初始化向量 (Initialization Vector)
+   * - CBC/CTR/CFB/OFB: 16字节 (32个十六进制字符) (16 bytes / 32 hex chars)
+   * - GCM: 12字节 (24个十六进制字符) (12 bytes / 24 hex chars)
+   * - ECB: 不需要IV (Not required for ECB)
+   */
+  iv?: string;
+  
+  /**
+   * 附加认证数据，用于GCM模式 (Additional Authenticated Data for GCM mode)
+   * 可以是字符串或Uint8Array (Can be string or Uint8Array)
+   */
+  aad?: string | Uint8Array;
+  
+  /**
+   * 认证标签长度，用于GCM模式 (Authentication tag length for GCM mode)
+   * 范围: 12-16字节 (Range: 12-16 bytes)
+   * 默认: 16字节 (Default: 16 bytes)
+   */
+  tagLength?: number;
+}
+
+/**
+ * SM4 GCM模式加密结果
+ * SM4 GCM mode encryption result
+ */
 export interface SM4GCMResult {
+  /**
+   * 密文（十六进制字符串）
+   * Ciphertext (hex string)
+   */
   ciphertext: string;
+  
+  /**
+   * 认证标签（十六进制字符串）
+   * Authentication tag (hex string)
+   */
   tag: string;
 }
 
 /**
  * 使用 SM4 加密数据
+ * Encrypt data using SM4 block cipher
+ * 
+ * 支持的模式 (Supported modes):
+ * - ECB: 电码本模式 (Electronic Codebook) - 不推荐用于生产环境 (Not recommended for production)
+ * - CBC: 分组链接模式 (Cipher Block Chaining) - 需要IV (Requires IV)
+ * - CTR: 计数器模式 (Counter mode) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV (AEAD mode, requires IV)
+ * 
+ * 支持的填充模式 (Supported padding modes):
+ * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
+ * - NONE: 无填充 (No padding) - 数据长度必须是16字节的倍数 (Data length must be multiple of 16 bytes)
+ * - ZERO: 零填充 (Zero padding) - 用零字节填充 (Pad with zero bytes)
+ * 
  * @param key - 加密密钥（十六进制字符串，32 个字符 = 16 字节）
+ *              Encryption key (hex string, 32 chars = 16 bytes)
  * @param data - 要加密的数据（字符串或 Uint8Array）
+ *               Data to encrypt (string or Uint8Array)
  * @param options - 加密选项（模式、填充、IV）
+ *                  Encryption options (mode, padding, IV)
  * @returns 小写十六进制字符串形式的加密数据，或GCM模式下返回包含密文和标签的对象
+ *          Encrypted data as lowercase hex string, or object with ciphertext and tag for GCM mode
+ * 
+ * @example
+ * // ECB mode
+ * const encrypted = encrypt(key, 'Hello', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
+ * 
+ * @example
+ * // GCM mode with authentication
+ * const result = encrypt(key, 'Secret', { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
+ * console.log(result.ciphertext, result.tag);
  */
 export function encrypt(
   key: string,
@@ -276,14 +413,24 @@ export function encrypt(
   let dataBytes = normalizeInput(data);
   
   // Stream cipher modes (CTR, CFB, OFB, GCM) don't require padding
+  // 流密码模式（CTR、CFB、OFB、GCM）不需要填充
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   
-  // 应用填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
+  // 应用填充 (Apply padding)
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
+      // PKCS#7 填充
       dataBytes = pkcs7Pad(dataBytes, 16);
-    } else if (dataBytes.length % 16 !== 0) {
-      throw new Error('Data length must be multiple of 16 bytes when padding is None');
+    } else if (padding === 'zero') {
+      // 零填充
+      dataBytes = zeroPad(dataBytes, 16);
+    } else if (padding === 'none') {
+      // 无填充，数据长度必须是16字节的倍数
+      if (dataBytes.length % 16 !== 0) {
+        throw new Error('Data length must be multiple of 16 bytes when padding is None');
+      }
+    } else {
+      throw new Error(`Unsupported padding mode: ${padding}`);
     }
   }
 
@@ -456,10 +603,37 @@ export function encrypt(
 
 /**
  * 使用 SM4 解密数据
+ * Decrypt data using SM4 block cipher
+ * 
+ * 支持的模式 (Supported modes):
+ * - ECB: 电码本模式 (Electronic Codebook)
+ * - CBC: 分组链接模式 (Cipher Block Chaining) - 需要IV (Requires IV)
+ * - CTR: 计数器模式 (Counter mode) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
+ * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV和tag (AEAD mode, requires IV and tag)
+ * 
+ * 支持的填充模式 (Supported padding modes):
+ * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
+ * - NONE: 无填充 (No padding)
+ * - ZERO: 零填充 (Zero padding)
+ * 
  * @param key - 解密密钥（十六进制字符串，32 个字符 = 16 字节）
+ *              Decryption key (hex string, 32 chars = 16 bytes)
  * @param encryptedData - 加密的数据（十六进制字符串或GCM结果对象）
+ *                        Encrypted data (hex string or GCM result object)
  * @param options - 解密选项（模式、填充、IV、tag用于GCM）
+ *                  Decryption options (mode, padding, IV, tag for GCM)
  * @returns 解密后的数据（UTF-8 字符串）
+ *          Decrypted data (UTF-8 string)
+ * 
+ * @example
+ * // ECB mode
+ * const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
+ * 
+ * @example
+ * // GCM mode with authentication verification
+ * const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
  */
 export function decrypt(
   key: string,
@@ -671,9 +845,20 @@ export function decrypt(
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
-  // 去除填充（为了向后兼容，同时支持 'pkcs7' 和 'PKCS7'）
-  // Stream cipher modes don't use padding
-  const unpadded = (!isStreamMode && padding === 'pkcs7') ? pkcs7Unpad(result) : result;
+  // 去除填充 (Remove padding)
+  // 流密码模式不使用填充 (Stream cipher modes don't use padding)
+  let unpadded = result;
+  if (!isStreamMode) {
+    if (padding === 'pkcs7') {
+      // 去除 PKCS#7 填充
+      unpadded = pkcs7Unpad(result);
+    } else if (padding === 'zero') {
+      // 去除零填充
+      unpadded = zeroUnpad(result);
+    }
+    // padding === 'none' 时不需要去除填充
+    // No unpadding needed when padding === 'none'
+  }
   
   return new TextDecoder().decode(unpadded);
 }
