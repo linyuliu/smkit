@@ -8,6 +8,8 @@ import {
   decodeSignature,
   rawToDer,
   derToRaw,
+  asn1ToXml,
+  signatureToXml,
 } from '../src/core/asn1';
 
 describe('ASN.1 Utilities', () => {
@@ -124,6 +126,55 @@ describe('ASN.1 Utilities', () => {
 
     it('should throw error for invalid raw signature length', () => {
       expect(() => rawToDer('1234')).toThrow('Raw signature must be 64 bytes');
+    });
+  });
+
+  describe('ASN.1 to XML conversion', () => {
+    it('should convert simple integer to XML', () => {
+      const encoded = encodeInteger('01');
+      const xml = asn1ToXml(encoded);
+      
+      expect(xml).toContain('<INTEGER>');
+      expect(xml).toContain('</INTEGER>');
+      expect(xml).toContain('<value>01</value>');
+    });
+
+    it('should convert sequence to XML', () => {
+      const int1 = encodeInteger('01');
+      const int2 = encodeInteger('02');
+      const encoded = encodeSequence(int1, int2);
+      const xml = asn1ToXml(encoded);
+      
+      expect(xml).toContain('<SEQUENCE>');
+      expect(xml).toContain('</SEQUENCE>');
+      expect(xml).toContain('<INTEGER>');
+    });
+
+    it('should convert signature to XML', () => {
+      const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
+      const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
+      
+      const xml = signatureToXml(r + s, false);
+      
+      expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(xml).toContain('<SM2Signature>');
+      expect(xml).toContain('</SM2Signature>');
+      expect(xml).toContain(`<r>${r.toLowerCase()}</r>`);
+      expect(xml).toContain(`<s>${s.toLowerCase()}</s>`);
+      expect(xml).toContain('<DER>');
+      expect(xml).toContain('</DER>');
+    });
+
+    it('should convert DER signature to XML', () => {
+      const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
+      const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
+      const der = encodeSignature(r, s);
+      
+      const xml = signatureToXml(der);
+      
+      expect(xml).toContain('<SM2Signature>');
+      expect(xml).toContain(`<r>${r.toLowerCase()}</r>`);
+      expect(xml).toContain(`<s>${s.toLowerCase()}</s>`);
     });
   });
 });

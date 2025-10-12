@@ -72,7 +72,7 @@ export function encodeInteger(value: string | Uint8Array): Uint8Array {
     const hex = cleaned.length % 2 === 0 ? cleaned : '0' + cleaned;
     bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+      bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     }
   } else {
     bytes = value;
@@ -235,4 +235,124 @@ export function derToRaw(derSignature: Uint8Array): string {
   const sPadded = s.padStart(64, '0');
   
   return rPadded + sPadded;
+}
+
+/**
+ * Convert ASN.1 DER-encoded data to XML representation
+ * @param data - DER-encoded data
+ * @param indent - Indentation level (for pretty printing)
+ * @returns XML string representation of the ASN.1 structure
+ */
+export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
+  const spaces = '  '.repeat(indent);
+  let offset = 0;
+  let xml = '';
+  
+  while (offset < data.length) {
+    const tag = data[offset];
+    const { length, bytesRead: lengthBytes } = decodeLength(data, offset + 1);
+    const contentStart = offset + 1 + lengthBytes;
+    const contentEnd = contentStart + length;
+    
+    // 获取标签名称
+    let tagName: string;
+    switch (tag) {
+      case ASN1Tag.INTEGER:
+        tagName = 'INTEGER';
+        break;
+      case ASN1Tag.BIT_STRING:
+        tagName = 'BIT_STRING';
+        break;
+      case ASN1Tag.OCTET_STRING:
+        tagName = 'OCTET_STRING';
+        break;
+      case ASN1Tag.NULL:
+        tagName = 'NULL';
+        break;
+      case ASN1Tag.OBJECT_IDENTIFIER:
+        tagName = 'OBJECT_IDENTIFIER';
+        break;
+      case ASN1Tag.SEQUENCE:
+        tagName = 'SEQUENCE';
+        break;
+      default:
+        tagName = `UNKNOWN_TAG_0x${tag.toString(16).padStart(2, '0')}`;
+    }
+    
+    xml += `${spaces}<${tagName}>\n`;
+    
+    if (tag === ASN1Tag.SEQUENCE) {
+      // 递归处理 SEQUENCE 内容
+      const sequenceContent = data.slice(contentStart, contentEnd);
+      xml += asn1ToXml(sequenceContent, indent + 1);
+    } else if (tag === ASN1Tag.INTEGER) {
+      // 显示 INTEGER 值
+      const value = data.slice(contentStart, contentEnd);
+      const hexValue = Array.from(value).map(b => b.toString(16).padStart(2, '0')).join('');
+      xml += `${spaces}  <value>${hexValue}</value>\n`;
+    } else if (tag === ASN1Tag.OCTET_STRING || tag === ASN1Tag.BIT_STRING) {
+      // 显示字节内容
+      const value = data.slice(contentStart, contentEnd);
+      const hexValue = Array.from(value).map(b => b.toString(16).padStart(2, '0')).join('');
+      xml += `${spaces}  <value>${hexValue}</value>\n`;
+    } else if (tag === ASN1Tag.NULL) {
+      // NULL 没有值
+      xml += `${spaces}  <value></value>\n`;
+    } else {
+      // 未知类型，显示原始字节
+      const value = data.slice(contentStart, contentEnd);
+      const hexValue = Array.from(value).map(b => b.toString(16).padStart(2, '0')).join('');
+      xml += `${spaces}  <value>${hexValue}</value>\n`;
+    }
+    
+    xml += `${spaces}</${tagName}>\n`;
+    
+    offset = contentEnd;
+  }
+  
+  return xml;
+}
+
+/**
+ * Convert SM2 signature to XML representation
+ * @param signature - DER-encoded signature or raw signature (r || s)
+ * @param isDer - Whether the signature is DER-encoded (default: auto-detect)
+ * @returns XML string representation of the signature
+ */
+export function signatureToXml(signature: string | Uint8Array, isDer?: boolean): string {
+  let derBytes: Uint8Array;
+  
+  if (typeof signature === 'string') {
+    // 自动检测格式
+    if (isDer === undefined) {
+      isDer = signature.startsWith('30');
+    }
+    
+    if (isDer) {
+      derBytes = new Uint8Array(signature.length / 2);
+      for (let i = 0; i < derBytes.length; i++) {
+        derBytes[i] = parseInt(signature.slice(i * 2, i * 2 + 2), 16);
+      }
+    } else {
+      // 原始格式，转换为 DER
+      derBytes = rawToDer(signature);
+    }
+  } else {
+    derBytes = signature;
+  }
+  
+  // 解析签名
+  const { r, s } = decodeSignature(derBytes);
+  
+  // 生成 XML
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<SM2Signature>\n';
+  xml += '  <r>' + r + '</r>\n';
+  xml += '  <s>' + s + '</s>\n';
+  xml += '  <DER>\n';
+  xml += asn1ToXml(derBytes, 2);
+  xml += '  </DER>\n';
+  xml += '</SM2Signature>';
+  
+  return xml;
 }

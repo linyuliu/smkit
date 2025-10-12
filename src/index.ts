@@ -7,6 +7,8 @@
 export {
   generateKeyPair,
   getPublicKeyFromPrivateKey,
+  compressPublicKey,
+  decompressPublicKey,
   encrypt as sm2Encrypt,
   decrypt as sm2Decrypt,
   sign,
@@ -64,4 +66,8 @@ export {
 export {
   encodeSignature,
   decodeSignature,
+  rawToDer,
+  derToRaw,
+  asn1ToXml,
+  signatureToXml,
 } from './core/asn1';

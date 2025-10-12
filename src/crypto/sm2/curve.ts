@@ -49,17 +49,48 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
 
 /**
  * 生成随机字节的跨平台函数
- * 优雅地处理 Node.js 和浏览器环境
+ * 优雅地处理 Node.js 和浏览器环境，提供多层回退机制
+ * 
+ * 优先级:
+ * 1. Web Crypto API (crypto.getRandomValues) - 最安全
+ * 2. Node.js Crypto Module - 次安全
+ * 3. 时间戳 + Math.random() - 回退方案（仅用于测试，生产环境不推荐）
  * 
  * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
  * 在浏览器环境中，直接使用 Web Crypto API
  */
 function getRandomBytes(bytesLength: number = 32): Uint8Array {
+  // 第一优先级: Web Crypto API (浏览器和现代 Node.js)
   if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
     return globalThis.crypto.getRandomValues(new Uint8Array(bytesLength));
   }
   
-  throw new Error('crypto.getRandomValues is not available. Please ensure crypto is available in your environment.');
+  // 第二优先级: Node.js Crypto Module
+  try {
+    // 动态导入 Node.js crypto 模块（如果可用）
+    const nodeCrypto = require('crypto');
+    if (nodeCrypto && nodeCrypto.randomBytes) {
+      return new Uint8Array(nodeCrypto.randomBytes(bytesLength));
+    }
+  } catch (e) {
+    // Node.js crypto 不可用，继续尝试下一个方案
+  }
+  
+  // 第三优先级: 使用时间戳 + Math.random() 作为回退方案
+  // 警告：此方案的随机性较弱，仅用于开发/测试环境
+  console.warn('Warning: Using Math.random() for random number generation. This is NOT cryptographically secure and should only be used for testing purposes.');
+  
+  const bytes = new Uint8Array(bytesLength);
+  const timestamp = Date.now();
+  
+  for (let i = 0; i < bytesLength; i++) {
+    // 结合时间戳和 Math.random() 生成伪随机数
+    const random = Math.random() * 256;
+    const timestampByte = (timestamp >> (i % 8)) & 0xff;
+    bytes[i] = (random ^ timestampByte) & 0xff;
+  }
+  
+  return bytes;
 }
 
 // SM2 曲线参数（BigInt格式）
