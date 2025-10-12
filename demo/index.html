@@ -579,8 +579,17 @@ const keyPair = generateKeyPair();</code>
                 let displayResult = ciphertext;
                 if (resultFormat === 'base64') {
                     // 将十六进制转换为 base64
-                    const bytes = new Uint8Array(ciphertext.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-                    displayResult = btoa(String.fromCharCode.apply(null, bytes));
+                    const hexPairs = ciphertext.match(/.{2}/g);
+                    if (!hexPairs) {
+                        throw new Error('Invalid ciphertext format');
+                    }
+                    const bytes = new Uint8Array(hexPairs.map(byte => parseInt(byte, 16)));
+                    // 避免使用 apply 导致栈溢出，使用分块处理
+                    let binary = '';
+                    for (let i = 0; i < bytes.length; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    displayResult = btoa(binary);
                 }
                 
                 document.getElementById('sm4-result').innerHTML = `
