@@ -318,9 +318,9 @@ const showError = (msg: string) => {
 .page-header h1 {
   font-size: 2.2em;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
   margin-bottom: 15px;
   font-weight: 700;
 }
@@ -520,7 +520,6 @@ const showError = (msg: string) => {
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  position: relative;
 }
 
 .btn-primary:hover {
@@ -531,12 +530,10 @@ const showError = (msg: string) => {
 .btn-secondary {
   background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   color: #333;
-  border: 2px solid #e0e0e0;
 }
 
 .btn-secondary:hover {
   background: linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%);
-  border-color: #667eea;
 }
 
 /* 按钮组样式 Button group styles */
