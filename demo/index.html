@@ -775,6 +775,7 @@ const keyPair = generateKeyPair();</code>
         
         let currentSignature = '';
         let currentCiphertext = '';
+        const DEFAULT_USER_ID = '1234567812345678';
         
         function testSM2Encrypt() {
             try {
@@ -844,7 +845,7 @@ const keyPair = generateKeyPair();</code>
             try {
                 const privateKey = document.getElementById('sm2-private-key').value;
                 const message = document.getElementById('sm2-message').value;
-                const userId = document.getElementById('sm2-user-id').value.trim();
+                const userId = document.getElementById('sm2-user-id').value.trim() || DEFAULT_USER_ID;
                 const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!privateKey) {
@@ -856,20 +857,18 @@ const keyPair = generateKeyPair();</code>
                 const options = {};
                 if (skipZ) {
                     options.skipZComputation = true;
-                } else if (userId) {
+                } else {
                     options.userId = userId;
                 }
                 
-                currentSignature = window.smkitHelpers.sign(privateKey, message, Object.keys(options).length > 0 ? options : undefined);
-                
-                const userIdDisplay = userId || '1234567812345678';
+                currentSignature = window.smkitHelpers.sign(privateKey, message, options);
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
                         <h3>签名结果：</h3>
                         <pre>${currentSignature}</pre>
                         <p style="margin-top: 10px; color: #666;">签名长度: ${currentSignature.length} 字符 (${currentSignature.length / 2} 字节)</p>
-                        <p style="color: #666;">使用 SM3 哈希算法${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userIdDisplay}</p>
+                        <p style="color: #666;">使用 SM3 哈希算法${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userId}</p>
                     </div>
                 `;
             } catch (error) {
@@ -886,7 +885,7 @@ const keyPair = generateKeyPair();</code>
             try {
                 const publicKey = document.getElementById('sm2-public-key').value;
                 const message = document.getElementById('sm2-message').value;
-                const userId = document.getElementById('sm2-user-id').value.trim();
+                const userId = document.getElementById('sm2-user-id').value.trim() || DEFAULT_USER_ID;
                 const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!publicKey) {
@@ -903,21 +902,20 @@ const keyPair = generateKeyPair();</code>
                 const options = {};
                 if (skipZ) {
                     options.skipZComputation = true;
-                } else if (userId) {
+                } else {
                     options.userId = userId;
                 }
                 
-                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, Object.keys(options).length > 0 ? options : undefined);
+                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, options);
                 
                 const statusColor = isValid ? '#4CAF50' : '#f44336';
                 const statusIcon = isValid ? '✅' : '❌';
-                const userIdDisplay = userId || '1234567812345678';
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result" style="border-left-color: ${statusColor};">
                         <h3 style="color: ${statusColor};">验证结果：</h3>
                         <pre style="font-size: 18px; font-weight: bold;">签名${statusIcon} ${isValid ? '有效' : '无效'}</pre>
-                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userIdDisplay}</p>
+                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userId}</p>
                     </div>
                 `;
             } catch (error) {
