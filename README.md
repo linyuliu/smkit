@@ -19,13 +19,39 @@ npm install smkit
 
 ## 在线演示
 
-想快速体验 SMKit？我们提供了交互式演示页面：
+想快速体验 SMKit？我们提供了两种交互式演示页面：
+
+### Vue 3 现代化演示（推荐）
+
+基于 Vue 3 + TypeScript 的现代化 Web 应用，提供更好的用户体验：
 
 ```bash
 # 克隆仓库
 git clone https://github.com/linyuliu/smkit.git
 cd smkit
 
+# 安装依赖
+npm install
+cd demo-vue && npm install
+
+# 启动 Vue 演示
+npm run dev
+```
+
+功能特点：
+- 🔐 **信创国密算法**: SM2、SM3、SM4 完整测试
+- 🌐 **国际标准算法**: AES、RSA、SHA（即将推出）
+- 🛠️ **实用工具**: 密钥生成、格式转换、签名验证
+- 📱 响应式设计，支持移动端
+- 🎨 现代化 UI，流畅的用户体验
+
+[查看 Vue 演示说明](./demo-vue/README.md)
+
+### H5 简单演示
+
+传统 HTML5 演示页面：
+
+```bash
 # 启动演示
 npm run demo
 ```
@@ -35,7 +61,7 @@ npm run demo
 - ✅ 测试 SM4 加密解密
 - ✅ 测试 SM2 密钥生成、签名和验签
 
-[查看演示说明](./demo/README.md)
+[查看 H5 演示说明](./demo/README.md)
 
 ## 使用方法
 
