@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+// 路由实例 Router instance
+const router = useRouter()
 
 const activeCategory = ref('chinese')
 
@@ -100,8 +104,8 @@ const categories = ref<ToolCategory[]>([
 ])
 
 const navigateToTool = (route: string) => {
-  // For now, just log - we'll implement routing next
-  console.log('Navigate to:', route)
+  // 导航到工具页面 Navigate to tool page
+  router.push(route)
 }
 </script>
 
