@@ -15,6 +15,52 @@ Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2
 npm install smkit
 ```
 
+## Online Demo
+
+Want to try SMKit quickly? We provide two interactive demo pages:
+
+### Vue 3 Modern Demo (Recommended)
+
+Modern web application built with Vue 3 + TypeScript, providing better user experience:
+
+```bash
+# Clone the repository
+git clone https://github.com/linyuliu/smkit.git
+cd smkit
+
+# Install dependencies
+npm install
+cd demo-vue && npm install
+
+# Start Vue demo
+npm run dev
+```
+
+Features:
+- 🔐 **Chinese National Cryptographic Algorithms**: Complete testing for SM2, SM3, SM4
+- 🌐 **International Standard Algorithms**: AES, RSA, SHA (coming soon)
+- 🛠️ **Utility Tools**: Key generation, format conversion, signature validation
+- 📱 Responsive design, mobile-friendly
+- 🎨 Modern UI with smooth animations
+
+[View Vue Demo Documentation](./demo-vue/README.md)
+
+### H5 Simple Demo
+
+Traditional HTML5 demo page:
+
+```bash
+# Start demo
+npm run demo
+```
+
+Features:
+- ✅ Test SM3 hash computation
+- ✅ Test SM4 encryption/decryption
+- ✅ Test SM2 key generation, signing and verification
+
+[View H5 Demo Documentation](./demo/README.md)
+
 ## Usage
 
 [简体中文](./README.md) | English
