@@ -248,6 +248,12 @@
             </div>
             
             <div class="form-group">
+                <label for="sm2-user-id">用户ID (User ID)：</label>
+                <input type="text" id="sm2-user-id" placeholder="默认值: 1234567812345678" value="1234567812345678">
+                <p style="color: #666; font-size: 12px; margin-top: 5px;">💡 用于签名和验签时的 Z 值计算，必须保持一致（GM/T 0009-2012 规范默认值）</p>
+            </div>
+            
+            <div class="form-group">
                 <label>
                     <input type="checkbox" id="sm2-skip-z" style="width: auto; margin-right: 5px;">
                     跳过 Z 值计算（用于测试，不推荐在生产环境使用）
@@ -682,6 +688,10 @@ const keyPair = generateKeyPair();</code>
                 const compressedKey = window.smkitHelpers.compressPublicKey(keyPair.publicKey);
                 const uncompressedKey = keyPair.publicKey;
                 
+                // 提取公钥坐标 X 和 Y（去掉04前缀，前64个字符是X，后64个字符是Y）
+                const publicKeyX = uncompressedKey.substring(2, 66);
+                const publicKeyY = uncompressedKey.substring(66, 130);
+                
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-left: 5px solid #667eea; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         <h3 style="color: #667eea; font-size: 1.3em; margin-bottom: 15px;">✅ 密钥对生成成功</h3>
@@ -689,7 +699,7 @@ const keyPair = generateKeyPair();</code>
                         <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                 <span style="font-size: 24px; margin-right: 10px;">🔐</span>
-                                <strong style="color: #333; font-size: 1.1em;">私钥信息</strong>
+                                <strong style="color: #333; font-size: 1.1em;">私钥 (Private Key)</strong>
                             </div>
                             <p style="color: #666; margin: 8px 0;">长度: <span style="color: #667eea; font-weight: 600;">${keyPair.privateKey.length}</span> 字符 (<span style="color: #667eea; font-weight: 600;">${keyPair.privateKey.length / 2}</span> 字节)</p>
                             <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #667eea;">
@@ -699,8 +709,32 @@ const keyPair = generateKeyPair();</code>
                         
                         <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 24px; margin-right: 10px;">📐</span>
+                                <strong style="color: #333; font-size: 1.1em;">公钥 X 坐标</strong>
+                                <span style="background: #fff3e0; color: #e65100; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">X</span>
+                            </div>
+                            <p style="color: #666; margin: 8px 0;">长度: <span style="color: #e65100; font-weight: 600;">${publicKeyX.length}</span> 字符 (<span style="color: #e65100; font-weight: 600;">${publicKeyX.length / 2}</span> 字节)</p>
+                            <div style="background: #fff3e0; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #e65100;">
+                                <code style="word-break: break-all; font-size: 13px; color: #bf360c;">${publicKeyX}</code>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 24px; margin-right: 10px;">📐</span>
+                                <strong style="color: #333; font-size: 1.1em;">公钥 Y 坐标</strong>
+                                <span style="background: #f3e5f5; color: #6a1b9a; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">Y</span>
+                            </div>
+                            <p style="color: #666; margin: 8px 0;">长度: <span style="color: #6a1b9a; font-weight: 600;">${publicKeyY.length}</span> 字符 (<span style="color: #6a1b9a; font-weight: 600;">${publicKeyY.length / 2}</span> 字节)</p>
+                            <div style="background: #f3e5f5; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #6a1b9a;">
+                                <code style="word-break: break-all; font-size: 13px; color: #4a148c;">${publicKeyY}</code>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                 <span style="font-size: 24px; margin-right: 10px;">🔑</span>
-                                <strong style="color: #333; font-size: 1.1em;">非压缩公钥</strong>
+                                <strong style="color: #333; font-size: 1.1em;">非压缩公钥 (Uncompressed Public Key)</strong>
                                 <span style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">04前缀</span>
                             </div>
                             <p style="color: #666; margin: 8px 0;">长度: <span style="color: #1976d2; font-weight: 600;">${uncompressedKey.length}</span> 字符 (<span style="color: #1976d2; font-weight: 600;">${uncompressedKey.length / 2}</span> 字节)</p>
@@ -712,7 +746,7 @@ const keyPair = generateKeyPair();</code>
                         <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                 <span style="font-size: 24px; margin-right: 10px;">🗜️</span>
-                                <strong style="color: #333; font-size: 1.1em;">压缩公钥</strong>
+                                <strong style="color: #333; font-size: 1.1em;">压缩公钥 (Compressed Public Key)</strong>
                                 <span style="background: #e8f5e9; color: #388e3c; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; font-weight: 600;">02/03前缀</span>
                             </div>
                             <p style="color: #666; margin: 8px 0;">长度: <span style="color: #388e3c; font-weight: 600;">${compressedKey.length}</span> 字符 (<span style="color: #388e3c; font-weight: 600;">${compressedKey.length / 2}</span> 字节)</p>
@@ -724,7 +758,7 @@ const keyPair = generateKeyPair();</code>
                         <div style="margin-top: 15px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 6px; border-left: 3px solid #667eea;">
                             <p style="color: #667eea; font-weight: 600; margin: 0;">
                                 <span style="font-size: 18px; margin-right: 8px;">✨</span>
-                                已同时生成压缩和非压缩格式的公钥
+                                公钥格式说明：非压缩格式 = 04 + X + Y，压缩格式 = 02/03 + X
                             </p>
                         </div>
                     </div>
@@ -810,6 +844,7 @@ const keyPair = generateKeyPair();</code>
             try {
                 const privateKey = document.getElementById('sm2-private-key').value;
                 const message = document.getElementById('sm2-message').value;
+                const userId = document.getElementById('sm2-user-id').value.trim();
                 const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!privateKey) {
@@ -817,15 +852,24 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
                 
-                const options = skipZ ? { skipZComputation: true } : undefined;
-                currentSignature = window.smkitHelpers.sign(privateKey, message, options);
+                // 构建签名选项
+                const options = {};
+                if (skipZ) {
+                    options.skipZComputation = true;
+                } else if (userId) {
+                    options.userId = userId;
+                }
+                
+                currentSignature = window.smkitHelpers.sign(privateKey, message, Object.keys(options).length > 0 ? options : undefined);
+                
+                const userIdDisplay = userId || '1234567812345678';
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
                         <h3>签名结果：</h3>
                         <pre>${currentSignature}</pre>
                         <p style="margin-top: 10px; color: #666;">签名长度: ${currentSignature.length} 字符 (${currentSignature.length / 2} 字节)</p>
-                        <p style="color: #666;">使用 SM3 哈希算法${skipZ ? '（跳过 Z 值计算）' : ''}</p>
+                        <p style="color: #666;">使用 SM3 哈希算法${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userIdDisplay}</p>
                     </div>
                 `;
             } catch (error) {
@@ -842,6 +886,7 @@ const keyPair = generateKeyPair();</code>
             try {
                 const publicKey = document.getElementById('sm2-public-key').value;
                 const message = document.getElementById('sm2-message').value;
+                const userId = document.getElementById('sm2-user-id').value.trim();
                 const skipZ = document.getElementById('sm2-skip-z').checked;
                 
                 if (!publicKey) {
@@ -854,17 +899,25 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
                 
-                const options = skipZ ? { skipZComputation: true } : undefined;
-                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, options);
+                // 构建验证选项
+                const options = {};
+                if (skipZ) {
+                    options.skipZComputation = true;
+                } else if (userId) {
+                    options.userId = userId;
+                }
+                
+                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, Object.keys(options).length > 0 ? options : undefined);
                 
                 const statusColor = isValid ? '#4CAF50' : '#f44336';
                 const statusIcon = isValid ? '✅' : '❌';
+                const userIdDisplay = userId || '1234567812345678';
                 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result" style="border-left-color: ${statusColor};">
                         <h3 style="color: ${statusColor};">验证结果：</h3>
                         <pre style="font-size: 18px; font-weight: bold;">签名${statusIcon} ${isValid ? '有效' : '无效'}</pre>
-                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名${skipZ ? '（跳过 Z 值计算）' : ''}</p>
+                        <p style="margin-top: 10px; color: #666;">使用公钥验证数字签名${skipZ ? '（跳过 Z 值计算）' : '，用户ID: ' + userIdDisplay}</p>
                     </div>
                 `;
             } catch (error) {
