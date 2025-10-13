@@ -357,8 +357,10 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 000
 ### SM2
 
 **函数式 API:**
-- `generateKeyPair(): KeyPair` - 生成 SM2 密钥对
-- `getPublicKeyFromPrivateKey(privateKey: string): string` - 从私钥派生公钥
+- `generateKeyPair(compressed?: boolean): KeyPair` - 生成 SM2 密钥对
+- `getPublicKeyFromPrivateKey(privateKey: string, compressed?: boolean): string` - 从私钥派生公钥
+- `compressPublicKey(publicKey: string): string` - 压缩公钥（04->02/03）
+- `decompressPublicKey(publicKey: string): string` - 解压公钥（02/03->04）
 - `sm2Encrypt(publicKey: string, data: string | Uint8Array, mode?: SM2CipherModeType): string` - 使用 SM2 加密数据
 - `sm2Decrypt(privateKey: string, encryptedData: string, mode?: SM2CipherModeType): string` - 使用 SM2 解密数据
 - `sign(privateKey: string, data: string | Uint8Array, options?: SignOptions): string` - 使用 SM2 签名数据
@@ -391,13 +393,24 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 000
 
 ### 工具函数
 
+**数据转换:**
 - `hexToBytes(hex: string): Uint8Array` - 将十六进制字符串转换为字节
 - `bytesToHex(bytes: Uint8Array): string` - 将字节转换为小写十六进制字符串
 - `stringToBytes(str: string): Uint8Array` - 将 UTF-8 字符串转换为字节
 - `bytesToString(bytes: Uint8Array): string` - 将字节转换为 UTF-8 字符串
 - `normalizeInput(data: string | Uint8Array): Uint8Array` - 将输入规范化为 Uint8Array
+
+**位运算:**
 - `xor(a: Uint8Array, b: Uint8Array): Uint8Array` - 对两个字节数组进行异或
 - `rotl(value: number, shift: number): number` - 左旋转 32 位值
+
+**ASN.1 编码工具:**
+- `encodeSignature(r: string, s: string): Uint8Array` - 将 r、s 编码为 DER 格式签名
+- `decodeSignature(derSignature: Uint8Array): { r: string; s: string }` - 解码 DER 格式签名
+- `rawToDer(rawSignature: string): string` - 将原始签名（r||s）转换为 DER 格式
+- `derToRaw(derSignature: string): string` - 将 DER 格式签名转换为原始格式（r||s）
+- `asn1ToXml(data: Uint8Array): string` - 将 ASN.1 数据转换为 XML 格式（用于调试）
+- `signatureToXml(signature: string): string` - 将签名转换为 XML 格式（用于调试）
 
 ## 数据格式约定
 
