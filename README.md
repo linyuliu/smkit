@@ -149,29 +149,27 @@ import { keyExchange } from 'smkit';
 const aliceKeyPair = generateKeyPair();
 const bobKeyPair = generateKeyPair();
 
-// Alice 生成临时密钥并发送给 Bob
-const aliceTemp = keyExchange({
-  privateKey: aliceKeyPair.privateKey,
-  peerPublicKey: bobKeyPair.publicKey,
-  peerTempPublicKey: bobKeyPair.publicKey, // 占位，稍后会用实际的临时公钥替换
-  isInitiator: true,
-});
+// 第一步：生成临时密钥对
+const aliceTempKeyPair = generateKeyPair();
+const bobTempKeyPair = generateKeyPair();
 
-// Bob 收到 Alice 的临时公钥后，执行密钥交换
-const bobResult = keyExchange({
-  privateKey: bobKeyPair.privateKey,
-  peerPublicKey: aliceKeyPair.publicKey,
-  peerTempPublicKey: aliceTemp.tempPublicKey,
-  isInitiator: false,
+// 第二步：Alice 作为发起方执行密钥交换
+const aliceResult = keyExchange({
+  privateKey: aliceKeyPair.privateKey,
+  tempPrivateKey: aliceTempKeyPair.privateKey,
+  peerPublicKey: bobKeyPair.publicKey,
+  peerTempPublicKey: bobTempKeyPair.publicKey,
+  isInitiator: true,
   keyLength: 16, // 派生 16 字节（128 位）密钥
 });
 
-// Alice 收到 Bob 的临时公钥后，完成密钥交换
-const aliceResult = keyExchange({
-  privateKey: aliceKeyPair.privateKey,
-  peerPublicKey: bobKeyPair.publicKey,
-  peerTempPublicKey: bobResult.tempPublicKey,
-  isInitiator: true,
+// 第三步：Bob 作为响应方执行密钥交换
+const bobResult = keyExchange({
+  privateKey: bobKeyPair.privateKey,
+  tempPrivateKey: bobTempKeyPair.privateKey,
+  peerPublicKey: aliceKeyPair.publicKey,
+  peerTempPublicKey: aliceTempKeyPair.publicKey,
+  isInitiator: false,
   keyLength: 16,
 });
 
@@ -246,27 +244,30 @@ const isValid = sm2.verify('Message to sign', signature);
 const alice = SM2.generateKeyPair();
 const bob = SM2.generateKeyPair();
 
-// Alice 生成临时密钥
-const aliceTemp = alice.keyExchange(
-  bob.getPublicKey(),
-  bob.getPublicKey(), // 占位
-  true
-);
+// 双方各自生成临时密钥对
+const aliceTemp = SM2.generateKeyPair();
+const bobTemp = SM2.generateKeyPair();
 
-// Bob 使用 Alice 的临时公钥执行密钥交换
-const bobResult = bob.keyExchange(
-  alice.getPublicKey(),
-  aliceTemp.tempPublicKey,
-  false, // Bob 是响应方
-  { keyLength: 16 }
-);
-
-// Alice 使用 Bob 的临时公钥完成密钥交换
+// Alice 作为发起方执行密钥交换
 const aliceResult = alice.keyExchange(
   bob.getPublicKey(),
-  bobResult.tempPublicKey,
+  bobTemp.getPublicKey(),
   true, // Alice 是发起方
-  { keyLength: 16 }
+  { 
+    tempPrivateKey: aliceTemp.getPrivateKey(),
+    keyLength: 16 
+  }
+);
+
+// Bob 作为响应方执行密钥交换
+const bobResult = bob.keyExchange(
+  alice.getPublicKey(),
+  aliceTemp.getPublicKey(),
+  false, // Bob 是响应方
+  { 
+    tempPrivateKey: bobTemp.getPrivateKey(),
+    keyLength: 16 
+  }
 );
 
 // 双方得到相同的共享密钥
