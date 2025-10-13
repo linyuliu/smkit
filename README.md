@@ -141,6 +141,34 @@ const valid = verify(publicKeyUpper, 'test', sig); // 自动识别格式
 const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
 const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
+
+// SM2 密钥交换（基于 GM/T 0003.3-2012）
+import { keyExchange } from 'smkit';
+
+// 假设 Alice 和 Bob 需要协商共享密钥
+const aliceKeyPair = generateKeyPair();
+const bobKeyPair = generateKeyPair();
+
+// Alice 作为发起方
+const aliceResult = keyExchange({
+  privateKey: aliceKeyPair.privateKey,
+  peerPublicKey: bobKeyPair.publicKey,
+  peerTempPublicKey: bobTempPublicKey, // Bob 的临时公钥
+  isInitiator: true,
+  keyLength: 16, // 派生 16 字节（128 位）密钥
+});
+
+// Bob 作为响应方
+const bobResult = keyExchange({
+  privateKey: bobKeyPair.privateKey,
+  peerPublicKey: aliceKeyPair.publicKey,
+  peerTempPublicKey: aliceResult.tempPublicKey,
+  isInitiator: false,
+  keyLength: 16,
+});
+
+// Alice 和 Bob 得到相同的共享密钥
+console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 ```
 
 ### 面向对象 API
@@ -205,6 +233,29 @@ const decrypted = sm2.decrypt(encrypted, SM2CipherMode.C1C3C2);
 // 签名/验证
 const signature = sm2.sign('Message to sign');
 const isValid = sm2.verify('Message to sign', signature);
+
+// 密钥交换
+const alice = SM2.generateKeyPair();
+const bob = SM2.generateKeyPair();
+
+// Alice 执行密钥交换
+const aliceResult = alice.keyExchange(
+  bob.getPublicKey(),
+  bobTempPublicKey, // Bob 的临时公钥
+  true, // Alice 是发起方
+  { keyLength: 16 }
+);
+
+// Bob 执行密钥交换
+const bobResult = bob.keyExchange(
+  alice.getPublicKey(),
+  aliceResult.tempPublicKey,
+  false, // Bob 是响应方
+  { keyLength: 16 }
+);
+
+// 双方得到相同的共享密钥
+console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 
 // 自定义曲线参数
 const curveParams = {
@@ -357,19 +408,56 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 000
 ### SM2
 
 **函数式 API:**
+
+*密钥管理：*
 - `generateKeyPair(compressed?: boolean): KeyPair` - 生成 SM2 密钥对
+  - `compressed`: 是否使用压缩格式（**默认：false**）
 - `getPublicKeyFromPrivateKey(privateKey: string, compressed?: boolean): string` - 从私钥派生公钥
+  - `compressed`: 是否返回压缩格式（**默认：false**）
 - `compressPublicKey(publicKey: string): string` - 压缩公钥（04->02/03）
 - `decompressPublicKey(publicKey: string): string` - 解压公钥（02/03->04）
+
+*加密解密：*
 - `sm2Encrypt(publicKey: string, data: string | Uint8Array, mode?: SM2CipherModeType): string` - 使用 SM2 加密数据
+  - `mode`: 密文模式（**默认：'C1C3C2'**）
 - `sm2Decrypt(privateKey: string, encryptedData: string, mode?: SM2CipherModeType): string` - 使用 SM2 解密数据
+  - `mode`: 密文模式（**默认：'C1C3C2'**）
+
+*签名验签：*
 - `sign(privateKey: string, data: string | Uint8Array, options?: SignOptions): string` - 使用 SM2 签名数据
 - `verify(publicKey: string, data: string | Uint8Array, signature: string, options?: VerifyOptions): boolean` - 使用 SM2 验证签名
 
-**SignOptions/VerifyOptions:**
-- `der?: boolean` - 使用 DER 编码签名
-- `userId?: string` - 签名的用户 ID（默认：'1234567812345678'）
+*密钥交换：*
+- `keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult` - 执行 SM2 密钥交换协议
+
+**SignOptions:**
+- `der?: boolean` - 是否使用 DER 编码格式（**默认：false**，使用 Raw 格式）
+- `userId?: string` - 签名用户 ID（**默认：'1234567812345678'**）
+- `skipZComputation?: boolean` - 是否跳过 Z 值计算（**默认：false**）
+- `curveParams?: SM2CurveParams` - 自定义椭圆曲线参数（**默认：使用 GM/T 0003-2012 标准参数**）
+
+**VerifyOptions:**
+- `der?: boolean` - 签名是否为 DER 编码格式（**默认：false**）
+- `userId?: string` - 验证用户 ID（**默认：'1234567812345678'**，必须与签名时一致）
+- `skipZComputation?: boolean` - 是否跳过 Z 值计算（**默认：false**，必须与签名时一致）
 - `curveParams?: SM2CurveParams` - 自定义椭圆曲线参数
+
+**SM2KeyExchangeParams:**
+- `privateKey: string` - 己方私钥（必需）
+- `publicKey?: string` - 己方公钥（可选，不提供会从私钥派生）
+- `userId?: string` - 己方用户 ID（**默认：'1234567812345678'**）
+- `tempPrivateKey?: string` - 己方临时私钥（可选，不提供会自动生成）
+- `peerPublicKey: string` - 对方公钥（必需）
+- `peerTempPublicKey: string` - 对方临时公钥（必需）
+- `peerUserId?: string` - 对方用户 ID（**默认：'1234567812345678'**）
+- `isInitiator: boolean` - 是否为发起方（必需）
+- `keyLength?: number` - 派生密钥字节长度（**默认：16**）
+
+**SM2KeyExchangeResult:**
+- `tempPublicKey: string` - 己方临时公钥
+- `sharedKey: string` - 派生的共享密钥
+- `s1?: string` - 己方确认哈希值（可选，用于相互认证）
+- `s2?: string` - 对方确认哈希值（可选，用于相互认证）
 
 **SM2CurveParams:**
 - `p?: string` - 素数模数 p
@@ -384,10 +472,11 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 000
 - `SM2.fromPrivateKey(privateKey, curveParams?)` - 从私钥创建
 - `SM2.fromPublicKey(publicKey, curveParams?)` - 从公钥创建
 - 实例方法：
-  - `.encrypt(data, mode?)` - 加密数据
-  - `.decrypt(encryptedData, mode?)` - 解密数据
+  - `.encrypt(data, mode?)` - 加密数据（**mode 默认：'C1C3C2'**）
+  - `.decrypt(encryptedData, mode?)` - 解密数据（**mode 默认：'C1C3C2'**）
   - `.sign(data, options?)` - 签名数据
   - `.verify(data, signature, options?)` - 验证签名
+  - `.keyExchange(peerPublicKey, peerTempPublicKey, isInitiator, options?)` - 执行密钥交换
   - `.getPublicKey()` / `.getPrivateKey()` - 获取密钥
   - `.setCurveParams(params)` / `.getCurveParams()` - 设置/获取曲线参数
 

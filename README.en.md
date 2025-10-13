@@ -121,6 +121,34 @@ const valid = verify(publicKeyUpper, 'test', sig); // Auto-detects format
 const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
 const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
+
+// SM2 Key Exchange (based on GM/T 0003.3-2012)
+import { keyExchange } from 'smkit';
+
+// Suppose Alice and Bob need to negotiate a shared key
+const aliceKeyPair = generateKeyPair();
+const bobKeyPair = generateKeyPair();
+
+// Alice as initiator
+const aliceResult = keyExchange({
+  privateKey: aliceKeyPair.privateKey,
+  peerPublicKey: bobKeyPair.publicKey,
+  peerTempPublicKey: bobTempPublicKey, // Bob's temporary public key
+  isInitiator: true,
+  keyLength: 16, // Derive 16 bytes (128 bits) key
+});
+
+// Bob as responder
+const bobResult = keyExchange({
+  privateKey: bobKeyPair.privateKey,
+  peerPublicKey: aliceKeyPair.publicKey,
+  peerTempPublicKey: aliceResult.tempPublicKey,
+  isInitiator: false,
+  keyLength: 16,
+});
+
+// Alice and Bob get the same shared key
+console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 ```
 
 ### Object-Oriented API
@@ -185,6 +213,29 @@ const decrypted = sm2.decrypt(encrypted, SM2CipherMode.C1C3C2);
 // Sign/Verify
 const signature = sm2.sign('Message to sign');
 const isValid = sm2.verify('Message to sign', signature);
+
+// Key Exchange
+const alice = SM2.generateKeyPair();
+const bob = SM2.generateKeyPair();
+
+// Alice performs key exchange
+const aliceResult = alice.keyExchange(
+  bob.getPublicKey(),
+  bobTempPublicKey, // Bob's temporary public key
+  true, // Alice is initiator
+  { keyLength: 16 }
+);
+
+// Bob performs key exchange
+const bobResult = bob.keyExchange(
+  alice.getPublicKey(),
+  aliceResult.tempPublicKey,
+  false, // Bob is responder
+  { keyLength: 16 }
+);
+
+// Both parties get the same shared key
+console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 
 // Custom curve parameters
 const curveParams = {
@@ -337,19 +388,56 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 ### SM2
 
 **Functional API:**
+
+*Key Management:*
 - `generateKeyPair(compressed?: boolean): KeyPair` - Generate SM2 key pair
+  - `compressed`: Use compressed format (**default: false**)
 - `getPublicKeyFromPrivateKey(privateKey: string, compressed?: boolean): string` - Derive public key from private key
+  - `compressed`: Return compressed format (**default: false**)
 - `compressPublicKey(publicKey: string): string` - Compress public key (04->02/03)
 - `decompressPublicKey(publicKey: string): string` - Decompress public key (02/03->04)
+
+*Encryption/Decryption:*
 - `sm2Encrypt(publicKey: string, data: string | Uint8Array, mode?: SM2CipherModeType): string` - Encrypt data using SM2
+  - `mode`: Cipher mode (**default: 'C1C3C2'**)
 - `sm2Decrypt(privateKey: string, encryptedData: string, mode?: SM2CipherModeType): string` - Decrypt data using SM2
+  - `mode`: Cipher mode (**default: 'C1C3C2'**)
+
+*Signing/Verification:*
 - `sign(privateKey: string, data: string | Uint8Array, options?: SignOptions): string` - Sign data using SM2
 - `verify(publicKey: string, data: string | Uint8Array, signature: string, options?: VerifyOptions): boolean` - Verify signature using SM2
 
-**SignOptions/VerifyOptions:**
-- `der?: boolean` - Use DER encoding for signature
-- `userId?: string` - User ID for signature (default: '1234567812345678')
+*Key Exchange:*
+- `keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult` - Execute SM2 key exchange protocol
+
+**SignOptions:**
+- `der?: boolean` - Use DER encoding format (**default: false**, Raw format)
+- `userId?: string` - User ID for signing (**default: '1234567812345678'**)
+- `skipZComputation?: boolean` - Skip Z value computation (**default: false**)
+- `curveParams?: SM2CurveParams` - Custom elliptic curve parameters (**default: GM/T 0003-2012 standard parameters**)
+
+**VerifyOptions:**
+- `der?: boolean` - Signature in DER encoding format (**default: false**)
+- `userId?: string` - User ID for verification (**default: '1234567812345678'**, must match signing)
+- `skipZComputation?: boolean` - Skip Z value computation (**default: false**, must match signing)
 - `curveParams?: SM2CurveParams` - Custom elliptic curve parameters
+
+**SM2KeyExchangeParams:**
+- `privateKey: string` - Self private key (required)
+- `publicKey?: string` - Self public key (optional, derived from private key if not provided)
+- `userId?: string` - Self user ID (**default: '1234567812345678'**)
+- `tempPrivateKey?: string` - Self temporary private key (optional, auto-generated if not provided)
+- `peerPublicKey: string` - Peer public key (required)
+- `peerTempPublicKey: string` - Peer temporary public key (required)
+- `peerUserId?: string` - Peer user ID (**default: '1234567812345678'**)
+- `isInitiator: boolean` - Whether is initiator (required)
+- `keyLength?: number` - Derived key byte length (**default: 16**)
+
+**SM2KeyExchangeResult:**
+- `tempPublicKey: string` - Self temporary public key
+- `sharedKey: string` - Derived shared key
+- `s1?: string` - Self confirmation hash (optional, for mutual authentication)
+- `s2?: string` - Peer confirmation hash (optional, for mutual authentication)
 
 **SM2CurveParams:**
 - `p?: string` - Prime modulus p
@@ -364,10 +452,11 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 - `SM2.fromPrivateKey(privateKey, curveParams?)` - Create from private key
 - `SM2.fromPublicKey(publicKey, curveParams?)` - Create from public key
 - Instance methods:
-  - `.encrypt(data, mode?)` - Encrypt data
-  - `.decrypt(encryptedData, mode?)` - Decrypt data
+  - `.encrypt(data, mode?)` - Encrypt data (**mode default: 'C1C3C2'**)
+  - `.decrypt(encryptedData, mode?)` - Decrypt data (**mode default: 'C1C3C2'**)
   - `.sign(data, options?)` - Sign data
   - `.verify(data, signature, options?)` - Verify signature
+  - `.keyExchange(peerPublicKey, peerTempPublicKey, isInitiator, options?)` - Execute key exchange
   - `.getPublicKey()` / `.getPrivateKey()` - Get keys
   - `.setCurveParams(params)` / `.getCurveParams()` - Set/get curve parameters
 
