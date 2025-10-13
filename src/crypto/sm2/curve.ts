@@ -49,7 +49,7 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
 
 /**
  * 生成随机字节的跨平台函数
- * 优雅地处理 Node.js 和浏览器环境，提供回退机制
+ * 优雅地处理 Node.js 和浏览器环境，提供双重回退机制
  * 
  * 优先级（从高到低）:
  * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
