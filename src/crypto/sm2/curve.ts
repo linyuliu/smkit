@@ -49,7 +49,7 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
 
 /**
  * 生成随机字节的跨平台函数
- * 优雅地处理 Node.js 和浏览器环境，提供多层回退机制
+ * 优雅地处理 Node.js 和浏览器环境，提供回退机制
  * 
  * 优先级（从高到低）:
  * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
@@ -57,11 +57,7 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
  *    - Node.js 15+：globalThis.crypto.getRandomValues
  *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
  * 
- * 2. Node.js Crypto Module (crypto.randomBytes) - Node.js 原生加密模块
- *    - 适用于较旧的 Node.js 版本
- *    - 同样使用操作系统的 CSPRNG
- * 
- * 3. 时间戳 + Math.random() - 应急回退方案
+ * 2. 时间戳 + Math.random() - 应急回退方案
  *    - ⚠️ 警告：这不是密码学安全的！
  *    - 仅用于开发/测试环境
  *    - 不应在生产环境中使用
@@ -83,18 +79,7 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
     return globalThis.crypto.getRandomValues(new Uint8Array(bytesLength));
   }
   
-  // 第二优先级: Node.js Crypto Module
-  try {
-    // 动态导入 Node.js crypto 模块（如果可用）
-    const nodeCrypto = require('crypto');
-    if (nodeCrypto && nodeCrypto.randomBytes) {
-      return new Uint8Array(nodeCrypto.randomBytes(bytesLength));
-    }
-  } catch (e) {
-    // Node.js crypto 不可用，继续尝试下一个方案
-  }
-  
-  // 第三优先级: 使用时间戳 + Math.random() 作为回退方案
+  // 第二优先级: 使用时间戳 + Math.random() 作为回退方案
   // 警告：此方案的随机性较弱，仅用于开发/测试环境
   console.warn('Warning: Using Math.random() for random number generation. This is NOT cryptographically secure and should only be used for testing purposes.');
   
