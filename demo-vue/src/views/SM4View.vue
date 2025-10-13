@@ -354,21 +354,26 @@ const showError = (msg: string) => {
 
 /* 页面标题样式 Page header styles */
 .page-header {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 35px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
+  border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .page-header h1 {
-  font-size: 2em;
-  color: #333;
+  font-size: 2.2em;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 15px;
+  font-weight: 700;
 }
 
 .page-description {
-  color: #666;
+  color: #555;
   line-height: 1.8;
   font-size: 1.05em;
 }
@@ -413,18 +418,27 @@ const showError = (msg: string) => {
 /* 区块样式 Section styles */
 .section {
   background: white;
-  padding: 30px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 35px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.section:hover {
+  box-shadow: 0 8px 28px rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.2);
 }
 
 .section-title {
-  font-size: 1.5em;
+  font-size: 1.6em;
   color: #333;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 25px;
+  padding-bottom: 18px;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, #667eea, #764ba2) 1;
+  font-weight: 600;
 }
 
 .section-content {
@@ -447,20 +461,26 @@ const showError = (msg: string) => {
 /* 输入框样式 Input styles */
 .input {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 14px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
   font-size: 14px;
   font-family: 'Courier New', monospace;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   background: #fafafa;
+  color: #333;
+}
+
+.input:hover {
+  border-color: #d0d0d0;
 }
 
 .input:focus {
   outline: none;
   border-color: #667eea;
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
 }
 
 /* 带按钮的输入框 Input with button */
@@ -477,21 +497,28 @@ const showError = (msg: string) => {
 /* 文本域样式 Textarea styles */
 .textarea {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 14px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
   font-size: 14px;
   font-family: 'Courier New', monospace;
   resize: vertical;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   background: #fafafa;
+  color: #333;
+  line-height: 1.6;
+}
+
+.textarea:hover {
+  border-color: #d0d0d0;
 }
 
 .textarea:focus {
   outline: none;
   border-color: #667eea;
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
 }
 
 /* 单选按钮组样式 Radio group styles */
@@ -529,51 +556,78 @@ const showError = (msg: string) => {
 
 /* 提示文本样式 Hint text styles */
 .hint {
-  margin-top: 6px;
-  font-size: 0.85em;
+  margin-top: 8px;
+  font-size: 0.88em;
   color: #666;
-  line-height: 1.5;
+  line-height: 1.6;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #ffd93d;
 }
 
 /* 按钮样式 Button styles */
 .btn {
-  padding: 12px 28px;
+  padding: 14px 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .btn:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
 }
 
 /* 主按钮 Primary button */
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  position: relative;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.4);
 }
 
 /* 次按钮 Secondary button */
 .btn-secondary {
-  background: #f0f0f0;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   color: #333;
+  border: 2px solid #e0e0e0;
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%);
+  border-color: #667eea;
 }
 
 /* 小按钮 Small button */
