@@ -129,29 +129,27 @@ import { keyExchange } from 'smkit';
 const aliceKeyPair = generateKeyPair();
 const bobKeyPair = generateKeyPair();
 
-// Alice generates temporary key and sends to Bob
-const aliceTemp = keyExchange({
-  privateKey: aliceKeyPair.privateKey,
-  peerPublicKey: bobKeyPair.publicKey,
-  peerTempPublicKey: bobKeyPair.publicKey, // Placeholder, will be replaced
-  isInitiator: true,
-});
+// Step 1: Generate temporary key pairs
+const aliceTempKeyPair = generateKeyPair();
+const bobTempKeyPair = generateKeyPair();
 
-// Bob receives Alice's temp public key and performs key exchange
-const bobResult = keyExchange({
-  privateKey: bobKeyPair.privateKey,
-  peerPublicKey: aliceKeyPair.publicKey,
-  peerTempPublicKey: aliceTemp.tempPublicKey,
-  isInitiator: false,
+// Step 2: Alice as initiator performs key exchange
+const aliceResult = keyExchange({
+  privateKey: aliceKeyPair.privateKey,
+  tempPrivateKey: aliceTempKeyPair.privateKey,
+  peerPublicKey: bobKeyPair.publicKey,
+  peerTempPublicKey: bobTempKeyPair.publicKey,
+  isInitiator: true,
   keyLength: 16, // Derive 16 bytes (128 bits) key
 });
 
-// Alice receives Bob's temp public key and completes key exchange
-const aliceResult = keyExchange({
-  privateKey: aliceKeyPair.privateKey,
-  peerPublicKey: bobKeyPair.publicKey,
-  peerTempPublicKey: bobResult.tempPublicKey,
-  isInitiator: true,
+// Step 3: Bob as responder performs key exchange
+const bobResult = keyExchange({
+  privateKey: bobKeyPair.privateKey,
+  tempPrivateKey: bobTempKeyPair.privateKey,
+  peerPublicKey: aliceKeyPair.publicKey,
+  peerTempPublicKey: aliceTempKeyPair.publicKey,
+  isInitiator: false,
   keyLength: 16,
 });
 
@@ -226,27 +224,30 @@ const isValid = sm2.verify('Message to sign', signature);
 const alice = SM2.generateKeyPair();
 const bob = SM2.generateKeyPair();
 
-// Alice generates temporary key
-const aliceTemp = alice.keyExchange(
-  bob.getPublicKey(),
-  bob.getPublicKey(), // Placeholder
-  true
-);
+// Both parties generate temporary key pairs
+const aliceTemp = SM2.generateKeyPair();
+const bobTemp = SM2.generateKeyPair();
 
-// Bob uses Alice's temp public key to perform key exchange
-const bobResult = bob.keyExchange(
-  alice.getPublicKey(),
-  aliceTemp.tempPublicKey,
-  false, // Bob is responder
-  { keyLength: 16 }
-);
-
-// Alice uses Bob's temp public key to complete key exchange
+// Alice as initiator performs key exchange
 const aliceResult = alice.keyExchange(
   bob.getPublicKey(),
-  bobResult.tempPublicKey,
+  bobTemp.getPublicKey(),
   true, // Alice is initiator
-  { keyLength: 16 }
+  { 
+    tempPrivateKey: aliceTemp.getPrivateKey(),
+    keyLength: 16 
+  }
+);
+
+// Bob as responder performs key exchange
+const bobResult = bob.keyExchange(
+  alice.getPublicKey(),
+  aliceTemp.getPublicKey(),
+  false, // Bob is responder
+  { 
+    tempPrivateKey: bobTemp.getPrivateKey(),
+    keyLength: 16 
+  }
 );
 
 // Both parties get the same shared key
