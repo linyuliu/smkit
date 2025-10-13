@@ -337,8 +337,10 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 ### SM2
 
 **Functional API:**
-- `generateKeyPair(): KeyPair` - Generate SM2 key pair
-- `getPublicKeyFromPrivateKey(privateKey: string): string` - Derive public key from private key
+- `generateKeyPair(compressed?: boolean): KeyPair` - Generate SM2 key pair
+- `getPublicKeyFromPrivateKey(privateKey: string, compressed?: boolean): string` - Derive public key from private key
+- `compressPublicKey(publicKey: string): string` - Compress public key (04->02/03)
+- `decompressPublicKey(publicKey: string): string` - Decompress public key (02/03->04)
 - `sm2Encrypt(publicKey: string, data: string | Uint8Array, mode?: SM2CipherModeType): string` - Encrypt data using SM2
 - `sm2Decrypt(privateKey: string, encryptedData: string, mode?: SM2CipherModeType): string` - Decrypt data using SM2
 - `sign(privateKey: string, data: string | Uint8Array, options?: SignOptions): string` - Sign data using SM2
@@ -371,13 +373,24 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 
 ### Utils
 
+**Data Conversion:**
 - `hexToBytes(hex: string): Uint8Array` - Convert hex string to bytes
 - `bytesToHex(bytes: Uint8Array): string` - Convert bytes to lowercase hex string
 - `stringToBytes(str: string): Uint8Array` - Convert UTF-8 string to bytes
 - `bytesToString(bytes: Uint8Array): string` - Convert bytes to UTF-8 string
 - `normalizeInput(data: string | Uint8Array): Uint8Array` - Normalize input to Uint8Array
+
+**Bit Operations:**
 - `xor(a: Uint8Array, b: Uint8Array): Uint8Array` - XOR two byte arrays
 - `rotl(value: number, shift: number): number` - Left rotate a 32-bit value
+
+**ASN.1 Encoding Tools:**
+- `encodeSignature(r: string, s: string): Uint8Array` - Encode r, s as DER format signature
+- `decodeSignature(derSignature: Uint8Array): { r: string; s: string }` - Decode DER format signature
+- `rawToDer(rawSignature: string): string` - Convert raw signature (r||s) to DER format
+- `derToRaw(derSignature: string): string` - Convert DER format signature to raw format (r||s)
+- `asn1ToXml(data: Uint8Array): string` - Convert ASN.1 data to XML format (for debugging)
+- `signatureToXml(signature: string): string` - Convert signature to XML format (for debugging)
 
 ## Data Format Conventions
 
