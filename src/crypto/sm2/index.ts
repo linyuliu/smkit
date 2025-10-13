@@ -767,3 +767,283 @@ export function verify(
     return false;
   }
 }
+
+/**
+ * SM2 密钥交换协议参数（用于初始化或响应方）
+ * 
+ * 基于 GM/T 0003.3-2012 标准实现
+ */
+export interface SM2KeyExchangeParams {
+  /**
+   * 己方私钥（十六进制字符串）
+   */
+  privateKey: string;
+  
+  /**
+   * 己方公钥（十六进制字符串，可选，如果不提供会从私钥派生）
+   */
+  publicKey?: string;
+  
+  /**
+   * 己方用户 ID（默认：DEFAULT_USER_ID）
+   */
+  userId?: string;
+  
+  /**
+   * 己方临时私钥（十六进制字符串，可选，如果不提供会自动生成）
+   */
+  tempPrivateKey?: string;
+  
+  /**
+   * 对方公钥（十六进制字符串）
+   */
+  peerPublicKey: string;
+  
+  /**
+   * 对方临时公钥（十六进制字符串）
+   */
+  peerTempPublicKey: string;
+  
+  /**
+   * 对方用户 ID（默认：DEFAULT_USER_ID）
+   */
+  peerUserId?: string;
+  
+  /**
+   * 是否为发起方（true = 发起方，false = 响应方）
+   */
+  isInitiator: boolean;
+  
+  /**
+   * 派生密钥的字节长度（默认：16，即 128 位）
+   */
+  keyLength?: number;
+}
+
+/**
+ * SM2 密钥交换结果
+ */
+export interface SM2KeyExchangeResult {
+  /**
+   * 己方临时公钥（十六进制字符串）
+   */
+  tempPublicKey: string;
+  
+  /**
+   * 派生的共享密钥（十六进制字符串）
+   */
+  sharedKey: string;
+  
+  /**
+   * 可选的己方确认哈希值（用于对方验证，十六进制字符串）
+   */
+  s1?: string;
+  
+  /**
+   * 可选的对方确认哈希值（用于己方验证，十六进制字符串）
+   */
+  s2?: string;
+}
+
+/**
+ * SM2 密钥交换协议（基于 GM/T 0003.3-2012）
+ * 
+ * 这是一个安全的密钥协商协议，允许两方在不安全的通道上协商出共享密钥。
+ * 
+ * 协议流程：
+ * 1. 发起方 A 生成临时密钥对 (rA, RA)，发送 RA 给响应方 B
+ * 2. 响应方 B 生成临时密钥对 (rB, RB)，发送 RB 给发起方 A
+ * 3. 双方各自计算共享密钥 K
+ * 4. 可选：双方交换确认哈希值进行相互认证
+ * 
+ * 安全特性：
+ * - 前向保密：即使长期私钥泄露，历史会话密钥仍然安全
+ * - 相互认证：可选的确认哈希值提供身份验证
+ * - 抗中间人攻击：需要长期密钥对的参与
+ * 
+ * @param params - 密钥交换参数
+ * @returns 密钥交换结果，包含临时公钥、共享密钥和可选的确认哈希值
+ * 
+ * @example
+ * ```typescript
+ * // 发起方 A
+ * const keyPairA = generateKeyPair();
+ * const keyPairB = generateKeyPair();
+ * 
+ * // A 执行第一步，生成临时密钥
+ * const resultA1 = keyExchange({
+ *   privateKey: keyPairA.privateKey,
+ *   publicKey: keyPairA.publicKey,
+ *   peerPublicKey: keyPairB.publicKey,
+ *   peerTempPublicKey: '', // 暂时不知道 B 的临时公钥
+ *   isInitiator: true
+ * });
+ * 
+ * // B 收到 A 的临时公钥后，执行密钥交换
+ * const resultB = keyExchange({
+ *   privateKey: keyPairB.privateKey,
+ *   publicKey: keyPairB.publicKey,
+ *   peerPublicKey: keyPairA.publicKey,
+ *   peerTempPublicKey: resultA1.tempPublicKey,
+ *   isInitiator: false
+ * });
+ * 
+ * // A 收到 B 的临时公钥后，完成密钥交换
+ * const resultA2 = keyExchange({
+ *   privateKey: keyPairA.privateKey,
+ *   publicKey: keyPairA.publicKey,
+ *   peerPublicKey: keyPairB.publicKey,
+ *   peerTempPublicKey: resultB.tempPublicKey,
+ *   isInitiator: true
+ * });
+ * 
+ * // 此时 resultA2.sharedKey === resultB.sharedKey
+ * ```
+ */
+export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult {
+  // 规范化输入参数
+  const selfPrivateKey = normalizePrivateKeyInput(params.privateKey);
+  const selfPublicKey = params.publicKey 
+    ? normalizePublicKeyInput(params.publicKey)
+    : getPublicKeyFromPrivateKey(selfPrivateKey);
+  const selfUserId = params.userId || DEFAULT_USER_ID;
+  
+  const peerPublicKey = normalizePublicKeyInput(params.peerPublicKey);
+  const peerTempPublicKey = normalizePublicKeyInput(params.peerTempPublicKey);
+  const peerUserId = params.peerUserId || DEFAULT_USER_ID;
+  
+  const keyLength = params.keyLength || 16;
+  const isInitiator = params.isInitiator;
+  
+  // 生成或使用提供的临时密钥对
+  let tempPrivateKey: string;
+  let tempPublicKey: string;
+  
+  if (params.tempPrivateKey) {
+    tempPrivateKey = normalizePrivateKeyInput(params.tempPrivateKey);
+    tempPublicKey = getPublicKeyFromPrivateKey(tempPrivateKey);
+  } else {
+    const tempKeyPair = generateKeyPair();
+    tempPrivateKey = tempKeyPair.privateKey;
+    tempPublicKey = tempKeyPair.publicKey;
+  }
+  
+  // 解析公钥点
+  const peerPublicKeyPoint = sm2.Point.fromHex(peerPublicKey);
+  const tempPublicKeyPoint = sm2.Point.fromHex(tempPublicKey);
+  const peerTempPublicKeyPoint = sm2.Point.fromHex(peerTempPublicKey);
+  
+  // 计算 x̄ = 2^w + (x mod 2^w)，其中 w = ⌈(log2(n) + 1) / 2⌉ - 1
+  // 对于 SM2，w = 127
+  const w = 127;
+  const powerOf2W = 1n << BigInt(w);
+  
+  function calculateXBar(point: any): bigint {
+    const pointBytes = point.toBytes(false);
+    const x = pointBytes.slice(1, 33); // x 坐标（32 字节）
+    const xBigInt = BigInt('0x' + bytesToHex(x));
+    return powerOf2W + (xBigInt % powerOf2W);
+  }
+  
+  // 计算己方和对方的 x̄
+  const selfXBar = calculateXBar(tempPublicKeyPoint);
+  const peerXBar = calculateXBar(peerTempPublicKeyPoint);
+  
+  // 计算 tA = (dA + x̄A · rA) mod n
+  const n = BigInt('0x' + SM2_CURVE_PARAMS.n);
+  const selfPrivateKeyBigInt = BigInt('0x' + selfPrivateKey);
+  const tempPrivateKeyBigInt = BigInt('0x' + tempPrivateKey);
+  const t = (selfPrivateKeyBigInt + selfXBar * tempPrivateKeyBigInt) % n;
+  
+  // 计算 V = [h · tA] (PB + [x̄B]RB)，其中 h = 1
+  // V = [tA] (PB + [x̄B]RB)
+  const peerCombinedPoint = peerPublicKeyPoint.add(peerTempPublicKeyPoint.multiply(peerXBar));
+  const vPoint = peerCombinedPoint.multiply(t);
+  
+  // 检查 V 是否为无穷远点
+  if (vPoint.equals(sm2.Point.ZERO)) {
+    throw new Error('Key exchange failed: V is point at infinity');
+  }
+  
+  const vBytes = vPoint.toBytes(false);
+  const xv = vBytes.slice(1, 33);
+  const yv = vBytes.slice(33, 65);
+  
+  // 计算 Z 值
+  const selfZ = computeZ(selfUserId, selfPublicKey);
+  const peerZ = computeZ(peerUserId, peerPublicKey);
+  
+  // 构造 KDF 输入：xv || yv || ZA || ZB
+  let kdfInput: Uint8Array;
+  if (isInitiator) {
+    // 发起方：KDF(xv || yv || ZA || ZB)
+    kdfInput = new Uint8Array(xv.length + yv.length + selfZ.length + peerZ.length);
+    kdfInput.set(xv, 0);
+    kdfInput.set(yv, xv.length);
+    kdfInput.set(selfZ, xv.length + yv.length);
+    kdfInput.set(peerZ, xv.length + yv.length + selfZ.length);
+  } else {
+    // 响应方：KDF(xv || yv || ZB || ZA)
+    kdfInput = new Uint8Array(xv.length + yv.length + peerZ.length + selfZ.length);
+    kdfInput.set(xv, 0);
+    kdfInput.set(yv, xv.length);
+    kdfInput.set(peerZ, xv.length + yv.length);
+    kdfInput.set(selfZ, xv.length + yv.length + peerZ.length);
+  }
+  
+  // 派生共享密钥
+  const sharedKeyBytes = kdf(kdfInput, keyLength);
+  const sharedKey = bytesToHex(sharedKeyBytes);
+  
+  // 计算可选的确认哈希值（用于相互认证）
+  // 根据 GM/T 0003.3-2012:
+  // 对于发起方 A: S1 = Hash(0x02 || yv || Hash(xv || ZA || ZB || xRA || yRA || xRB || yRB))
+  // 对于响应方 B: S1 = Hash(0x02 || yv || Hash(xv || ZB || ZA || xRB || yRB || xRA || yRA))
+  
+  const tempPublicKeyBytes = tempPublicKeyPoint.toBytes(false);
+  const peerTempPublicKeyBytes = peerTempPublicKeyPoint.toBytes(false);
+  
+  const xSelf = tempPublicKeyBytes.slice(1, 33);
+  const ySelf = tempPublicKeyBytes.slice(33, 65);
+  const xPeer = peerTempPublicKeyBytes.slice(1, 33);
+  const yPeer = peerTempPublicKeyBytes.slice(33, 65);
+  
+  // 构造内部哈希输入
+  // 发起方 A: xv || ZA || ZB || xRA || yRA || xRB || yRB
+  // 响应方 B: xv || ZB || ZA || xRB || yRB || xRA || yRA
+  const innerHashInput = new Uint8Array(
+    xv.length + selfZ.length + peerZ.length + xSelf.length + ySelf.length + xPeer.length + yPeer.length
+  );
+  let offset = 0;
+  innerHashInput.set(xv, offset); offset += xv.length;
+  innerHashInput.set(selfZ, offset); offset += selfZ.length;
+  innerHashInput.set(peerZ, offset); offset += peerZ.length;
+  innerHashInput.set(xSelf, offset); offset += xSelf.length;
+  innerHashInput.set(ySelf, offset); offset += ySelf.length;
+  innerHashInput.set(xPeer, offset); offset += xPeer.length;
+  innerHashInput.set(yPeer, offset);
+  
+  const innerHash = sm3Digest(innerHashInput);
+  const innerHashBytes = hexToBytes(innerHash);
+  
+  // 计算 S1（发起方发送给响应方，响应方用来验证发起方）
+  const s1Input = new Uint8Array(1 + yv.length + innerHashBytes.length);
+  s1Input[0] = 0x02;
+  s1Input.set(yv, 1);
+  s1Input.set(innerHashBytes, 1 + yv.length);
+  const s1 = sm3Digest(s1Input);
+  
+  // 计算 S2（响应方发送给发起方，发起方用来验证响应方）
+  const s2Input = new Uint8Array(1 + yv.length + innerHashBytes.length);
+  s2Input[0] = 0x03;
+  s2Input.set(yv, 1);
+  s2Input.set(innerHashBytes, 1 + yv.length);
+  const s2 = sm3Digest(s2Input);
+  
+  return {
+    tempPublicKey,
+    sharedKey,
+    s1,
+    s2,
+  };
+}
