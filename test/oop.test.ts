@@ -74,6 +74,70 @@ describe('Object-Oriented API', () => {
       const encrypted2 = sm2.encrypt(plaintext, SM2CipherMode.C1C2C3);
       expect(encrypted2).toBeTruthy();
     });
+
+    it('should perform key exchange', () => {
+      const sm2A = SM2.generateKeyPair();
+      const sm2B = SM2.generateKeyPair();
+      
+      // Generate temporary key pairs
+      const tempA = SM2.generateKeyPair();
+      const tempB = SM2.generateKeyPair();
+      
+      // A initiates key exchange
+      const resultA = sm2A.keyExchange(
+        sm2B.getPublicKey(),
+        tempB.getPublicKey(),
+        true,
+        { tempPrivateKey: tempA.getPrivateKey() }
+      );
+      
+      // B responds to key exchange
+      const resultB = sm2B.keyExchange(
+        sm2A.getPublicKey(),
+        tempA.getPublicKey(),
+        false,
+        { tempPrivateKey: tempB.getPrivateKey() }
+      );
+      
+      // Both should derive the same shared key
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
+      expect(resultA.sharedKey).toBeTruthy();
+      expect(resultA.sharedKey).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('should perform key exchange with custom options', () => {
+      const sm2A = SM2.generateKeyPair();
+      const sm2B = SM2.generateKeyPair();
+      const tempA = SM2.generateKeyPair();
+      const tempB = SM2.generateKeyPair();
+      
+      const resultA = sm2A.keyExchange(
+        sm2B.getPublicKey(),
+        tempB.getPublicKey(),
+        true,
+        {
+          tempPrivateKey: tempA.getPrivateKey(),
+          userId: 'alice',
+          peerUserId: 'bob',
+          keyLength: 32,
+        }
+      );
+      
+      const resultB = sm2B.keyExchange(
+        sm2A.getPublicKey(),
+        tempA.getPublicKey(),
+        false,
+        {
+          tempPrivateKey: tempB.getPrivateKey(),
+          userId: 'bob',
+          peerUserId: 'alice',
+          keyLength: 32,
+        }
+      );
+      
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
+      expect(resultA.sharedKey.length).toBe(64); // 32 bytes = 64 hex chars
+    });
   });
 
   describe('SM3', () => {

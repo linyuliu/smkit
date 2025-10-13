@@ -13,10 +13,13 @@ export {
   decrypt as sm2Decrypt,
   sign,
   verify,
+  keyExchange,
   type KeyPair,
   type SignOptions,
   type VerifyOptions,
   type SM2CurveParams,
+  type SM2KeyExchangeParams,
+  type SM2KeyExchangeResult,
 } from './crypto/sm2';
 
 export { SM2 } from './crypto/sm2/class';

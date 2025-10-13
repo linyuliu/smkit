@@ -8,6 +8,7 @@ import {
   decrypt,
   sign,
   verify,
+  keyExchange,
 } from '../src/crypto/sm2';
 import { SM2CipherMode, DEFAULT_USER_ID } from '../src/types/constants';
 
@@ -218,6 +219,227 @@ describe('SM2 国密算法测试', () => {
       const signature = sign(keyPair.privateKey, data);
       const isValid = verify(compressed, data, signature);
       expect(isValid).toBe(true);
+    });
+  });
+
+  describe('SM2 密钥交换协议', () => {
+    it('应该能够进行基本的密钥交换', () => {
+      // 生成两个密钥对
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      
+      // A 生成临时密钥对
+      const tempKeyPairA = generateKeyPair();
+      
+      // B 生成临时密钥对
+      const tempKeyPairB = generateKeyPair();
+      
+      // A 作为发起方执行密钥交换
+      const resultA = keyExchange({
+        privateKey: keyPairA.privateKey,
+        publicKey: keyPairA.publicKey,
+        tempPrivateKey: tempKeyPairA.privateKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        isInitiator: true,
+      });
+      
+      // B 作为响应方执行密钥交换
+      const resultB = keyExchange({
+        privateKey: keyPairB.privateKey,
+        publicKey: keyPairB.publicKey,
+        tempPrivateKey: tempKeyPairB.privateKey,
+        peerPublicKey: keyPairA.publicKey,
+        peerTempPublicKey: tempKeyPairA.publicKey,
+        isInitiator: false,
+      });
+      
+      // 验证双方得到相同的共享密钥
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
+      expect(resultA.sharedKey).toBeTruthy();
+      expect(resultA.sharedKey).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('应该能够自动生成临时密钥对', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      // A 不提供临时密钥，让函数自动生成
+      const resultA1 = keyExchange({
+        privateKey: keyPairA.privateKey,
+        publicKey: keyPairA.publicKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        isInitiator: true,
+      });
+      
+      expect(resultA1.tempPublicKey).toBeTruthy();
+      expect(resultA1.tempPublicKey).toMatch(/^[0-9a-f]+$/);
+      expect(resultA1.tempPublicKey.length).toBe(130); // 非压缩格式
+    });
+
+    it('应该支持自定义密钥长度', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairA = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      // 测试 32 字节密钥
+      const resultA = keyExchange({
+        privateKey: keyPairA.privateKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        tempPrivateKey: tempKeyPairA.privateKey,
+        isInitiator: true,
+        keyLength: 32,
+      });
+      
+      const resultB = keyExchange({
+        privateKey: keyPairB.privateKey,
+        peerPublicKey: keyPairA.publicKey,
+        peerTempPublicKey: tempKeyPairA.publicKey,
+        tempPrivateKey: tempKeyPairB.privateKey,
+        isInitiator: false,
+        keyLength: 32,
+      });
+      
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
+      expect(resultA.sharedKey.length).toBe(64); // 32 字节 = 64 hex chars
+    });
+
+    it('应该生成正确的确认哈希值', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairA = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      const resultA = keyExchange({
+        privateKey: keyPairA.privateKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        tempPrivateKey: tempKeyPairA.privateKey,
+        isInitiator: true,
+      });
+      
+      const resultB = keyExchange({
+        privateKey: keyPairB.privateKey,
+        peerPublicKey: keyPairA.publicKey,
+        peerTempPublicKey: tempKeyPairA.publicKey,
+        tempPrivateKey: tempKeyPairB.privateKey,
+        isInitiator: false,
+      });
+      
+      // 验证确认哈希值存在
+      expect(resultA.s1).toBeTruthy();
+      expect(resultA.s2).toBeTruthy();
+      expect(resultB.s1).toBeTruthy();
+      expect(resultB.s2).toBeTruthy();
+      
+      // 验证哈希值是有效的十六进制字符串
+      expect(resultA.s1).toMatch(/^[0-9a-f]+$/);
+      expect(resultA.s2).toMatch(/^[0-9a-f]+$/);
+      expect(resultB.s1).toMatch(/^[0-9a-f]+$/);
+      expect(resultB.s2).toMatch(/^[0-9a-f]+$/);
+      
+      // 验证哈希值长度为 64 字符（32 字节 SM3 哈希）
+      expect(resultA.s1?.length).toBe(64);
+      expect(resultA.s2?.length).toBe(64);
+      expect(resultB.s1?.length).toBe(64);
+      expect(resultB.s2?.length).toBe(64);
+    });
+
+    it('应该支持自定义用户 ID', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairA = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      const userIdA = 'alice@example.com';
+      const userIdB = 'bob@example.com';
+      
+      const resultA = keyExchange({
+        privateKey: keyPairA.privateKey,
+        userId: userIdA,
+        peerPublicKey: keyPairB.publicKey,
+        peerUserId: userIdB,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        tempPrivateKey: tempKeyPairA.privateKey,
+        isInitiator: true,
+      });
+      
+      const resultB = keyExchange({
+        privateKey: keyPairB.privateKey,
+        userId: userIdB,
+        peerPublicKey: keyPairA.publicKey,
+        peerUserId: userIdA,
+        peerTempPublicKey: tempKeyPairA.publicKey,
+        tempPrivateKey: tempKeyPairB.privateKey,
+        isInitiator: false,
+      });
+      
+      // 即使使用自定义用户 ID，双方也应该得到相同的共享密钥
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
+    });
+
+    it('应该在不同参数下生成不同的共享密钥', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairA1 = generateKeyPair();
+      const tempKeyPairA2 = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      // 使用不同的临时密钥应该产生不同的共享密钥
+      const result1 = keyExchange({
+        privateKey: keyPairA.privateKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        tempPrivateKey: tempKeyPairA1.privateKey,
+        isInitiator: true,
+      });
+      
+      const result2 = keyExchange({
+        privateKey: keyPairA.privateKey,
+        peerPublicKey: keyPairB.publicKey,
+        peerTempPublicKey: tempKeyPairB.publicKey,
+        tempPrivateKey: tempKeyPairA2.privateKey,
+        isInitiator: true,
+      });
+      
+      expect(result1.sharedKey).not.toBe(result2.sharedKey);
+    });
+
+    it('应该能够使用压缩公钥进行密钥交换', () => {
+      const keyPairA = generateKeyPair();
+      const keyPairB = generateKeyPair();
+      const tempKeyPairA = generateKeyPair();
+      const tempKeyPairB = generateKeyPair();
+      
+      // 压缩公钥
+      const compressedA = compressPublicKey(keyPairA.publicKey);
+      const compressedB = compressPublicKey(keyPairB.publicKey);
+      const compressedTempA = compressPublicKey(tempKeyPairA.publicKey);
+      const compressedTempB = compressPublicKey(tempKeyPairB.publicKey);
+      
+      const resultA = keyExchange({
+        privateKey: keyPairA.privateKey,
+        publicKey: compressedA,
+        peerPublicKey: compressedB,
+        peerTempPublicKey: compressedTempB,
+        tempPrivateKey: tempKeyPairA.privateKey,
+        isInitiator: true,
+      });
+      
+      const resultB = keyExchange({
+        privateKey: keyPairB.privateKey,
+        publicKey: compressedB,
+        peerPublicKey: compressedA,
+        peerTempPublicKey: compressedTempA,
+        tempPrivateKey: tempKeyPairB.privateKey,
+        isInitiator: false,
+      });
+      
+      expect(resultA.sharedKey).toBe(resultB.sharedKey);
     });
   });
 });

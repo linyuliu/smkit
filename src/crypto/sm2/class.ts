@@ -9,10 +9,12 @@ import {
   decrypt as decryptFunc,
   sign as signFunc,
   verify as verifyFunc,
+  keyExchange as keyExchangeFunc,
   type KeyPair,
   type SignOptions as FuncSignOptions,
   type VerifyOptions as FuncVerifyOptions,
   type SM2CurveParams,
+  type SM2KeyExchangeResult,
 } from './index';
 import { SM2CipherMode, type SM2CipherModeType } from '../../types/constants';
 
@@ -144,5 +146,58 @@ export class SM2 {
    */
   getCurveParams(): SM2CurveParams | undefined {
     return this.curveParams;
+  }
+
+  /**
+   * 执行 SM2 密钥交换协议
+   * 
+   * @param peerPublicKey - 对方公钥（十六进制字符串）
+   * @param peerTempPublicKey - 对方临时公钥（十六进制字符串）
+   * @param isInitiator - 是否为发起方
+   * @param options - 可选参数
+   * @returns 密钥交换结果
+   * 
+   * @example
+   * ```typescript
+   * const sm2A = SM2.generateKeyPair();
+   * const sm2B = SM2.generateKeyPair();
+   * 
+   * // A 生成临时密钥
+   * const resultA1 = sm2A.keyExchange(sm2B.getPublicKey(), '', true);
+   * 
+   * // B 进行密钥交换
+   * const resultB = sm2B.keyExchange(sm2A.getPublicKey(), resultA1.tempPublicKey, false);
+   * 
+   * // A 完成密钥交换
+   * const resultA2 = sm2A.keyExchange(sm2B.getPublicKey(), resultB.tempPublicKey, true);
+   * 
+   * // resultA2.sharedKey === resultB.sharedKey
+   * ```
+   */
+  keyExchange(
+    peerPublicKey: string,
+    peerTempPublicKey: string,
+    isInitiator: boolean,
+    options?: {
+      userId?: string;
+      peerUserId?: string;
+      tempPrivateKey?: string;
+      keyLength?: number;
+    }
+  ): SM2KeyExchangeResult {
+    const privateKey = this.getPrivateKey();
+    const publicKey = this.getPublicKey();
+    
+    return keyExchangeFunc({
+      privateKey,
+      publicKey,
+      peerPublicKey,
+      peerTempPublicKey,
+      isInitiator,
+      userId: options?.userId,
+      peerUserId: options?.peerUserId,
+      tempPrivateKey: options?.tempPrivateKey,
+      keyLength: options?.keyLength,
+    });
   }
 }
