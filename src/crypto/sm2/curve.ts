@@ -88,9 +88,10 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
   // 尝试动态导入 Node.js 的 crypto 模块
   try {
     // 使用动态 require 来避免在浏览器环境中出错
-    // @ts-ignore - dynamic require for Node.js compatibility
-    const nodeCrypto = typeof require !== 'undefined' ? require('crypto') : null;
-    if (nodeCrypto && nodeCrypto.randomBytes) {
+    // 使用类型断言避免 TypeScript 错误，同时保持运行时兼容性
+    const requireFn = typeof require !== 'undefined' ? require : null;
+    const nodeCrypto = requireFn ? requireFn('crypto') : null;
+    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') {
       const buffer = nodeCrypto.randomBytes(bytesLength);
       return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     }
