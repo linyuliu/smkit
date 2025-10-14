@@ -85,6 +85,36 @@ describe('SM2 国密算法测试', () => {
       expect(encrypted).toMatch(/^[0-9a-zA-Z]+$/);
     });
 
+    it('应该能够自动检测非压缩点格式（0x04 开头）', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = 'Test auto-detection';
+      
+      // 加密（默认使用非压缩格式）
+      const encrypted = encrypt(keyPair.publicKey, plaintext);
+      
+      // 验证密文以 04 开头（非压缩格式）
+      expect(encrypted.startsWith('04')).toBe(true);
+      
+      // 解密时不指定 mode，应该自动检测
+      const decrypted = decrypt(keyPair.privateKey, encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该能够自动检测 C1C3C2 和 C1C2C3 模式', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = 'Test mode auto-detection';
+      
+      // 测试 C1C3C2 模式
+      const encryptedC1C3C2 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
+      const decryptedC1C3C2 = decrypt(keyPair.privateKey, encryptedC1C3C2); // 不指定 mode
+      expect(decryptedC1C3C2).toBe(plaintext);
+      
+      // 测试 C1C2C3 模式
+      const encryptedC1C2C3 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
+      const decryptedC1C2C3 = decrypt(keyPair.privateKey, encryptedC1C2C3); // 不指定 mode
+      expect(decryptedC1C2C3).toBe(plaintext);
+    });
+
     it('应该能够正确解密 - 短文本', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello, SM2!';
