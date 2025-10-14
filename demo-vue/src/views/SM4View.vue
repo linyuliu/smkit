@@ -31,9 +31,15 @@ const plaintext = ref('Hello, SM4!')
 // 密文 Ciphertext
 const ciphertext = ref('')
 // 工作模式 Cipher mode
-const cipherMode = ref<'ECB' | 'CBC'>('ECB')
-// 初始化向量（CBC模式使用）Initialization Vector (used in CBC mode)
+const cipherMode = ref<'ECB' | 'CBC' | 'CTR' | 'CFB' | 'OFB' | 'GCM'>('ECB')
+// 初始化向量（CBC/CTR/CFB/OFB模式使用）Initialization Vector (used in CBC/CTR/CFB/OFB mode)
 const iv = ref('0123456789abcdeffedcba9876543210')
+// GCM模式的IV（12字节）GCM mode IV (12 bytes)
+const gcmIV = ref('000000000000000000000000')
+// GCM模式的附加认证数据 GCM mode Additional Authenticated Data
+const aad = ref('')
+// GCM模式的认证标签 GCM mode authentication tag
+const authTag = ref('')
 
 // 生成随机IV Generate random IV
 const generateRandomIV = () => {
@@ -46,8 +52,23 @@ const generateRandomIV = () => {
   showSuccess('随机IV生成成功！')
 }
 
+// 生成GCM模式随机IV Generate random IV for GCM mode
+const generateRandomGCMIV = () => {
+  // 生成96位随机IV Generate 96-bit random IV
+  const array = new Uint8Array(12)
+  crypto.getRandomValues(array)
+  gcmIV.value = Array.from(array)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  showSuccess('随机GCM IV生成成功！')
+}
+
 // 是否显示IV输入 Whether to show IV input
-const showIVInput = computed(() => cipherMode.value === 'CBC')
+const showIVInput = computed(() => ['CBC', 'CTR', 'CFB', 'OFB'].includes(cipherMode.value))
+// 是否显示GCM相关输入 Whether to show GCM-related inputs
+const showGCMInput = computed(() => cipherMode.value === 'GCM')
+// 是否为流密码模式 Whether it's a stream cipher mode
+const isStreamMode = computed(() => ['CTR', 'CFB', 'OFB', 'GCM'].includes(cipherMode.value))
 
 // 加密操作 Encrypt operation
 const encryptText = () => {
@@ -76,18 +97,42 @@ const encryptText = () => {
   
   try {
     // 执行SM4加密 Perform SM4 encryption
-    const mode = cipherMode.value === 'ECB' ? CipherMode.ECB : CipherMode.CBC
-    const encrypted = sm4Encrypt(
-      secretKey.value,
-      plaintext.value,
-      {
-        mode,
-        ...(mode === CipherMode.CBC && { iv: iv.value })
+    const modeMap: Record<typeof cipherMode.value, typeof CipherMode[keyof typeof CipherMode]> = {
+      'ECB': CipherMode.ECB,
+      'CBC': CipherMode.CBC,
+      'CTR': CipherMode.CTR,
+      'CFB': CipherMode.CFB,
+      'OFB': CipherMode.OFB,
+      'GCM': CipherMode.GCM
+    }
+    const mode = modeMap[cipherMode.value]
+    
+    const options: any = { mode }
+    
+    // 添加IV（非ECB模式）Add IV (non-ECB modes)
+    if (mode === CipherMode.GCM) {
+      options.iv = gcmIV.value
+      if (aad.value) {
+        options.aad = aad.value
       }
-    )
-    // 确保密文为字符串类型 Ensure ciphertext is string type
-    ciphertext.value = typeof encrypted === 'string' ? encrypted : encrypted.ciphertext
-    showSuccess('加密成功！')
+    } else if (mode !== CipherMode.ECB) {
+      options.iv = iv.value
+    }
+    
+    const encrypted = sm4Encrypt(secretKey.value, plaintext.value, options)
+    
+    // 处理加密结果 Handle encryption result
+    if (typeof encrypted === 'object' && 'ciphertext' in encrypted) {
+      // GCM模式返回对象 GCM mode returns object
+      ciphertext.value = encrypted.ciphertext
+      authTag.value = encrypted.tag
+      showSuccess('加密成功！认证标签已生成。')
+    } else {
+      // 其他模式返回字符串 Other modes return string
+      ciphertext.value = encrypted
+      authTag.value = ''
+      showSuccess('加密成功！')
+    }
   } catch (error) {
     showError('加密失败：' + (error as Error).message)
   }
@@ -110,25 +155,52 @@ const decryptText = () => {
     return
   }
   
-  // CBC模式需要IV CBC mode requires IV
-  if (cipherMode.value === 'CBC') {
+  // CBC/CTR/CFB/OFB模式需要IV CBC/CTR/CFB/OFB mode requires IV
+  if (['CBC', 'CTR', 'CFB', 'OFB'].includes(cipherMode.value)) {
     if (!iv.value || iv.value.length !== 32) {
-      showError('CBC模式需要32个十六进制字符（128位）的IV！')
+      showError(`${cipherMode.value}模式需要32个十六进制字符（128位）的IV！`)
+      return
+    }
+  }
+  
+  // GCM模式需要12字节IV和认证标签 GCM mode requires 12-byte IV and auth tag
+  if (cipherMode.value === 'GCM') {
+    if (!gcmIV.value || gcmIV.value.length !== 24) {
+      showError('GCM模式需要24个十六进制字符（96位）的IV！')
+      return
+    }
+    if (!authTag.value) {
+      showError('GCM模式需要认证标签！请先执行加密操作。')
       return
     }
   }
   
   try {
     // 执行SM4解密 Perform SM4 decryption
-    const mode = cipherMode.value === 'ECB' ? CipherMode.ECB : CipherMode.CBC
-    const decrypted = sm4Decrypt(
-      secretKey.value,
-      ciphertext.value,
-      {
-        mode,
-        ...(mode === CipherMode.CBC && { iv: iv.value })
+    const modeMap: Record<typeof cipherMode.value, typeof CipherMode[keyof typeof CipherMode]> = {
+      'ECB': CipherMode.ECB,
+      'CBC': CipherMode.CBC,
+      'CTR': CipherMode.CTR,
+      'CFB': CipherMode.CFB,
+      'OFB': CipherMode.OFB,
+      'GCM': CipherMode.GCM
+    }
+    const mode = modeMap[cipherMode.value]
+    
+    const options: any = { mode }
+    
+    // 添加IV和其他参数 Add IV and other parameters
+    if (mode === CipherMode.GCM) {
+      options.iv = gcmIV.value
+      options.tag = authTag.value
+      if (aad.value) {
+        options.aad = aad.value
       }
-    )
+    } else if (mode !== CipherMode.ECB) {
+      options.iv = iv.value
+    }
+    
+    const decrypted = sm4Decrypt(secretKey.value, ciphertext.value, options)
     plaintext.value = decrypted
     showSuccess('解密成功！')
   } catch (error) {
@@ -219,7 +291,7 @@ const showError = (msg: string) => {
                 value="ECB" 
                 class="radio-input"
               >
-              <span class="radio-text">ECB（电子密码本模式）</span>
+              <span class="radio-text">ECB（电子密码本）</span>
             </label>
             <label class="radio-label">
               <input 
@@ -228,13 +300,49 @@ const showError = (msg: string) => {
                 value="CBC" 
                 class="radio-input"
               >
-              <span class="radio-text">CBC（密码分组链接模式）</span>
+              <span class="radio-text">CBC（分组链接）</span>
+            </label>
+            <label class="radio-label">
+              <input 
+                v-model="cipherMode" 
+                type="radio" 
+                value="CTR" 
+                class="radio-input"
+              >
+              <span class="radio-text">CTR（计数器模式）</span>
+            </label>
+            <label class="radio-label">
+              <input 
+                v-model="cipherMode" 
+                type="radio" 
+                value="CFB" 
+                class="radio-input"
+              >
+              <span class="radio-text">CFB（密文反馈）</span>
+            </label>
+            <label class="radio-label">
+              <input 
+                v-model="cipherMode" 
+                type="radio" 
+                value="OFB" 
+                class="radio-input"
+              >
+              <span class="radio-text">OFB（输出反馈）</span>
+            </label>
+            <label class="radio-label">
+              <input 
+                v-model="cipherMode" 
+                type="radio" 
+                value="GCM" 
+                class="radio-input"
+              >
+              <span class="radio-text">GCM（认证加密）</span>
             </label>
           </div>
-          <p class="hint">💡 ECB模式简单但安全性较低，CBC模式更安全，需要初始化向量（IV）</p>
+          <p class="hint">💡 ECB模式不推荐用于生产环境。推荐使用CBC、CTR或GCM模式。GCM模式提供认证加密功能。</p>
         </div>
         
-        <!-- IV输入（CBC模式） IV input (CBC mode) -->
+        <!-- IV输入（CBC/CTR/CFB/OFB模式） IV input (CBC/CTR/CFB/OFB mode) -->
         <div v-if="showIVInput" class="form-group">
           <label for="iv">初始化向量 (IV)：</label>
           <div class="input-with-button">
@@ -248,7 +356,49 @@ const showError = (msg: string) => {
             >
             <button class="btn btn-small" @click="generateRandomIV">生成随机IV</button>
           </div>
-          <p class="hint">💡 IV用于CBC模式，增强密文的随机性，每次加密应使用不同的IV</p>
+          <p class="hint">💡 IV用于增强密文的随机性，每次加密应使用不同的IV</p>
+        </div>
+        
+        <!-- GCM模式输入 GCM mode input -->
+        <div v-if="showGCMInput" class="form-group">
+          <label for="gcm-iv">初始化向量 (IV - GCM)：</label>
+          <div class="input-with-button">
+            <input 
+              id="gcm-iv"
+              v-model="gcmIV" 
+              type="text" 
+              class="input" 
+              placeholder="输入24个十六进制字符（96位）"
+              maxlength="24"
+            >
+            <button class="btn btn-small" @click="generateRandomGCMIV">生成随机IV</button>
+          </div>
+          <p class="hint">💡 GCM模式使用96位（12字节）IV，提供认证加密功能</p>
+        </div>
+        
+        <div v-if="showGCMInput" class="form-group">
+          <label for="aad">附加认证数据 (AAD - 可选)：</label>
+          <input 
+            id="aad"
+            v-model="aad" 
+            type="text" 
+            class="input" 
+            placeholder="输入附加认证数据（可选）"
+          >
+          <p class="hint">💡 AAD是不需要加密但需要认证的数据，如协议头信息</p>
+        </div>
+        
+        <div v-if="showGCMInput && authTag" class="form-group">
+          <label for="auth-tag">认证标签 (Authentication Tag)：</label>
+          <input 
+            id="auth-tag"
+            v-model="authTag" 
+            type="text" 
+            class="input" 
+            placeholder="认证标签（加密后自动生成）"
+            readonly
+          >
+          <p class="hint">💡 认证标签用于验证数据完整性和真实性</p>
         </div>
         
         <!-- 明文输入 Plaintext input -->
@@ -302,10 +452,12 @@ const showError = (msg: string) => {
           <div class="info-item">
             <h3>🔹 工作模式</h3>
             <ul>
-              <li>ECB：电子密码本模式，简单快速</li>
-              <li>CBC：密码分组链接，更安全</li>
-              <li>CTR：计数器模式（未来支持）</li>
-              <li>GCM：伽罗瓦计数器模式（未来支持）</li>
+              <li>ECB：电子密码本模式（不推荐）</li>
+              <li>CBC：密码分组链接模式</li>
+              <li>CTR：计数器模式（流密码）</li>
+              <li>CFB：密文反馈模式（流密码）</li>
+              <li>OFB：输出反馈模式（流密码）</li>
+              <li>GCM：认证加密模式（推荐）</li>
             </ul>
           </div>
           
@@ -335,9 +487,10 @@ const showError = (msg: string) => {
           <h3>🔐 安全建议</h3>
           <ul>
             <li><strong>密钥管理：</strong>使用强随机密钥，定期更换，安全存储</li>
-            <li><strong>工作模式：</strong>生产环境建议使用CBC或CTR模式，避免使用ECB</li>
-            <li><strong>初始化向量：</strong>CBC模式每次加密使用不同的IV，且IV应随机生成</li>
-            <li><strong>填充方式：</strong>默认使用PKCS#7填充，确保数据完整性</li>
+            <li><strong>工作模式：</strong>生产环境推荐使用GCM模式（提供认证加密），或CBC/CTR模式。避免使用ECB模式。</li>
+            <li><strong>初始化向量：</strong>每次加密使用不同的IV，且IV应随机生成。GCM模式IV不应重复使用。</li>
+            <li><strong>填充方式：</strong>ECB和CBC模式默认使用PKCS#7填充。流密码模式（CTR/CFB/OFB/GCM）不需要填充。</li>
+            <li><strong>认证加密：</strong>GCM模式提供加密和认证功能，可防止密文被篡改，适合对安全性要求高的场景。</li>
           </ul>
         </div>
       </div>
@@ -523,23 +676,34 @@ const showError = (msg: string) => {
 
 /* 单选按钮组样式 Radio group styles */
 .radio-group {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
   margin-top: 10px;
-  flex-wrap: wrap;
 }
 
 .radio-label {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 10px 15px;
+  padding: 12px 16px;
   border-radius: 8px;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  border: 2px solid #e8e8e8;
+  background: white;
 }
 
 .radio-label:hover {
   background: #f8f9fa;
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.radio-label:has(.radio-input:checked) {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-color: #667eea;
+  font-weight: 600;
 }
 
 .radio-input {
@@ -766,8 +930,7 @@ const showError = (msg: string) => {
   }
 
   .radio-group {
-    flex-direction: column;
-    gap: 10px;
+    grid-template-columns: 1fr;
   }
 
   .info-grid {

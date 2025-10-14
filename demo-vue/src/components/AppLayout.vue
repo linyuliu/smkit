@@ -272,7 +272,10 @@ const goHome = () => {
 
   .sidebar {
     width: 100%;
-    max-height: 300px;
+    max-height: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
   .nav-menu {
@@ -280,38 +283,70 @@ const goHome = () => {
     flex-direction: row;
     overflow-x: auto;
     padding: 10px;
+    scrollbar-width: thin;
+  }
+
+  .nav-menu::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .nav-menu::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
   }
 
   .menu-item {
-    min-width: 200px;
-    margin: 0 10px;
+    min-width: 220px;
+    margin: 0 8px;
+    flex-shrink: 0;
   }
 
   .menu-item:hover {
     transform: translateY(-3px);
   }
 
+  .menu-item:first-child {
+    margin-left: 10px;
+  }
+
+  .menu-item:last-child {
+    margin-right: 10px;
+  }
+
   .content {
     padding: 20px;
+    min-height: calc(100vh - 200px);
   }
 }
 
 @media (max-width: 640px) {
   .sidebar-header {
-    padding: 20px 15px;
+    padding: 15px;
   }
 
   .logo {
-    font-size: 1.5em;
+    font-size: 1.3em;
+  }
+
+  .tagline {
+    font-size: 0.8em;
   }
 
   .menu-item {
-    padding: 15px;
+    padding: 12px;
     min-width: 180px;
   }
 
   .menu-item-icon {
     font-size: 1.5em;
+  }
+
+  .menu-item-name {
+    font-size: 0.95em;
+  }
+
+  .menu-item-desc {
+    font-size: 0.75em;
   }
 
   .content {
