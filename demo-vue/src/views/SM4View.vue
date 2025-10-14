@@ -70,6 +70,16 @@ const showGCMInput = computed(() => cipherMode.value === 'GCM')
 // 是否为流密码模式 Whether it's a stream cipher mode
 const isStreamMode = computed(() => ['CTR', 'CFB', 'OFB', 'GCM'].includes(cipherMode.value))
 
+// 工作模式映射 Cipher mode mapping
+const modeMap: Record<typeof cipherMode.value, typeof CipherMode[keyof typeof CipherMode]> = {
+  'ECB': CipherMode.ECB,
+  'CBC': CipherMode.CBC,
+  'CTR': CipherMode.CTR,
+  'CFB': CipherMode.CFB,
+  'OFB': CipherMode.OFB,
+  'GCM': CipherMode.GCM
+}
+
 // 加密操作 Encrypt operation
 const encryptText = () => {
   if (!secretKey.value) {
@@ -97,17 +107,9 @@ const encryptText = () => {
   
   try {
     // 执行SM4加密 Perform SM4 encryption
-    const modeMap: Record<typeof cipherMode.value, typeof CipherMode[keyof typeof CipherMode]> = {
-      'ECB': CipherMode.ECB,
-      'CBC': CipherMode.CBC,
-      'CTR': CipherMode.CTR,
-      'CFB': CipherMode.CFB,
-      'OFB': CipherMode.OFB,
-      'GCM': CipherMode.GCM
-    }
     const mode = modeMap[cipherMode.value]
     
-    const options: any = { mode }
+    const options: { mode: typeof mode; iv?: string; aad?: string } = { mode }
     
     // 添加IV（非ECB模式）Add IV (non-ECB modes)
     if (mode === CipherMode.GCM) {
@@ -177,17 +179,9 @@ const decryptText = () => {
   
   try {
     // 执行SM4解密 Perform SM4 decryption
-    const modeMap: Record<typeof cipherMode.value, typeof CipherMode[keyof typeof CipherMode]> = {
-      'ECB': CipherMode.ECB,
-      'CBC': CipherMode.CBC,
-      'CTR': CipherMode.CTR,
-      'CFB': CipherMode.CFB,
-      'OFB': CipherMode.OFB,
-      'GCM': CipherMode.GCM
-    }
     const mode = modeMap[cipherMode.value]
     
-    const options: any = { mode }
+    const options: { mode: typeof mode; iv?: string; aad?: string; tag?: string } = { mode }
     
     // 添加IV和其他参数 Add IV and other parameters
     if (mode === CipherMode.GCM) {
@@ -700,10 +694,26 @@ const showError = (msg: string) => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
+/* Selected radio button style - using adjacent sibling for better compatibility */
+.radio-input:checked + .radio-text {
+  font-weight: 600;
+}
+
 .radio-label:has(.radio-input:checked) {
   background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
   border-color: #667eea;
   font-weight: 600;
+}
+
+/* Fallback for browsers without :has() support */
+@supports not selector(:has(*)) {
+  .radio-label {
+    position: relative;
+  }
+  
+  .radio-input:checked ~ * {
+    font-weight: 600;
+  }
 }
 
 .radio-input {
