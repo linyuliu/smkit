@@ -15,6 +15,28 @@ Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2
 npm install smkit
 ```
 
+### Multiple Import Methods
+
+SMKit supports multiple module formats for use in different environments:
+
+**ES Module (Recommended for modern projects)**
+```javascript
+import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+```
+
+**CommonJS (Node.js)**
+```javascript
+const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+```
+
+**UMD (Direct browser usage)**
+```html
+<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+<script>
+  const hash = SMKit.digest('Hello, World!');
+</script>
+```
+
 ## Online Demo
 
 Want to try SMKit quickly? We provide two interactive demo pages:
