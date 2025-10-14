@@ -49,7 +49,7 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
 
 /**
  * 生成随机字节的跨平台函数
- * 优雅地处理 Node.js 和浏览器环境，提供双重回退机制
+ * 优雅地处理 Node.js 和浏览器环境，提供三重回退机制
  * 
  * 优先级（从高到低）:
  * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
@@ -57,7 +57,12 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
  *    - Node.js 15+：globalThis.crypto.getRandomValues
  *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
  * 
- * 2. 时间戳 + Math.random() - 应急回退方案
+ * 2. Node.js Crypto Module (crypto.randomBytes) - 密码学安全的随机数生成器
+ *    - Node.js < 15：使用 require('crypto').randomBytes
+ *    - 同样使用操作系统提供的 CSPRNG
+ *    - 为旧版本 Node.js 提供安全的随机数
+ * 
+ * 3. 时间戳 + Math.random() - 应急回退方案
  *    - ⚠️ 警告：这不是密码学安全的！
  *    - 仅用于开发/测试环境
  *    - 不应在生产环境中使用
@@ -79,7 +84,21 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
     return globalThis.crypto.getRandomValues(new Uint8Array(bytesLength));
   }
   
-  // 第二优先级: 使用时间戳 + Math.random() 作为回退方案
+  // 第二优先级: Node.js Crypto Module (旧版本 Node.js)
+  // 尝试动态导入 Node.js 的 crypto 模块
+  try {
+    // 使用动态 require 来避免在浏览器环境中出错
+    // @ts-ignore - dynamic require for Node.js compatibility
+    const nodeCrypto = typeof require !== 'undefined' ? require('crypto') : null;
+    if (nodeCrypto && nodeCrypto.randomBytes) {
+      const buffer = nodeCrypto.randomBytes(bytesLength);
+      return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    }
+  } catch (e) {
+    // 在浏览器或不支持 crypto 的环境中会失败，继续尝试下一个方案
+  }
+  
+  // 第三优先级: 使用时间戳 + Math.random() 作为回退方案
   // 警告：此方案的随机性较弱，仅用于开发/测试环境
   console.warn('Warning: Using Math.random() for random number generation. This is NOT cryptographically secure and should only be used for testing purposes.');
   
