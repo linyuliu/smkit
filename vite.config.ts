@@ -8,10 +8,11 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'SMKit',
-      formats: ['es', 'cjs'],
+      formats: ['es', 'cjs', 'umd'],
       fileName: (format) => {
         if (format === 'es') return 'smkit.js';
         if (format === 'cjs') return 'smkit.cjs';
+        if (format === 'umd') return 'smkit.umd.js';
         return `smkit.${format}.js`;
       },
     },

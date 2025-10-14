@@ -13,6 +13,8 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "unpkg": "./dist/smkit.umd.js",
+  "jsdelivr": "./dist/smkit.umd.js",
   "files": [
     "dist"
   ],
@@ -35,6 +37,14 @@
   ],
   "author": "",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linyuliu/smkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/linyuliu/smkit/issues"
+  },
+  "homepage": "https://github.com/linyuliu/smkit#readme",
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",

@@ -17,6 +17,28 @@
 npm install smkit
 ```
 
+### 多种导入方式
+
+SMKit 支持多种模块格式，可以在不同环境中使用：
+
+**ES Module (推荐用于现代项目)**
+```javascript
+import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+```
+
+**CommonJS (Node.js)**
+```javascript
+const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+```
+
+**UMD (浏览器直接引入)**
+```html
+<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+<script>
+  const hash = SMKit.digest('Hello, World!');
+</script>
+```
+
 ## 在线演示
 
 想快速体验 SMKit？我们提供了两种交互式演示页面：
