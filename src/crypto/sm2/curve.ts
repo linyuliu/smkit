@@ -89,8 +89,8 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
   try {
     // 使用动态 require 来避免在浏览器环境中出错
     // 使用类型断言避免 TypeScript 错误，同时保持运行时兼容性
-    const requireFn = typeof require !== 'undefined' ? require : null;
-    const nodeCrypto = requireFn ? requireFn('crypto') : null;
+    const nodeRequire = typeof require !== 'undefined' ? require : null;
+    const nodeCrypto = nodeRequire ? nodeRequire('crypto') : null;
     if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') {
       const buffer = nodeCrypto.randomBytes(bytesLength);
       return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
