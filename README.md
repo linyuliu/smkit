@@ -158,7 +158,16 @@ const publicKey = getPublicKeyFromPrivateKey(keyPair.privateKey);
 const plaintext = 'Hello, SM2!';
 // 支持两种密文模式：C1C3C2（默认）和 C1C2C3
 const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
-const decrypted = sm2Decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C3C2);
+
+// 解密支持自动格式检测（可选择不指定模式）
+// 根据密文首字节自动识别：
+// - 0x30: ASN.1 格式
+// - 0x04: C1 为非压缩点格式
+// - 0x02/0x03: C1 为压缩点格式
+const decrypted = sm2Decrypt(keyPair.privateKey, encrypted); // 自动检测模式
+
+// 也可以明确指定模式以提高性能
+const decryptedWithMode = sm2Decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C3C2);
 
 // 签名/验证（使用 SM3 哈希和 Z 值计算）
 const data = 'Message to sign';
@@ -399,6 +408,15 @@ import { SM2CipherMode } from 'smkit';
 SM2CipherMode.C1C3C2  // 'C1C3C2' (推荐)
 SM2CipherMode.C1C2C3  // 'C1C2C3'
 ```
+
+**说明**：
+- SM2 解密支持自动格式检测，通过密文首字节判断格式：
+  - **0x30**：ASN.1 DER 编码格式
+  - **0x04**：C1 为非压缩点格式（04 + x + y），默认尝试 C1C3C2 模式
+  - **0x02/0x03**：C1 为压缩点格式（02/03 + x），默认尝试 C1C3C2 模式
+- 自动检测会在 C1C3C2 模式失败时自动尝试 C1C2C3 模式
+- 为了性能考虑，建议在与其他系统集成时明确指定密文模式
+- 对于加解密，对用户透明不一定是好事，知己知彼更有助于系统集成
 
 ### OID（对象标识符）
 ```typescript

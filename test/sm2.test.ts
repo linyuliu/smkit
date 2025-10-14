@@ -184,6 +184,117 @@ describe('SM2 国密算法测试', () => {
       const decrypted = decrypt(keyPair.privateKey, encrypted);
       expect(decrypted).toBe(plaintext);
     });
+
+    it('应该能够处理压缩点格式的密文（0x02/0x03 开头）', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = 'Test compressed C1 format';
+      
+      // 加密后手动替换 C1 为压缩格式
+      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
+      const encryptedBytes = new Uint8Array(encrypted.length / 2);
+      for (let i = 0; i < encryptedBytes.length; i++) {
+        encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
+      }
+      
+      // 提取 C1 并压缩
+      const c1Uncompressed = encryptedBytes.slice(0, 65);
+      const c1Hex = Array.from(c1Uncompressed).map(b => b.toString(16).padStart(2, '0')).join('');
+      const c1Compressed = compressPublicKey(c1Hex);
+      const c1CompressedBytes = new Uint8Array(c1Compressed.length / 2);
+      for (let i = 0; i < c1CompressedBytes.length; i++) {
+        c1CompressedBytes[i] = parseInt(c1Compressed.slice(i * 2, i * 2 + 2), 16);
+      }
+      
+      // 重新组合密文：压缩的 C1 + C3 + C2
+      const c3c2 = encryptedBytes.slice(65);
+      const compressedCipherBytes = new Uint8Array(c1CompressedBytes.length + c3c2.length);
+      compressedCipherBytes.set(c1CompressedBytes, 0);
+      compressedCipherBytes.set(c3c2, c1CompressedBytes.length);
+      
+      const compressedCipher = Array.from(compressedCipherBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // 验证密文以 02 或 03 开头（压缩格式）
+      expect(compressedCipher.startsWith('02') || compressedCipher.startsWith('03')).toBe(true);
+      
+      // 解密时应该自动检测压缩格式
+      const decrypted = decrypt(keyPair.privateKey, compressedCipher);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该能够在压缩格式下自动检测 C1C2C3 模式', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = 'Test compressed C1C2C3 format';
+      
+      // 加密为 C1C2C3 模式
+      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
+      const encryptedBytes = new Uint8Array(encrypted.length / 2);
+      for (let i = 0; i < encryptedBytes.length; i++) {
+        encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
+      }
+      
+      // 提取 C1、C2、C3
+      const c1Uncompressed = encryptedBytes.slice(0, 65);
+      const c2 = encryptedBytes.slice(65, encryptedBytes.length - 32);
+      const c3 = encryptedBytes.slice(encryptedBytes.length - 32);
+      
+      // 压缩 C1
+      const c1Hex = Array.from(c1Uncompressed).map(b => b.toString(16).padStart(2, '0')).join('');
+      const c1Compressed = compressPublicKey(c1Hex);
+      const c1CompressedBytes = new Uint8Array(c1Compressed.length / 2);
+      for (let i = 0; i < c1CompressedBytes.length; i++) {
+        c1CompressedBytes[i] = parseInt(c1Compressed.slice(i * 2, i * 2 + 2), 16);
+      }
+      
+      // 重新组合密文：压缩的 C1 + C2 + C3（C1C2C3 顺序）
+      const compressedCipherBytes = new Uint8Array(c1CompressedBytes.length + c2.length + c3.length);
+      compressedCipherBytes.set(c1CompressedBytes, 0);
+      compressedCipherBytes.set(c2, c1CompressedBytes.length);
+      compressedCipherBytes.set(c3, c1CompressedBytes.length + c2.length);
+      
+      const compressedCipher = Array.from(compressedCipherBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // 验证密文以 02 或 03 开头（压缩格式）
+      expect(compressedCipher.startsWith('02') || compressedCipher.startsWith('03')).toBe(true);
+      
+      // 解密时应该自动检测格式和模式
+      const decrypted = decrypt(keyPair.privateKey, compressedCipher);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该拒绝无效格式的密文', () => {
+      const keyPair = generateKeyPair();
+      
+      // 测试空密文
+      expect(() => decrypt(keyPair.privateKey, '')).toThrow('Invalid ciphertext: empty data');
+      
+      // 测试无效首字节（不是 0x30, 0x04, 0x02, 0x03）
+      const invalidCipher = '05' + '00'.repeat(100);
+      expect(() => decrypt(keyPair.privateKey, invalidCipher)).toThrow('Invalid ciphertext: unsupported format');
+      
+      // 测试密文过短
+      const shortCipher = '04' + '00'.repeat(50);
+      expect(() => decrypt(keyPair.privateKey, shortCipher)).toThrow('Invalid ciphertext: too short');
+    });
+
+    it('应该在 C3 验证失败时抛出错误', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = 'Test C3 verification';
+      
+      // 正常加密
+      const encrypted = encrypt(keyPair.publicKey, plaintext);
+      const encryptedBytes = new Uint8Array(encrypted.length / 2);
+      for (let i = 0; i < encryptedBytes.length; i++) {
+        encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
+      }
+      
+      // 篡改 C3 部分（假设是 C1C3C2 模式，C3 在第 65 字节开始的 32 字节）
+      encryptedBytes[65] ^= 0xFF; // 翻转一个字节
+      
+      const tamperedCipher = Array.from(encryptedBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // 解密应该失败
+      expect(() => decrypt(keyPair.privateKey, tamperedCipher)).toThrow();
+    });
   });
 
   describe('签名与验签', () => {
