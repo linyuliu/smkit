@@ -1,6 +1,9 @@
 /**
  * SM2 椭圆曲线参数和工具函数
- * 基于 GM/T 0003-2012 标准
+ * 
+ * 标准参考：
+ * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
+ * - GM/T 0009-2023: SM2 密码算法使用规范
  * 
  * 使用 @noble/curves 进行高效的椭圆曲线运算
  */
@@ -10,7 +13,12 @@ import { Field } from '@noble/curves/abstract/modular.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
 /**
- * SM2 推荐曲线参数 (GM/T 0003-2012)
+ * SM2 推荐曲线参数
+ * 
+ * 标准参考：
+ * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
+ * - GM/T 0009-2023: SM2 密码算法使用规范（继续使用相同的曲线参数）
+ * 
  * 素数域 p = 2^256 - 2^224 - 2^96 + 2^64 - 1
  */
 export const SM2_CURVE_PARAMS = {

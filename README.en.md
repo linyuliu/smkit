@@ -190,7 +190,7 @@ const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
 const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
 
-// SM2 Key Exchange (based on GM/T 0003.3-2012)
+// SM2 Key Exchange (based on GM/T 0003.3-2012 and GM/T 0009-2023)
 import { keyExchange } from 'smkit';
 
 // Suppose Alice and Bob need to negotiate a shared key
@@ -428,7 +428,8 @@ OID.EC_PUBLIC_KEY  // '1.2.840.10045.2.1' - Standard EC public key (incorrect SM
 ```typescript
 import { DEFAULT_USER_ID } from 'smkit';
 
-DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (specified in GM/T 0009-2012)
+DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (backward compatible)
+                 // GM/T 0009-2023 recommends using empty string ''
 ```
 
 ## API Reference
@@ -498,7 +499,7 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (spec
 - `der?: boolean` - Use DER encoding format (**default: false**, Raw format)
 - `userId?: string` - User ID for signing (**default: '1234567812345678'**)
 - `skipZComputation?: boolean` - Skip Z value computation (**default: false**)
-- `curveParams?: SM2CurveParams` - Custom elliptic curve parameters (**default: GM/T 0003-2012 standard parameters**)
+- `curveParams?: SM2CurveParams` - Custom elliptic curve parameters (**default: GM/T 0003-2012 standard parameters, continued in GM/T 0009-2023**)
 
 **VerifyOptions:**
 - `der?: boolean` - Signature in DER encoding format (**default: false**)
@@ -608,8 +609,22 @@ This library implements the following Chinese national cryptographic standards:
 - **GM/T 0003-2012**: SM2 Elliptic Curve Public Key Cryptographic Algorithm
 - **GM/T 0004-2012**: SM3 Cryptographic Hash Algorithm
 - **GM/T 0002-2012**: SM4 Block Cipher Algorithm
-- **GM/T 0009-2012**: SM2 Cryptographic Algorithm Application Specification
+- **GM/T 0009-2023**: SM2 Cryptographic Algorithm Application Specification (replaces GM/T 0009-2012)
 - **GM/T 0006-2012**: Cryptographic Application Identifier Specification (OID definitions)
+
+### Standard Evolution Notes
+
+Key updates in GMT 0009-2023 compared to GMT 0009-2012:
+
+1. **Default User ID**: Recommends using empty string `''` instead of `'1234567812345678'`
+   - This library defaults to `'1234567812345678'` for backward compatibility
+   - To comply with the latest standard, explicitly specify `userId: ''` when signing/verifying
+
+2. **Cipher Mode**: Explicitly recommends C1C3C2 mode (already the default in this library)
+
+3. **Public Key Format**: Explicitly recommends uncompressed format (04 prefix, already the default)
+
+4. **Security Enhancements**: Enhanced recommendations for key length and parameter validation
 
 ## Note
 
