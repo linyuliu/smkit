@@ -1,6 +1,8 @@
 /**
  * SM2 椭圆曲线公钥密码算法实现
- * 基于 GM/T 0003-2012 标准
+ * 符合以下标准：
+ * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
+ * - GM/T 0009-2023: SM2 密码算法使用规范（替代 GM/T 0009-2012）
  * 
  * 使用 @noble/curves 进行高效的椭圆曲线运算
  */
@@ -369,18 +371,25 @@ export interface SignOptions {
   /**
    * 用户 ID（用于计算 Z 值）
    * 
-   * 默认值：'1234567812345678'（16 字节）
+   * 标准演进：
+   * - GM/T 0009-2012: 默认使用 '1234567812345678'（16 字节）
+   * - GM/T 0009-2023: 推荐使用空字符串 ''
+   * 
+   * 本库默认值：'1234567812345678'（保持向后兼容）
    * 
    * Z 值是 SM2 签名算法的一个特殊部分，包含了用户身份信息和公钥信息，
    * 用于将签名与特定用户绑定。不同的用户 ID 会产生不同的 Z 值，
    * 从而产生不同的签名。
+   * 
+   * 如需符合 GMT 0009-2023 最新标准，可显式传入 userId: ''
    */
   userId?: string;
   
   /**
    * 自定义曲线参数（高级选项）
    * 
-   * 一般情况下不需要设置，使用 GM/T 0003-2012 标准推荐的曲线参数。
+   * 一般情况下不需要设置，使用 GM/T 0003-2012 标准推荐的曲线参数
+   * （GM/T 0009-2023 继续沿用相同的曲线参数）。
    * 仅在需要使用自定义椭圆曲线时才设置此选项。
    */
   curveParams?: SM2CurveParams;
@@ -423,10 +432,15 @@ export interface VerifyOptions {
   /**
    * 用户 ID（必须与签名时使用的相同）
    * 
-   * 默认值：'1234567812345678'
+   * 标准演进：
+   * - GM/T 0009-2012: 默认使用 '1234567812345678'
+   * - GM/T 0009-2023: 推荐使用空字符串 ''
    * 
-   * 如果签名时使用了自定义用户 ID，验签时必须使用相同的用户 ID，
-   * 否则验签会失败。
+   * 本库默认值：'1234567812345678'（保持向后兼容）
+   * 
+   * ⚠️ 重要：签名和验签必须使用相同的 userId，否则验签会失败
+   * 
+   * 如需符合 GMT 0009-2023 最新标准，可显式传入 userId: ''
    */
   userId?: string;
   
@@ -589,10 +603,14 @@ export function decompressPublicKey(publicKey: string): string {
  * KDF（密钥派生函数）
  * 使用 SM3 作为哈希函数
  * 
+ * 标准参考：
+ * - GM/T 0003.1-2012: 密钥派生函数规范
+ * - GM/T 0009-2023: SM2 密码算法使用规范
+ * 
  * 优化说明：
  * - 减少内存分配，复用缓冲区
  * - 优化零值检测，提前退出
- * - 按照 GM/T 0003.1-2012 标准实现
+ * - 按照标准实现，确保互操作性
  */
 function kdf(z: Uint8Array, klen: number): Uint8Array {
   const k = new Uint8Array(klen);
@@ -963,7 +981,9 @@ export function verify(
 /**
  * SM2 密钥交换协议参数（用于初始化或响应方）
  * 
- * 基于 GM/T 0003.3-2012 标准实现
+ * 标准参考：
+ * - GM/T 0003.3-2012: SM2 椭圆曲线密钥交换协议
+ * - GM/T 0009-2023: SM2 密码算法使用规范
  */
 export interface SM2KeyExchangeParams {
   /**
@@ -977,7 +997,10 @@ export interface SM2KeyExchangeParams {
   publicKey?: string;
   
   /**
-   * 己方用户 ID（默认：DEFAULT_USER_ID）
+   * 己方用户 ID
+   * 
+   * 默认：'1234567812345678'（DEFAULT_USER_ID，保持向后兼容）
+   * GMT 0009-2023 推荐使用空字符串 ''
    */
   userId?: string;
   
@@ -997,7 +1020,10 @@ export interface SM2KeyExchangeParams {
   peerTempPublicKey: string;
   
   /**
-   * 对方用户 ID（默认：DEFAULT_USER_ID）
+   * 对方用户 ID
+   * 
+   * 默认：'1234567812345678'（DEFAULT_USER_ID，保持向后兼容）
+   * GMT 0009-2023 推荐使用空字符串 ''
    */
   peerUserId?: string;
   
@@ -1038,7 +1064,11 @@ export interface SM2KeyExchangeResult {
 }
 
 /**
- * SM2 密钥交换协议（基于 GM/T 0003.3-2012）
+ * SM2 密钥交换协议
+ * 
+ * 标准参考：
+ * - GM/T 0003.3-2012: SM2 椭圆曲线密钥交换协议
+ * - GM/T 0009-2023: SM2 密码算法使用规范
  * 
  * 这是一个安全的密钥协商协议，允许两方在不安全的通道上协商出共享密钥。
  * 
@@ -1188,7 +1218,7 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const sharedKey = bytesToHex(sharedKeyBytes);
   
   // 计算可选的确认哈希值（用于相互认证）
-  // 根据 GM/T 0003.3-2012:
+  // 根据标准（GM/T 0003.3-2012 及 GM/T 0009-2023）:
   // 对于发起方 A: S1 = Hash(0x02 || yv || Hash(xv || ZA || ZB || xRA || yRA || xRB || yRB))
   // 对于响应方 B: S1 = Hash(0x02 || yv || Hash(xv || ZB || ZA || xRB || yRB || xRA || yRA))
   

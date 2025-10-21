@@ -199,7 +199,7 @@ const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
 const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
 
-// SM2 密钥交换（基于 GM/T 0003.3-2012）
+// SM2 密钥交换（基于 GM/T 0003.3-2012 及 GM/T 0009-2023）
 import { keyExchange } from 'smkit';
 
 // 假设 Alice 和 Bob 需要协商共享密钥
@@ -446,7 +446,8 @@ OID.EC_PUBLIC_KEY  // '1.2.840.10045.2.1' - 标准 EC 公钥（OpenSSL 1.x 对 S
 ```typescript
 import { DEFAULT_USER_ID } from 'smkit';
 
-DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 0009-2012 规定）
+DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（向后兼容）
+                 // GM/T 0009-2023 推荐使用空字符串 ''
 ```
 
 ## API 参考
@@ -516,7 +517,7 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（GM/T 000
 - `der?: boolean` - 是否使用 DER 编码格式（**默认：false**，使用 Raw 格式）
 - `userId?: string` - 签名用户 ID（**默认：'1234567812345678'**）
 - `skipZComputation?: boolean` - 是否跳过 Z 值计算（**默认：false**）
-- `curveParams?: SM2CurveParams` - 自定义椭圆曲线参数（**默认：使用 GM/T 0003-2012 标准参数**）
+- `curveParams?: SM2CurveParams` - 自定义椭圆曲线参数（**默认：使用 GM/T 0003-2012 标准参数，GM/T 0009-2023 继续沿用**）
 
 **VerifyOptions:**
 - `der?: boolean` - 签名是否为 DER 编码格式（**默认：false**）
@@ -637,8 +638,22 @@ npm run type-check
 - **GM/T 0003-2012**: SM2 椭圆曲线公钥密码算法
 - **GM/T 0004-2012**: SM3 密码杂凑算法
 - **GM/T 0002-2012**: SM4 分组密码算法
-- **GM/T 0009-2012**: SM2 密码算法使用规范
+- **GM/T 0009-2023**: SM2 密码算法使用规范（替代 GM/T 0009-2012）
 - **GM/T 0006-2012**: 密码应用标识规范（OID 定义）
+
+### 标准演进说明
+
+GMT 0009-2023 相比 GMT 0009-2012 的主要更新：
+
+1. **默认用户 ID**: 推荐使用空字符串 `''` 代替 `'1234567812345678'`
+   - 本库为保持向后兼容，默认仍使用 `'1234567812345678'`
+   - 如需符合最新标准，可在签名/验签时显式指定 `userId: ''`
+
+2. **密文模式**: 明确推荐使用 C1C3C2 模式（本库默认）
+
+3. **公钥格式**: 明确推荐使用非压缩格式（04前缀，本库默认）
+
+4. **安全增强**: 增强了密钥长度和参数验证的安全建议
 
 ## 许可证
 
