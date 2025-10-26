@@ -1,6 +1,6 @@
 # SMKit
 
-Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4).
+Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4, ZUC).
 
 ## Features
 

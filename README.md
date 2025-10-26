@@ -1,6 +1,6 @@
 # SMKit
 
-中国国密算法（SM2、SM3、SM4）的纯 TypeScript 实现。
+中国国密算法（SM2、SM3、SM4、ZUC）的纯 TypeScript 实现。
 
 简体中文 | [English](./README.en.md)
 
@@ -232,6 +232,51 @@ const bobResult = keyExchange({
 
 // Alice 和 Bob 得到相同的共享密钥
 console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
+```
+
+#### ZUC 流密码算法
+
+```typescript
+import { zucEncrypt, zucDecrypt, zucKeystream, eea3, eia3 } from 'smkit';
+
+const key = '00112233445566778899aabbccddeeff'; // 128 位密钥（32 个十六进制字符）
+const iv = 'ffeeddccbbaa99887766554433221100';  // 128 位 IV（32 个十六进制字符）
+const plaintext = 'Hello, ZUC!';
+
+// 加密
+const ciphertext = zucEncrypt(key, iv, plaintext);
+console.log(ciphertext); // 十六进制字符串
+
+// 解密
+const decrypted = zucDecrypt(key, iv, ciphertext);
+console.log(decrypted); // 'Hello, ZUC!'
+
+// 生成密钥流（用于高级应用）
+const keystream = zucKeystream(key, iv, 4); // 生成 4 个 32 位字（16 字节）
+console.log(keystream); // 十六进制字符串
+
+// EEA3 - 3GPP LTE 加密算法（基于 ZUC-128）
+const count = 0x12345678;    // 32 位计数器
+const bearer = 5;             // 5 位承载身份（0-31）
+const direction = 0;          // 1 位方向（0=上行，1=下行）
+const length = 256;           // 密钥流比特长度
+
+const eea3Keystream = eea3(key, count, bearer, direction, length);
+console.log(eea3Keystream); // 用于加密的密钥流
+
+// EIA3 - 3GPP LTE 完整性算法（基于 ZUC-128）
+const message = 'Message to authenticate';
+const mac = eia3(key, count, bearer, direction, message);
+console.log(mac); // 32 位 MAC 值（8 个十六进制字符）
+
+// 支持 Uint8Array 输入
+const binaryKey = new Uint8Array(16).fill(0);
+const binaryIv = new Uint8Array(16).fill(1);
+const binaryData = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
+
+const encryptedBinary = zucEncrypt(binaryKey, binaryIv, binaryData);
+const decryptedBinary = zucDecrypt(binaryKey, binaryIv, encryptedBinary);
+console.log(decryptedBinary); // 'Hello'
 ```
 
 ### 面向对象 API
@@ -638,8 +683,11 @@ npm run type-check
 - **GM/T 0003-2012**: SM2 椭圆曲线公钥密码算法
 - **GM/T 0004-2012**: SM3 密码杂凑算法
 - **GM/T 0002-2012**: SM4 分组密码算法
+- **GM/T 0001-2012**: ZUC 流密码算法
+- **GM/T 0001.1-2023**: ZUC-256 流密码算法
 - **GM/T 0009-2023**: SM2 密码算法使用规范（替代 GM/T 0009-2012）
 - **GM/T 0006-2012**: 密码应用标识规范（OID 定义）
+- **3GPP TS 35.221**: EEA3 和 EIA3 规范（基于 ZUC 的 LTE 加密与完整性算法）
 
 ### 标准演进说明
 
@@ -661,7 +709,7 @@ Apache-2.0
 
 ## 注意
 
-SMKit 已实现完整的 SM2、SM3 和 SM4 算法，并通过了 128 项单元测试。所有核心功能均已实现并可用于生产环境。
+SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，并通过了 175 项单元测试（包含 28 项 ZUC 专项测试）。所有核心功能均已实现并可用于生产环境。
 
 ## 相关项目
 
