@@ -1,9 +1,9 @@
 /**
  * ZUC Stream Cipher Algorithm - Core Implementation
- * 
+ *
  * ZUC is a word-oriented stream cipher designed for 3GPP LTE encryption and integrity protection.
  * Based on GM/T 0001-2012 (ZUC-128) and GM/T 0001.1-2023 (ZUC-256)
- * 
+ *
  * @see http://www.oscca.gov.cn/sca/xxgk/2012-03/21/content_1002389.shtml
  */
 
@@ -165,8 +165,6 @@ export class ZUCState {
    * LFSR with initialization mode (feedback with u)
    */
   private lfsrWithInitMode(u: number): void {
-    const f = this.lfsr[0];
-    const v = this.mulByPow2(this.lfsr[0], 8);
     const s16 = this.addMod(
       this.addMod(
         this.addMod(this.mulByPow2(this.lfsr[0], 8), this.lfsr[4]),
@@ -280,7 +278,7 @@ export function process(
 
   while (offset < dataBytes.length) {
     const keyword = state.generateKeyword();
-    
+
     // Extract 4 bytes from the keyword
     for (let i = 0; i < 4 && offset < dataBytes.length; i++) {
       const keyByte = (keyword >>> (24 - i * 8)) & 0xFF;

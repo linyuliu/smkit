@@ -1,9 +1,9 @@
 /**
  * ZUC Stream Cipher - Public API
- * 
+ *
  * ZUC (祖冲之算法) is a stream cipher algorithm used in Chinese cryptographic standards.
  * It provides both encryption/decryption and message authentication.
- * 
+ *
  * Standards:
  * - GM/T 0001-2012: ZUC-128 Stream Cipher Algorithm
  * - GM/T 0001.1-2023: ZUC-256 Stream Cipher Algorithm
@@ -125,13 +125,13 @@ export function eia3(
   iv[1] = (count >>> 16) & 0xFF;
   iv[2] = (count >>> 8) & 0xFF;
   iv[3] = count & 0xFF;
-  iv[4] = (bearer << 3) & 0xFF;
+  iv[4] = (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF;
   // iv[5-7] are already 0
   iv[8] = (count >>> 24) & 0xFF;
   iv[9] = (count >>> 16) & 0xFF;
   iv[10] = (count >>> 8) & 0xFF;
   iv[11] = count & 0xFF;
-  iv[12] = (bearer << 3) & 0xFF;
+  iv[12] = (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF;
   // iv[13-15] are already 0
 
   // Generate keystream
