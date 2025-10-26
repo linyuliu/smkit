@@ -12,9 +12,9 @@ import {
 } from '../src/crypto/sm2';
 import { SM2CipherMode, DEFAULT_USER_ID } from '../src/types/constants';
 
-describe('SM2 Cryptographic Algorithm', () => {
-  describe('Key Pair Generation', () => {
-    it('should generate key pair', () => {
+describe('SM2 国密算法测试', () => {
+  describe('密钥对生成', () => {
+    it('应该能够生成密钥对', () => {
       const keyPair = generateKeyPair();
       expect(keyPair.publicKey).toBeTruthy();
       expect(keyPair.privateKey).toBeTruthy();
@@ -22,35 +22,35 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(keyPair.privateKey).toMatch(/^[0-9a-f]+$/);
     });
 
-    it('should generate different keys each time', () => {
+    it('应该每次生成不同的密钥', () => {
       const keyPair1 = generateKeyPair();
       const keyPair2 = generateKeyPair();
       expect(keyPair1.privateKey).not.toBe(keyPair2.privateKey);
     });
   });
 
-  describe('Derive Public Key from Private Key', () => {
-    it('should derive uncompressed public key from private key', () => {
+  describe('从私钥派生公钥', () => {
+    it('应该能够从私钥派生非压缩公钥', () => {
       const privateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       const publicKey = getPublicKeyFromPrivateKey(privateKey);
       expect(publicKey).toBeTruthy();
       expect(publicKey).toMatch(/^[0-9a-f]+$/);
-      expect(publicKey.startsWith('04')).toBe(true); // uncompressed format
+      expect(publicKey.startsWith('04')).toBe(true); // 非压缩格式
       expect(publicKey.length).toBe(130); // 65 bytes = 130 hex chars
     });
 
-    it('should derive compressed public key from private key', () => {
+    it('应该能够从私钥派生压缩公钥', () => {
       const privateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       const publicKey = getPublicKeyFromPrivateKey(privateKey, true);
       expect(publicKey).toBeTruthy();
       expect(publicKey).toMatch(/^[0-9a-f]+$/);
-      expect(publicKey.startsWith('02') || publicKey.startsWith('03')).toBe(true); // compressed format
+      expect(publicKey.startsWith('02') || publicKey.startsWith('03')).toBe(true); // 压缩格式
       expect(publicKey.length).toBe(66); // 33 bytes = 66 hex chars
     });
   });
 
-  describe('Public Key Compression and Decompression', () => {
-    it('should compress uncompressed public key', () => {
+  describe('公钥压缩与解压', () => {
+    it('应该能够压缩非压缩公钥', () => {
       const keyPair = generateKeyPair();
       const compressed = compressPublicKey(keyPair.publicKey);
       expect(compressed).toBeTruthy();
@@ -58,7 +58,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(compressed.length).toBe(66); // 33 bytes
     });
 
-    it('should decompress compressed public key', () => {
+    it('应该能够解压压缩公钥', () => {
       const keyPair = generateKeyPair();
       const uncompressed = keyPair.publicKey;
       const compressed = compressPublicKey(uncompressed);
@@ -69,15 +69,15 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decompressed).toBe(uncompressed);
     });
 
-    it('should handle already uncompressed public key correctly', () => {
+    it('应该正确处理已经是非压缩格式的公钥', () => {
       const keyPair = generateKeyPair();
       const result = decompressPublicKey(keyPair.publicKey);
       expect(result).toBe(keyPair.publicKey.toLowerCase());
     });
   });
 
-  describe('Encryption and Decryption', () => {
-    it('should encrypt data', () => {
+  describe('加解密测试', () => {
+    it('应该能够加密数据', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello, SM2!';
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -85,37 +85,37 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(encrypted).toMatch(/^[0-9a-zA-Z]+$/);
     });
 
-    it('should auto-detect uncompressed point format (starting with 0x04)', () => {
+    it('应该能够自动检测非压缩点格式（0x04 开头）', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test auto-detection';
       
-      // Encrypt (uses uncompressed format by default)
+      // 加密（默认使用非压缩格式）
       const encrypted = encrypt(keyPair.publicKey, plaintext);
       
-      // Verify ciphertext starts with 04 (uncompressed format)
+      // 验证密文以 04 开头（非压缩格式）
       expect(encrypted.startsWith('04')).toBe(true);
       
-      // Decrypt without specifying mode, should auto-detect
+      // 解密时不指定 mode，应该自动检测
       const decrypted = decrypt(keyPair.privateKey, encrypted);
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should auto-detect C1C3C2 and C1C2C3 modes', () => {
+    it('应该能够自动检测 C1C3C2 和 C1C2C3 模式', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test mode auto-detection';
       
-      // Test C1C3C2 mode
+      // 测试 C1C3C2 模式
       const encryptedC1C3C2 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
-      const decryptedC1C3C2 = decrypt(keyPair.privateKey, encryptedC1C3C2); // without specifying mode
+      const decryptedC1C3C2 = decrypt(keyPair.privateKey, encryptedC1C3C2); // 不指定 mode
       expect(decryptedC1C3C2).toBe(plaintext);
       
-      // Test C1C2C3 mode
+      // 测试 C1C2C3 模式
       const encryptedC1C2C3 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
-      const decryptedC1C2C3 = decrypt(keyPair.privateKey, encryptedC1C2C3); // without specifying mode
+      const decryptedC1C2C3 = decrypt(keyPair.privateKey, encryptedC1C2C3); // 不指定 mode
       expect(decryptedC1C2C3).toBe(plaintext);
     });
 
-    it('should correctly decrypt - short text', () => {
+    it('应该能够正确解密 - 短文本', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello, SM2!';
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -123,7 +123,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should correctly decrypt - Chinese text', () => {
+    it('应该能够正确解密 - 中文文本', () => {
       const keyPair = generateKeyPair();
       const plaintext = '你好，国密SM2算法！';
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -131,7 +131,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should correctly decrypt - long text', () => {
+    it('应该能够正确解密 - 长文本', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'This is a longer text to test SM2 encryption and decryption. It contains multiple sentences and should work correctly with the SM2 algorithm implementation.';
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -139,7 +139,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should correctly decrypt - numbers and special characters', () => {
+    it('应该能够正确解密 - 数字和特殊字符', () => {
       const keyPair = generateKeyPair();
       const plaintext = '1234567890!@#$%^&*()_+-=[]{}|;:,.<>?';
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -147,7 +147,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should support both cipher modes - C1C3C2', () => {
+    it('应该支持两种密文模式 - C1C3C2', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello';
       
@@ -157,7 +157,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should support both cipher modes - C1C2C3', () => {
+    it('应该支持两种密文模式 - C1C2C3', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello';
       
@@ -167,7 +167,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should accept Uint8Array input and decrypt correctly', () => {
+    it('应该接受 Uint8Array 输入并正确解密', () => {
       const keyPair = generateKeyPair();
       const plaintext = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
       const encrypted = encrypt(keyPair.publicKey, plaintext);
@@ -176,7 +176,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe('Hello');
     });
 
-    it('should encrypt using compressed public key', () => {
+    it('应该能使用压缩公钥进行加密', () => {
       const keyPair = generateKeyPair();
       const compressed = compressPublicKey(keyPair.publicKey);
       const plaintext = 'Test with compressed key';
@@ -185,18 +185,18 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should handle compressed point format ciphertext (starting with 0x02/0x03)', () => {
+    it('应该能够处理压缩点格式的密文（0x02/0x03 开头）', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test compressed C1 format';
       
-      // Encrypt then manually replace C1 with compressed format
+      // 加密后手动替换 C1 为压缩格式
       const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
       const encryptedBytes = new Uint8Array(encrypted.length / 2);
       for (let i = 0; i < encryptedBytes.length; i++) {
         encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
       }
       
-      // Extract C1 and compress it
+      // 提取 C1 并压缩
       const c1Uncompressed = encryptedBytes.slice(0, 65);
       const c1Hex = Array.from(c1Uncompressed).map(b => b.toString(16).padStart(2, '0')).join('');
       const c1Compressed = compressPublicKey(c1Hex);
@@ -205,7 +205,7 @@ describe('SM2 Cryptographic Algorithm', () => {
         c1CompressedBytes[i] = parseInt(c1Compressed.slice(i * 2, i * 2 + 2), 16);
       }
       
-      // Reassemble ciphertext: compressed C1 + C3 + C2
+      // 重新组合密文：压缩的 C1 + C3 + C2
       const c3c2 = encryptedBytes.slice(65);
       const compressedCipherBytes = new Uint8Array(c1CompressedBytes.length + c3c2.length);
       compressedCipherBytes.set(c1CompressedBytes, 0);
@@ -213,31 +213,31 @@ describe('SM2 Cryptographic Algorithm', () => {
       
       const compressedCipher = Array.from(compressedCipherBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       
-      // Verify ciphertext starts with 02 or 03 (compressed format)
+      // 验证密文以 02 或 03 开头（压缩格式）
       expect(compressedCipher.startsWith('02') || compressedCipher.startsWith('03')).toBe(true);
       
-      // Decryption should auto-detect compressed format
+      // 解密时应该自动检测压缩格式
       const decrypted = decrypt(keyPair.privateKey, compressedCipher);
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should auto-detect C1C2C3 mode with compressed format', () => {
+    it('应该能够在压缩格式下自动检测 C1C2C3 模式', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test compressed C1C2C3 format';
       
-      // Encrypt in C1C2C3 mode
+      // 加密为 C1C2C3 模式
       const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
       const encryptedBytes = new Uint8Array(encrypted.length / 2);
       for (let i = 0; i < encryptedBytes.length; i++) {
         encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
       }
       
-      // Extract C1, C2, C3
+      // 提取 C1、C2、C3
       const c1Uncompressed = encryptedBytes.slice(0, 65);
       const c2 = encryptedBytes.slice(65, encryptedBytes.length - 32);
       const c3 = encryptedBytes.slice(encryptedBytes.length - 32);
       
-      // Compress C1
+      // 压缩 C1
       const c1Hex = Array.from(c1Uncompressed).map(b => b.toString(16).padStart(2, '0')).join('');
       const c1Compressed = compressPublicKey(c1Hex);
       const c1CompressedBytes = new Uint8Array(c1Compressed.length / 2);
@@ -245,7 +245,7 @@ describe('SM2 Cryptographic Algorithm', () => {
         c1CompressedBytes[i] = parseInt(c1Compressed.slice(i * 2, i * 2 + 2), 16);
       }
       
-      // Reassemble ciphertext: compressed C1 + C2 + C3 (C1C2C3 order)
+      // 重新组合密文：压缩的 C1 + C2 + C3（C1C2C3 顺序）
       const compressedCipherBytes = new Uint8Array(c1CompressedBytes.length + c2.length + c3.length);
       compressedCipherBytes.set(c1CompressedBytes, 0);
       compressedCipherBytes.set(c2, c1CompressedBytes.length);
@@ -253,52 +253,52 @@ describe('SM2 Cryptographic Algorithm', () => {
       
       const compressedCipher = Array.from(compressedCipherBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       
-      // Verify ciphertext starts with 02 or 03 (compressed format)
+      // 验证密文以 02 或 03 开头（压缩格式）
       expect(compressedCipher.startsWith('02') || compressedCipher.startsWith('03')).toBe(true);
       
-      // Decryption should auto-detect format and mode
+      // 解密时应该自动检测格式和模式
       const decrypted = decrypt(keyPair.privateKey, compressedCipher);
       expect(decrypted).toBe(plaintext);
     });
 
-    it('should reject invalid ciphertext format', () => {
+    it('应该拒绝无效格式的密文', () => {
       const keyPair = generateKeyPair();
       
-      // Test empty ciphertext
+      // 测试空密文
       expect(() => decrypt(keyPair.privateKey, '')).toThrow('Invalid ciphertext: empty data');
       
-      // Test invalid first byte (not 0x30, 0x04, 0x02, 0x03)
+      // 测试无效首字节（不是 0x30, 0x04, 0x02, 0x03）
       const invalidCipher = '05' + '00'.repeat(100);
       expect(() => decrypt(keyPair.privateKey, invalidCipher)).toThrow('Invalid ciphertext: unsupported format');
       
-      // Test ciphertext too short
+      // 测试密文过短
       const shortCipher = '04' + '00'.repeat(50);
       expect(() => decrypt(keyPair.privateKey, shortCipher)).toThrow('Invalid ciphertext: too short');
     });
 
-    it('should throw error when C3 verification fails', () => {
+    it('应该在 C3 验证失败时抛出错误', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test C3 verification';
       
-      // Normal encryption
+      // 正常加密
       const encrypted = encrypt(keyPair.publicKey, plaintext);
       const encryptedBytes = new Uint8Array(encrypted.length / 2);
       for (let i = 0; i < encryptedBytes.length; i++) {
         encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
       }
       
-      // Tamper with C3 part (assuming C1C3C2 mode, C3 starts at byte 65 for 32 bytes)
-      encryptedBytes[65] ^= 0xFF; // Flip one byte
+      // 篡改 C3 部分（假设是 C1C3C2 模式，C3 在第 65 字节开始的 32 字节）
+      encryptedBytes[65] ^= 0xFF; // 翻转一个字节
       
       const tamperedCipher = Array.from(encryptedBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       
-      // Decryption should fail
+      // 解密应该失败
       expect(() => decrypt(keyPair.privateKey, tamperedCipher)).toThrow();
     });
   });
 
-  describe('Signature and Verification', () => {
-    it('should sign data', () => {
+  describe('签名与验签', () => {
+    it('应该能够对数据进行签名', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello, SM2!';
       const signature = sign(keyPair.privateKey, data);
@@ -306,7 +306,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(signature).toMatch(/^[0-9a-f]+$/);
     });
 
-    it('should verify signature', () => {
+    it('应该能够验证签名', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello, SM2!';
       const signature = sign(keyPair.privateKey, data);
@@ -314,7 +314,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(isValid).toBe(true);
     });
 
-    it('should accept Uint8Array input', () => {
+    it('应该接受 Uint8Array 输入', () => {
       const keyPair = generateKeyPair();
       const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
       const signature = sign(keyPair.privateKey, data);
@@ -324,7 +324,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(isValid).toBe(true);
     });
 
-    it('should support configuration options', () => {
+    it('应该支持配置选项', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello';
       
@@ -335,24 +335,24 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(isValid).toBe(true);
     });
 
-    it('should support skip Z computation option', () => {
+    it('应该支持跳过 Z 值计算选项', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello, SM2!';
       
-      // Sign with Z computation skipped
+      // 签名时跳过 Z 值计算
       const signature = sign(keyPair.privateKey, data, { skipZComputation: true });
       expect(signature).toBeTruthy();
       
-      // Verification also needs to skip Z computation
+      // 验证时也需要跳过 Z 值计算
       const isValid = verify(keyPair.publicKey, data, signature, { skipZComputation: true });
       expect(isValid).toBe(true);
       
-      // If verification doesn't skip Z computation, it should fail
+      // 如果验证时不跳过 Z 值计算，应该验证失败
       const isInvalid = verify(keyPair.publicKey, data, signature, { skipZComputation: false });
       expect(isInvalid).toBe(false);
     });
 
-    it('should verify signature using compressed public key', () => {
+    it('应该能使用压缩公钥进行验签', () => {
       const keyPair = generateKeyPair();
       const compressed = compressPublicKey(keyPair.publicKey);
       const data = 'Hello, SM2!';
@@ -363,19 +363,19 @@ describe('SM2 Cryptographic Algorithm', () => {
     });
   });
 
-  describe('SM2 Key Exchange Protocol', () => {
-    it('should perform basic key exchange', () => {
-      // Generate two key pairs
+  describe('SM2 密钥交换协议', () => {
+    it('应该能够进行基本的密钥交换', () => {
+      // 生成两个密钥对
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       
-      // A generates temporary key pair
+      // A 生成临时密钥对
       const tempKeyPairA = generateKeyPair();
       
-      // B generates temporary key pair
+      // B 生成临时密钥对
       const tempKeyPairB = generateKeyPair();
       
-      // A as initiator performs key exchange
+      // A 作为发起方执行密钥交换
       const resultA = keyExchange({
         privateKey: keyPairA.privateKey,
         publicKey: keyPairA.publicKey,
@@ -385,7 +385,7 @@ describe('SM2 Cryptographic Algorithm', () => {
         isInitiator: true,
       });
       
-      // B as responder performs key exchange
+      // B 作为响应方执行密钥交换
       const resultB = keyExchange({
         privateKey: keyPairB.privateKey,
         publicKey: keyPairB.publicKey,
@@ -395,18 +395,18 @@ describe('SM2 Cryptographic Algorithm', () => {
         isInitiator: false,
       });
       
-      // Verify both parties get the same shared key
+      // 验证双方得到相同的共享密钥
       expect(resultA.sharedKey).toBe(resultB.sharedKey);
       expect(resultA.sharedKey).toBeTruthy();
       expect(resultA.sharedKey).toMatch(/^[0-9a-f]+$/);
     });
 
-    it('should auto-generate temporary key pair', () => {
+    it('应该能够自动生成临时密钥对', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairB = generateKeyPair();
       
-      // A doesn't provide temporary key, let function auto-generate
+      // A 不提供临时密钥，让函数自动生成
       const resultA1 = keyExchange({
         privateKey: keyPairA.privateKey,
         publicKey: keyPairA.publicKey,
@@ -417,16 +417,16 @@ describe('SM2 Cryptographic Algorithm', () => {
       
       expect(resultA1.tempPublicKey).toBeTruthy();
       expect(resultA1.tempPublicKey).toMatch(/^[0-9a-f]+$/);
-      expect(resultA1.tempPublicKey.length).toBe(130); // uncompressed format
+      expect(resultA1.tempPublicKey.length).toBe(130); // 非压缩格式
     });
 
-    it('should support custom key length', () => {
+    it('应该支持自定义密钥长度', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairA = generateKeyPair();
       const tempKeyPairB = generateKeyPair();
       
-      // Test 32-byte key
+      // 测试 32 字节密钥
       const resultA = keyExchange({
         privateKey: keyPairA.privateKey,
         peerPublicKey: keyPairB.publicKey,
@@ -446,10 +446,10 @@ describe('SM2 Cryptographic Algorithm', () => {
       });
       
       expect(resultA.sharedKey).toBe(resultB.sharedKey);
-      expect(resultA.sharedKey.length).toBe(64); // 32 bytes = 64 hex chars
+      expect(resultA.sharedKey.length).toBe(64); // 32 字节 = 64 hex chars
     });
 
-    it('should generate correct confirmation hashes', () => {
+    it('应该生成正确的确认哈希值', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairA = generateKeyPair();
@@ -471,26 +471,26 @@ describe('SM2 Cryptographic Algorithm', () => {
         isInitiator: false,
       });
       
-      // Verify confirmation hashes exist
+      // 验证确认哈希值存在
       expect(resultA.s1).toBeTruthy();
       expect(resultA.s2).toBeTruthy();
       expect(resultB.s1).toBeTruthy();
       expect(resultB.s2).toBeTruthy();
       
-      // Verify hashes are valid hex strings
+      // 验证哈希值是有效的十六进制字符串
       expect(resultA.s1).toMatch(/^[0-9a-f]+$/);
       expect(resultA.s2).toMatch(/^[0-9a-f]+$/);
       expect(resultB.s1).toMatch(/^[0-9a-f]+$/);
       expect(resultB.s2).toMatch(/^[0-9a-f]+$/);
       
-      // Verify hash length is 64 characters (32 bytes SM3 hash)
+      // 验证哈希值长度为 64 字符（32 字节 SM3 哈希）
       expect(resultA.s1?.length).toBe(64);
       expect(resultA.s2?.length).toBe(64);
       expect(resultB.s1?.length).toBe(64);
       expect(resultB.s2?.length).toBe(64);
     });
 
-    it('should support custom user ID', () => {
+    it('应该支持自定义用户 ID', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairA = generateKeyPair();
@@ -519,18 +519,18 @@ describe('SM2 Cryptographic Algorithm', () => {
         isInitiator: false,
       });
       
-      // Even with custom user IDs, both parties should get the same shared key
+      // 即使使用自定义用户 ID，双方也应该得到相同的共享密钥
       expect(resultA.sharedKey).toBe(resultB.sharedKey);
     });
 
-    it('should generate different shared keys with different parameters', () => {
+    it('应该在不同参数下生成不同的共享密钥', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairA1 = generateKeyPair();
       const tempKeyPairA2 = generateKeyPair();
       const tempKeyPairB = generateKeyPair();
       
-      // Using different temporary keys should produce different shared keys
+      // 使用不同的临时密钥应该产生不同的共享密钥
       const result1 = keyExchange({
         privateKey: keyPairA.privateKey,
         peerPublicKey: keyPairB.publicKey,
@@ -550,7 +550,7 @@ describe('SM2 Cryptographic Algorithm', () => {
       expect(result1.sharedKey).not.toBe(result2.sharedKey);
     });
 
-    it('should perform key exchange using compressed public keys', () => {
+    it('应该能够使用压缩公钥进行密钥交换', () => {
       const keyPairA = generateKeyPair();
       const keyPairB = generateKeyPair();
       const tempKeyPairA = generateKeyPair();
