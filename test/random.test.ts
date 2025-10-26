@@ -1,50 +1,50 @@
 import { describe, it, expect } from 'vitest';
 import { generateKeyPair } from '../src/crypto/sm2';
 
-describe('Random Number Generation 随机数生成测试', () => {
-  describe('随机数生成器回退机制', () => {
-    it('应该使用 Web Crypto API 作为第一优先级', () => {
-      // Web Crypto API 应该可用（通过 test/setup.ts 的 polyfill）
+describe('Random Number Generation', () => {
+  describe('Random Generator Fallback Mechanism', () => {
+    it('should use Web Crypto API as first priority', () => {
+      // Web Crypto API should be available (via test/setup.ts polyfill)
       expect(globalThis.crypto).toBeDefined();
       expect(globalThis.crypto.getRandomValues).toBeDefined();
       
-      // 生成密钥对应该成功
+      // Key pair generation should succeed
       const keyPair = generateKeyPair();
       expect(keyPair.privateKey).toBeTruthy();
       expect(keyPair.publicKey).toBeTruthy();
     });
 
-    it('应该生成唯一的随机密钥', () => {
-      // 生成多个密钥对
+    it('should generate unique random keys', () => {
+      // Generate multiple key pairs
       const keyPairs = [];
       for (let i = 0; i < 5; i++) {
         keyPairs.push(generateKeyPair());
       }
       
-      // 检查所有私钥都是唯一的
+      // Check that all private keys are unique
       const uniquePrivateKeys = new Set(keyPairs.map(kp => kp.privateKey));
       expect(uniquePrivateKeys.size).toBe(5);
       
-      // 检查所有公钥都是唯一的
+      // Check that all public keys are unique
       const uniquePublicKeys = new Set(keyPairs.map(kp => kp.publicKey));
       expect(uniquePublicKeys.size).toBe(5);
     });
 
-    it('生成的密钥应该符合 SM2 规范', () => {
+    it('should generate keys compliant with SM2 specification', () => {
       const keyPair = generateKeyPair();
       
-      // 私钥应该是 64 个十六进制字符（32 字节）
+      // Private key should be 64 hex characters (32 bytes)
       expect(keyPair.privateKey).toMatch(/^[0-9a-f]{64}$/);
       
-      // 公钥应该是 130 个十六进制字符（65 字节，04 + x + y）
-      // 或 66 个字符（压缩格式）
+      // Public key should be 130 hex characters (65 bytes, 04 + x + y)
+      // or 66 characters (compressed format)
       expect(keyPair.publicKey.length).toBeGreaterThanOrEqual(66);
       expect(keyPair.publicKey).toMatch(/^[0-9a-f]+$/);
     });
   });
 
-  describe('性能测试', () => {
-    it('应该能够快速生成密钥对', () => {
+  describe('Performance Test', () => {
+    it('should generate key pairs quickly', () => {
       const startTime = Date.now();
       const iterations = 10;
       
@@ -56,10 +56,10 @@ describe('Random Number Generation 随机数生成测试', () => {
       const duration = endTime - startTime;
       const avgTime = duration / iterations;
       
-      // 平均每个密钥对生成应该在合理时间内完成（小于 1 秒）
+      // Average key pair generation should complete in reasonable time (less than 1 second)
       expect(avgTime).toBeLessThan(1000);
       
-      console.log(`生成 ${iterations} 个密钥对平均耗时: ${avgTime.toFixed(2)}ms`);
+      console.log(`Average time to generate ${iterations} key pairs: ${avgTime.toFixed(2)}ms`);
     });
   });
 });
