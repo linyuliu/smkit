@@ -42,6 +42,17 @@ export {
 
 export { SM4 } from './crypto/sm4/class';
 
+// ZUC 流密码算法
+export {
+  encrypt as zucEncrypt,
+  decrypt as zucDecrypt,
+  getKeystream as zucKeystream,
+  eea3,
+  eia3,
+  ZUCState,
+  generateKeystream as zucGenerateKeystream,
+} from './crypto/zuc';
+
 // 常量
 export {
   CipherMode,
