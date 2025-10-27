@@ -333,6 +333,36 @@ const curveParams = {
 const sm2Custom = SM2.generateKeyPair(curveParams);
 ```
 
+#### ZUC - Stream Cipher
+
+```typescript
+import { ZUC } from 'smkit';
+
+const key = '00112233445566778899aabbccddeeff';
+const iv = 'ffeeddccbbaa99887766554433221100';
+
+// Using constructor
+const zuc = new ZUC(key, iv);
+const encrypted = zuc.encrypt('Hello, ZUC!');
+const decrypted = zuc.decrypt(encrypted);
+
+// Using factory method
+const zuc128 = ZUC.ZUC128(key, iv);
+
+// Generate keystream
+const keystream = zuc.keystream(4); // Generate 4 32-bit words
+
+// Set new IV
+zuc.setIV('00000000000000000000000000000000');
+
+// EEA3 static method (3GPP LTE encryption)
+const eea3Keystream = ZUC.eea3(key, 0x12345678, 5, 0, 256);
+
+// EIA3 static method (3GPP LTE integrity)
+const mac = ZUC.eia3(key, 0x12345678, 5, 0, 'Message to authenticate');
+```
+
+
 ### Utility Functions
 
 ```typescript
