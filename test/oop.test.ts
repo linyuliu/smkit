@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SM2, SM3, SM4 } from '../src/index';
+import { SM2, SM3, SM4, ZUC } from '../src/index';
 import { CipherMode, PaddingMode, SM2CipherMode } from '../src/types/constants';
 
 describe('Object-Oriented API', () => {
@@ -295,6 +295,97 @@ describe('Object-Oriented API', () => {
       const encrypted = sm4.encrypt(plaintext);
       const decrypted = sm4.decrypt(encrypted);
       expect(decrypted).toBe(plaintext);
+    });
+  });
+
+  describe('ZUC', () => {
+    it('should encrypt and decrypt data', () => {
+      const key = '00000000000000000000000000000000';
+      const iv = '00000000000000000000000000000000';
+      const zuc = new ZUC(key, iv);
+      const plaintext = 'Hello, ZUC!';
+      
+      const encrypted = zuc.encrypt(plaintext);
+      expect(encrypted).toBeTruthy();
+      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      
+      const decrypted = zuc.decrypt(encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should allow IV updates', () => {
+      const key = '00112233445566778899aabbccddeeff';
+      const iv1 = '00000000000000000000000000000000';
+      const iv2 = 'ffffffffffffffffffffffffffffffff';
+      const zuc = new ZUC(key, iv1);
+      const plaintext = 'Test message';
+      
+      const encrypted1 = zuc.encrypt(plaintext);
+      
+      zuc.setIV(iv2);
+      expect(zuc.getIV()).toBe(iv2);
+      
+      const encrypted2 = zuc.encrypt(plaintext);
+      expect(encrypted1).not.toBe(encrypted2);
+    });
+
+    it('should generate keystream', () => {
+      const key = '00000000000000000000000000000000';
+      const iv = '00000000000000000000000000000000';
+      const zuc = new ZUC(key, iv);
+      
+      const keystream = zuc.keystream(4);
+      expect(keystream).toHaveLength(32); // 4 words * 8 hex chars
+      expect(keystream).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('should support ZUC-128 static factory', () => {
+      const key = 'ffffffffffffffffffffffffffffffff';
+      const iv = '00000000000000000000000000000000';
+      const zuc = ZUC.ZUC128(key, iv);
+      const plaintext = 'Test';
+      
+      const encrypted = zuc.encrypt(plaintext);
+      const decrypted = zuc.decrypt(encrypted);
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should support EEA3 static method', () => {
+      const key = '00000000000000000000000000000000';
+      const count = 0x12345678;
+      const bearer = 0x15;
+      const direction = 0;
+      const length = 128;
+      
+      const keystream = ZUC.eea3(key, count, bearer, direction, length);
+      expect(keystream).toBeTruthy();
+      expect(keystream).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('should support EIA3 static method', () => {
+      const key = '00000000000000000000000000000000';
+      const count = 0x12345678;
+      const bearer = 0x15;
+      const direction = 0;
+      const message = 'Test message';
+      
+      const mac = ZUC.eia3(key, count, bearer, direction, message);
+      expect(mac).toBeTruthy();
+      expect(mac).toHaveLength(8); // 32-bit MAC as 8 hex chars
+      expect(mac).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('should work with Uint8Array inputs', () => {
+      const key = new Uint8Array(16).fill(0);
+      const iv = new Uint8Array(16).fill(1);
+      const zuc = new ZUC(key, iv);
+      const plaintext = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
+      
+      const encrypted = zuc.encrypt(plaintext);
+      expect(encrypted).toBeTruthy();
+      
+      const decrypted = zuc.decrypt(encrypted);
+      expect(decrypted).toBe('Hello');
     });
   });
 });
