@@ -387,6 +387,36 @@ const curveParams = {
 const sm2Custom = SM2.generateKeyPair(curveParams);
 ```
 
+#### ZUC - 流密码
+
+```typescript
+import { ZUC } from 'smkit';
+
+const key = '00112233445566778899aabbccddeeff';
+const iv = 'ffeeddccbbaa99887766554433221100';
+
+// 使用构造函数
+const zuc = new ZUC(key, iv);
+const encrypted = zuc.encrypt('Hello, ZUC!');
+const decrypted = zuc.decrypt(encrypted);
+
+// 使用工厂方法
+const zuc128 = ZUC.ZUC128(key, iv);
+
+// 生成密钥流
+const keystream = zuc.keystream(4); // 生成 4 个 32 位字
+
+// 设置新的 IV
+zuc.setIV('00000000000000000000000000000000');
+
+// EEA3 静态方法（3GPP LTE 加密）
+const eea3Keystream = ZUC.eea3(key, 0x12345678, 5, 0, 256);
+
+// EIA3 静态方法（3GPP LTE 完整性）
+const mac = ZUC.eia3(key, 0x12345678, 5, 0, 'Message to authenticate');
+```
+
+
 ### 工具函数
 
 ```typescript
