@@ -19,6 +19,7 @@ import * as zucFunctions from './crypto/zuc';
 import { SM2 as SM2Class } from './crypto/sm2/class';
 import { SM3 as SM3Class } from './crypto/sm3/class';
 import { SM4 as SM4Class } from './crypto/sm4/class';
+import { ZUC as ZUCClass } from './crypto/zuc/class';
 
 /**
  * SM2 椭圆曲线密码算法模块
@@ -49,10 +50,11 @@ export const sm4 = {
 
 /**
  * ZUC 流密码算法模块
- * 包含所有 ZUC 相关的函数
+ * 包含所有 ZUC 相关的函数和类
  */
 export const zuc = {
   ...zucFunctions,
+  ZUC: ZUCClass,
 };
 
 // ============================================================================
@@ -108,6 +110,8 @@ export {
   ZUCState,
   generateKeystream as zucGenerateKeystream,
 } from './crypto/zuc';
+
+export { ZUC } from './crypto/zuc/class';
 
 // ============================================================================
 // 常量和类型导出

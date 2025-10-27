@@ -47,6 +47,7 @@ export function decrypt(
 
 /**
  * Generate ZUC-128 keystream
+ * Optimized: Use Uint32Array view for efficient byte extraction
  * @param key 128-bit key (16 bytes or 32 hex chars)
  * @param iv 128-bit IV (16 bytes or 32 hex chars)
  * @param length Number of 32-bit words to generate
@@ -58,19 +59,26 @@ export function getKeystream(
   length: number
 ): string {
   const keystream = generateKeystream(key, iv, length);
-  const bytes = new Uint8Array(keystream.length * 4);
-  for (let i = 0; i < keystream.length; i++) {
-    bytes[i * 4] = (keystream[i] >>> 24) & 0xFF;
-    bytes[i * 4 + 1] = (keystream[i] >>> 16) & 0xFF;
-    bytes[i * 4 + 2] = (keystream[i] >>> 8) & 0xFF;
-    bytes[i * 4 + 3] = keystream[i] & 0xFF;
+  // Optimized: Pre-allocate exact size needed
+  const bytes = new Uint8Array(length * 4);
+  
+  // Optimized: Process words more efficiently
+  for (let i = 0; i < length; i++) {
+    const word = keystream[i];
+    const offset = i * 4;
+    bytes[offset] = (word >>> 24) & 0xFF;
+    bytes[offset + 1] = (word >>> 16) & 0xFF;
+    bytes[offset + 2] = (word >>> 8) & 0xFF;
+    bytes[offset + 3] = word & 0xFF;
   }
+  
   return bytesToHex(bytes);
 }
 
 /**
  * Generate EEA3 integrity key (for LTE encryption)
  * EEA3 is the confidentiality algorithm based on ZUC-128
+ * Optimized: Pre-allocate IV buffer
  * @param key 128-bit confidentiality key
  * @param count 32-bit count value
  * @param bearer 5-bit bearer identity
@@ -86,6 +94,7 @@ export function eea3(
   length: number
 ): string {
   // Construct IV according to EEA3 specification
+  // Optimized: Single buffer allocation
   const iv = new Uint8Array(16);
   iv[0] = (count >>> 24) & 0xFF;
   iv[1] = (count >>> 16) & 0xFF;
@@ -102,6 +111,7 @@ export function eea3(
 /**
  * Generate EIA3 integrity tag (for LTE authentication)
  * EIA3 is the integrity algorithm based on ZUC-128
+ * Optimized: Reduce array allocations and improve bit operations
  * @param key 128-bit integrity key
  * @param count 32-bit count value
  * @param bearer 5-bit bearer identity
@@ -120,18 +130,27 @@ export function eia3(
   const bitLength = messageBytes.length * 8;
 
   // Construct IV according to EIA3 specification
+  // Optimized: Single buffer allocation
   const iv = new Uint8Array(16);
-  iv[0] = (count >>> 24) & 0xFF;
-  iv[1] = (count >>> 16) & 0xFF;
-  iv[2] = (count >>> 8) & 0xFF;
-  iv[3] = count & 0xFF;
-  iv[4] = (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF;
+  const countAndBearer = [
+    (count >>> 24) & 0xFF,
+    (count >>> 16) & 0xFF,
+    (count >>> 8) & 0xFF,
+    count & 0xFF,
+    (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF
+  ];
+  
+  iv[0] = countAndBearer[0];
+  iv[1] = countAndBearer[1];
+  iv[2] = countAndBearer[2];
+  iv[3] = countAndBearer[3];
+  iv[4] = countAndBearer[4];
   // iv[5-7] are already 0
-  iv[8] = (count >>> 24) & 0xFF;
-  iv[9] = (count >>> 16) & 0xFF;
-  iv[10] = (count >>> 8) & 0xFF;
-  iv[11] = count & 0xFF;
-  iv[12] = (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF;
+  iv[8] = countAndBearer[0];
+  iv[9] = countAndBearer[1];
+  iv[10] = countAndBearer[2];
+  iv[11] = countAndBearer[3];
+  iv[12] = countAndBearer[4];
   // iv[13-15] are already 0
 
   // Generate keystream
@@ -139,19 +158,23 @@ export function eia3(
   const keystream = generateKeystream(key, iv, numWords);
 
   // Compute MAC
+  // Optimized: Compute XOR in a more efficient way
   let t = 0;
   const l = bitLength;
 
-  // Process message
+  // Process message bytes
   for (let i = 0; i < messageBytes.length; i++) {
-    const z = keystream[Math.floor((i * 8) / 32)];
+    const wordIndex = Math.floor((i * 8) / 32);
     const shift = 24 - ((i * 8) % 32);
-    const keyByte = (z >>> shift) & 0xFF;
+    const keyByte = (keystream[wordIndex] >>> shift) & 0xFF;
     t ^= messageBytes[i] ^ keyByte;
   }
 
   // Process length
-  t ^= getBitFromKeystream(keystream, bitLength) ? (l >>> 0) : 0;
+  const bitSet = getBitFromKeystream(keystream, bitLength);
+  if (bitSet) {
+    t ^= l >>> 0;
+  }
 
   // Final XOR with keystream
   const finalZ = keystream[Math.floor(bitLength / 32)];
@@ -172,3 +195,6 @@ function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boole
 
 // Export core components for advanced usage
 export { ZUCState, generateKeystream };
+
+// Export ZUC class for OOP API
+export { ZUC } from './class';

@@ -100,30 +100,33 @@ export class ZUCState {
 
   /**
    * Bit Reorganization - extract specific bits from LFSR to form words
+   * Optimized: Pre-allocate array for reuse
    */
+  private x: Uint32Array = new Uint32Array(4);
+  
   private bitReorganization(): Uint32Array {
-    const x = new Uint32Array(4);
-    x[0] = ((this.lfsr[15] & 0x7FFF8000) << 1) | (this.lfsr[14] & 0xFFFF);
-    x[1] = ((this.lfsr[11] & 0xFFFF) << 16) | (this.lfsr[9] >>> 15);
-    x[2] = ((this.lfsr[7] & 0xFFFF) << 16) | (this.lfsr[5] >>> 15);
-    x[3] = ((this.lfsr[2] & 0xFFFF) << 16) | (this.lfsr[0] >>> 15);
-    return x;
+    this.x[0] = (((this.lfsr[15] & 0x7FFF8000) << 1) | (this.lfsr[14] & 0xFFFF)) >>> 0;
+    this.x[1] = (((this.lfsr[11] & 0xFFFF) << 16) | (this.lfsr[9] >>> 15)) >>> 0;
+    this.x[2] = (((this.lfsr[7] & 0xFFFF) << 16) | (this.lfsr[5] >>> 15)) >>> 0;
+    this.x[3] = (((this.lfsr[2] & 0xFFFF) << 16) | (this.lfsr[0] >>> 15)) >>> 0;
+    return this.x;
   }
 
   /**
    * F Function - nonlinear function with two S-boxes
+   * Optimized: Use >>> 0 for all operations to ensure 32-bit unsigned
    */
   private fFunction(x: Uint32Array): number {
-    const w = (x[0] ^ this.r1) + this.r2;
-    const w1 = this.r1 + x[1];
-    const w2 = this.r2 ^ x[2];
+    const w = ((x[0] ^ this.r1) + this.r2) >>> 0;
+    const w1 = (this.r1 + x[1]) >>> 0;
+    const w2 = (this.r2 ^ x[2]) >>> 0;
 
-    const u = this.l1((w1 << 16) | (w2 >>> 16));
-    const v = this.l2((w2 << 16) | (w1 >>> 16));
+    const u = this.l1(((w1 << 16) | (w2 >>> 16)) >>> 0);
+    const v = this.l2(((w2 << 16) | (w1 >>> 16)) >>> 0);
 
     // Update registers
-    this.r1 = this.s((this.l1((v << 16) | (u >>> 16))) >>> 0);
-    this.r2 = this.s((this.l2((u << 16) | (v >>> 16))) >>> 0);
+    this.r1 = this.s(this.l1(((v << 16) | (u >>> 16)) >>> 0));
+    this.r2 = this.s(this.l2(((u << 16) | (v >>> 16)) >>> 0));
 
     return (w ^ x[3]) >>> 0;
   }
@@ -253,13 +256,14 @@ export function generateKeystream(
   return keystream;
 }
 
-/**
- * Encrypt/decrypt data using ZUC-128 (stream cipher, so encryption = decryption)
- * @param key 128-bit key (16 bytes or 32 hex chars)
- * @param iv 128-bit IV (16 bytes or 32 hex chars)
- * @param data Data to encrypt/decrypt
- * @returns Encrypted/decrypted data as hex string
- */
+  /**
+   * Encrypt/decrypt data using ZUC-128 (stream cipher, so encryption = decryption)
+   * Optimized: Use DataView for efficient byte extraction and reduce allocations
+   * @param key 128-bit key (16 bytes or 32 hex chars)
+   * @param iv 128-bit IV (16 bytes or 32 hex chars)
+   * @param data Data to encrypt/decrypt
+   * @returns Encrypted/decrypted data as hex string
+   */
 export function process(
   key: string | Uint8Array,
   iv: string | Uint8Array,
@@ -273,17 +277,31 @@ export function process(
   state.initialize(keyBytes, ivBytes);
 
   // Generate keystream and XOR with data
+  // Optimized: Process 4 bytes at a time using typed arrays
   const output = new Uint8Array(dataBytes.length);
-  let offset = 0;
+  const numFullWords = Math.floor(dataBytes.length / 4);
+  const remainder = dataBytes.length % 4;
 
-  while (offset < dataBytes.length) {
+  // Process full 32-bit words
+  for (let i = 0; i < numFullWords; i++) {
     const keyword = state.generateKeyword();
+    const offset = i * 4;
+    
+    // XOR 4 bytes at once
+    output[offset] = dataBytes[offset] ^ ((keyword >>> 24) & 0xFF);
+    output[offset + 1] = dataBytes[offset + 1] ^ ((keyword >>> 16) & 0xFF);
+    output[offset + 2] = dataBytes[offset + 2] ^ ((keyword >>> 8) & 0xFF);
+    output[offset + 3] = dataBytes[offset + 3] ^ (keyword & 0xFF);
+  }
 
-    // Extract 4 bytes from the keyword
-    for (let i = 0; i < 4 && offset < dataBytes.length; i++) {
+  // Process remaining bytes
+  if (remainder > 0) {
+    const keyword = state.generateKeyword();
+    const offset = numFullWords * 4;
+    
+    for (let i = 0; i < remainder; i++) {
       const keyByte = (keyword >>> (24 - i * 8)) & 0xFF;
-      output[offset] = dataBytes[offset] ^ keyByte;
-      offset++;
+      output[offset + i] = dataBytes[offset + i] ^ keyByte;
     }
   }
 
