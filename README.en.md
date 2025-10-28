@@ -612,6 +612,8 @@ SMKit follows functional programming principles with all features implemented as
 - **Strong composability**: Combine functions like building blocks
 - **Flexibility**: Choose functional or object-oriented style
 
+For detailed architecture documentation, see [Architecture Guide](./docs/ARCHITECTURE.zh-CN.md)
+
 ## Building from Source
 
 ```bash
@@ -627,6 +629,43 @@ npm run build
 # Type check
 npm run type-check
 ```
+
+## Local Testing
+
+Want to quickly test all features? We provide comprehensive testing guides and scripts:
+
+```bash
+# Run interactive test script (recommended)
+npx tsx test-local.ts
+
+# Or view detailed testing guide
+cat TESTING.zh-CN.md
+```
+
+Test coverage:
+- ✅ SM3 hash and HMAC
+- ✅ SM4 multiple modes (ECB, CBC, CTR, CFB, OFB, GCM)
+- ✅ SM2 key generation, encryption/decryption, signing/verification, key exchange
+- ✅ ZUC encryption/decryption, EEA3, EIA3
+
+For detailed testing instructions, see [Local Testing Guide](./TESTING.zh-CN.md)
+
+## Integration with Hutool Backend
+
+If you need to integrate SMKit on the frontend with Hutool (Java) on the backend, we provide a complete integration guide:
+
+```bash
+# View integration guide
+cat docs/HUTOOL-INTEGRATION.zh-CN.md
+```
+
+The guide includes:
+- Data format compatibility table
+- Complete SM3/SM4/SM2 integration examples
+- Common issues and solutions
+- Key format conversion methods
+
+For details, see [Hutool Integration Guide](./docs/HUTOOL-INTEGRATION.zh-CN.md)
 
 ## License
 
@@ -658,7 +697,20 @@ Key updates in GMT 0009-2023 compared to GMT 0009-2012:
 
 ## Note
 
-SMKit provides full implementations of SM2, SM3, and SM4 algorithms, validated by 128 unit tests. All core features are implemented and production-ready.
+SMKit provides full implementations of SM2, SM3, SM4, and ZUC algorithms, validated by 214+ unit tests. All core features are implemented and production-ready.
+
+## Documentation
+
+For more documentation, see the [docs](./docs) directory:
+
+- [Local Testing Guide](./TESTING.zh-CN.md) - How to test encryption/decryption, signing/verification, etc.
+- [Hutool Integration Guide](./docs/HUTOOL-INTEGRATION.zh-CN.md) - Integration with Java Hutool backend
+- [Architecture Guide](./docs/ARCHITECTURE.zh-CN.md) - Project architecture design
+- [Publishing Guide](./docs/PUBLISHING.md) - How to publish new versions
+- [Performance Benchmarks](./docs/PERFORMANCE.md) - Performance test results
+- [Standards Compliance](./docs/GMT-0009-COMPLIANCE.md) - GMT national standard compliance
+
+For a complete documentation index, see [docs/README.md](./docs/README.md)
 
 ## Related Projects
 
