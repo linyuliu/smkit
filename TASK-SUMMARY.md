@@ -200,7 +200,7 @@ smkit/
    ```bash
    # 编辑 CHANGELOG.md，添加以下内容：
    
-   ## [0.2.0] - 2025-10-28
+   ## [0.2.0] - YYYY-MM-DD  # 替换为实际发布日期
    
    ### Added
    - 本地测试脚本 test-local.ts
@@ -223,7 +223,9 @@ smkit/
 
 2. **更新版本号**
    ```bash
-   npm version minor  # 0.1.0 -> 0.2.0
+   # 当前版本: 0.1.0 (查看 package.json 确认)
+   # 建议版本: 0.2.0 (minor version - 新增功能但向后兼容)
+   npm version minor  # 将自动更新为 0.2.0
    ```
 
 3. **提交并推送**
