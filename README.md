@@ -688,7 +688,7 @@ src/
 - **易于扩展**: 新增算法只需添加新模块并导出
 - **中文注释**: 核心代码包含详细的中文注释
 
-详细架构说明请参阅 [架构文档](./ARCHITECTURE.zh-CN.md)
+详细架构说明请参阅 [架构文档](./docs/ARCHITECTURE.zh-CN.md)
 
 ## 从源码构建
 
@@ -705,6 +705,43 @@ npm run build
 # 类型检查
 npm run type-check
 ```
+
+## 本地测试
+
+想要快速测试各项功能？我们提供了完整的测试指南和脚本：
+
+```bash
+# 运行交互式测试脚本（推荐）
+npx tsx test-local.ts
+
+# 或查看详细测试指南
+cat TESTING.zh-CN.md
+```
+
+测试覆盖：
+- ✅ SM3 哈希和 HMAC
+- ✅ SM4 多种模式（ECB, CBC, CTR, CFB, OFB, GCM）
+- ✅ SM2 密钥生成、加密解密、签名验签、密钥交换
+- ✅ ZUC 加密解密、EEA3、EIA3
+
+详细测试说明请参阅 [本地测试指南](./TESTING.zh-CN.md)
+
+## 与 Hutool 后端对接
+
+如果你需要在前端使用 SMKit 与后端 Hutool (Java) 进行国密算法对接，我们提供了完整的集成指南：
+
+```bash
+# 查看对接指南
+cat docs/HUTOOL-INTEGRATION.zh-CN.md
+```
+
+指南包含：
+- 数据格式对照表
+- SM3/SM4/SM2 完整对接示例
+- 常见问题解答
+- 密钥格式转换方法
+
+详细内容请参阅 [Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md)
 
 ## 标准和参考
 
@@ -740,6 +777,19 @@ Apache-2.0
 ## 注意
 
 SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均已实现并可用于生产环境。通过了完整的单元测试覆盖，包括基础加密功能、边界情况和标准测试向量验证。
+
+## 文档
+
+更多文档请查看 [docs](./docs) 目录：
+
+- [本地测试指南](./TESTING.zh-CN.md) - 如何测试加解密、签名验签等功能
+- [Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md) - 与 Java Hutool 后端对接
+- [架构文档](./docs/ARCHITECTURE.zh-CN.md) - 项目架构设计
+- [发布指南](./docs/PUBLISHING.md) - 如何发布新版本
+- [性能测试](./docs/PERFORMANCE.md) - 性能基准测试结果
+- [标准合规](./docs/GMT-0009-COMPLIANCE.md) - GMT 国密标准合规性
+
+完整文档索引请查看 [docs/README.md](./docs/README.md)
 
 ## 相关项目
 
