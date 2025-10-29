@@ -1,6 +1,6 @@
 # SMKit
 
-中国国密算法（SM2、SM3、SM4、ZUC）的纯 TypeScript 实现。
+中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的纯 TypeScript 实现。
 
 简体中文 | [English](./README.en.md)
 
@@ -10,6 +10,8 @@
 - **性能**: 内部数据处理使用 `Uint8Array` 以获得最佳性能
 - **现代化**: 使用 TypeScript 编写，提供一流的类型支持，ES 模块优先，兼容 CommonJS
 - **同构性**: 在 Node.js 和现代浏览器中无缝运行
+- **灵活性**: 支持多种输出格式（hex、base64），适应不同使用场景
+- **国际标准**: 除国密算法外，还支持 SHA 系列哈希算法
 
 ## 安装
 
@@ -87,21 +89,76 @@ npm run demo
 
 ## 使用方法
 
+### 输出格式配置
+
+SMKit 支持灵活的输出格式配置，所有加密和哈希函数都支持以下格式：
+
+- **hex**（十六进制）：默认格式，易于阅读和调试
+- **base64**：更紧凑的格式，节省约 25% 空间，适合网络传输
+
+```typescript
+import { digest, OutputFormat } from 'smkit';
+
+// 十六进制格式（默认）
+const hexHash = digest('Hello, World!');
+console.log(hexHash); // "9b71d224bd62f3..."
+
+// Base64 格式
+const base64Hash = digest('Hello, World!', { outputFormat: OutputFormat.BASE64 });
+console.log(base64Hash); // "m3HSJLLy83h..."
+```
+
+详细使用指南请参阅 [国际标准算法使用指南](./docs/INTERNATIONAL-ALGORITHMS.zh-CN.md)
+
 ### 函数式 API
 
 #### SM3 哈希算法
 
 ```typescript
-import { digest, hmac } from 'smkit';
+import { digest, hmac, OutputFormat } from 'smkit';
 
-// 计算哈希
+// 计算哈希（默认 hex 格式）
 const hash = digest('Hello, SM3!');
 console.log(hash); // 小写十六进制字符串（64 个字符）
+
+// Base64 格式输出
+const base64Hash = digest('Hello, SM3!', { outputFormat: OutputFormat.BASE64 });
+console.log(base64Hash);
 
 // HMAC
 const mac = hmac('secret-key', 'data to authenticate');
 console.log(mac); // 小写十六进制字符串（64 个字符）
+
+// HMAC with Base64 output
+const base64Mac = hmac('secret-key', 'data', { outputFormat: OutputFormat.BASE64 });
 ```
+
+#### SHA 哈希算法（国际标准）
+
+SMKit 还提供高性能的 SHA 系列哈希算法：
+
+```typescript
+import { sha256, sha384, sha512, hmacSha256, OutputFormat } from 'smkit';
+
+// SHA-256
+const hash256 = sha256('Hello, World!');
+console.log(hash256); // 十六进制，64 个字符
+
+// SHA-256 with Base64 output
+const hash256Base64 = sha256('Hello, World!', { outputFormat: OutputFormat.BASE64 });
+
+// SHA-384
+const hash384 = sha384('Hello, World!'); // 96 个字符
+
+// SHA-512
+const hash512 = sha512('Hello, World!'); // 128 个字符
+
+// HMAC-SHA256
+const mac = hmacSha256('secret-key', 'message');
+console.log(mac);
+```
+
+详细文档请参阅 [国际标准算法使用指南](./docs/INTERNATIONAL-ALGORITHMS.zh-CN.md)
 
 #### SM4 分组密码
 
@@ -284,16 +341,53 @@ console.log(decryptedBinary); // 'Hello'
 #### SM3 - 哈希操作
 
 ```typescript
-import { SM3 } from 'smkit';
+import { SM3, OutputFormat } from 'smkit';
 
-// 静态方法
+// 静态方法（默认 hex 格式）
 const hash = SM3.digest('Hello, SM3!');
 const mac = SM3.hmac('secret-key', 'data');
+
+// 静态方法 with Base64 output
+const base64Hash = SM3.digest('Hello, SM3!', { outputFormat: OutputFormat.BASE64 });
 
 // 增量哈希
 const sm3 = new SM3();
 sm3.update('Hello, ').update('SM3!');
 const result = sm3.digest();
+
+// 增量哈希 with Base64 output
+const sm3Base64 = new SM3(OutputFormat.BASE64);
+sm3Base64.update('Hello, ').update('World!');
+const base64Result = sm3Base64.digest();
+```
+
+#### SHA - 哈希算法（国际标准）
+
+```typescript
+import { SHA256, SHA384, SHA512, OutputFormat } from 'smkit';
+
+// SHA-256 静态方法
+const hash = SHA256.digest('Hello, World!');
+const base64Hash = SHA256.digest('Hello, World!', { outputFormat: OutputFormat.BASE64 });
+
+// SHA-256 增量哈希
+const sha = new SHA256();
+sha.update('Hello, ').update('World!');
+const result = sha.digest();
+
+// 支持重置和重复使用
+sha.reset();
+sha.update('New data');
+const hash2 = sha.digest();
+
+// 设置输出格式
+sha.setOutputFormat(OutputFormat.BASE64);
+sha.update('test');
+const base64Hash = sha.digest();
+
+// SHA-384, SHA-512 使用方式相同
+const sha384 = new SHA384();
+const sha512 = new SHA512();
 ```
 
 #### SM4 - 分组密码
@@ -783,6 +877,7 @@ SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均�
 更多文档请查看 [docs](./docs) 目录：
 
 - [本地测试指南](./TESTING.zh-CN.md) - 如何测试加解密、签名验签等功能
+- [国际标准算法使用指南](./docs/INTERNATIONAL-ALGORITHMS.zh-CN.md) - SHA 系列算法、输出格式配置、AES/RSA 使用建议
 - [Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md) - 与 Java Hutool 后端对接
 - [架构文档](./docs/ARCHITECTURE.zh-CN.md) - 项目架构设计
 - [发布指南](./docs/PUBLISHING.md) - 如何发布新版本

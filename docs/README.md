@@ -20,6 +20,7 @@
 ### 集成指南
 
 - [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md) - 与 Hutool 后端对接指南
+- [INTERNATIONAL-ALGORITHMS.zh-CN.md](./INTERNATIONAL-ALGORITHMS.zh-CN.md) - 国际标准算法使用指南（SHA、AES、RSA）
 
 ### 标准与合规
 
@@ -45,6 +46,7 @@
 
 - **开始使用 SMKit** → [README.md](../README.md)
 - **测试功能** → [TESTING.zh-CN.md](../TESTING.zh-CN.md)
+- **使用国际标准算法** → [INTERNATIONAL-ALGORITHMS.zh-CN.md](./INTERNATIONAL-ALGORITHMS.zh-CN.md)
 - **与后端对接** → [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md)
 - **了解架构** → [ARCHITECTURE.zh-CN.md](./ARCHITECTURE.zh-CN.md)
 - **发布新版本** → [PUBLISHING.md](./PUBLISHING.md)
