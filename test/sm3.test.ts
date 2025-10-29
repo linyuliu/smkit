@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { digest, hmac } from '../src/crypto/sm3';
+import { SM3 } from '../src/crypto/sm3/class';
+import { OutputFormat } from '../src/types/constants';
 
 describe('SM3 哈希算法测试', () => {
   describe('digest 摘要计算', () => {
@@ -33,6 +35,17 @@ describe('SM3 哈希算法测试', () => {
       expect(result).toHaveLength(64);
       expect(result).toMatch(/^[0-9a-f]{64}$/);
     });
+
+    it('应该支持 base64 输出格式', () => {
+      const hexResult = digest('abc');
+      const base64Result = digest('abc', { outputFormat: OutputFormat.BASE64 });
+      
+      // base64 结果应该不同于 hex 结果
+      expect(base64Result).not.toBe(hexResult);
+      
+      // base64 结果应该是有效的 base64 字符串
+      expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    });
   });
 
   describe('hmac 消息认证码', () => {
@@ -58,6 +71,48 @@ describe('SM3 哈希算法测试', () => {
       const result = hmac(key, data);
       expect(result).toHaveLength(64);
       expect(result).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('应该支持 base64 输出格式', () => {
+      const key = 'key';
+      const data = 'data';
+      const hexResult = hmac(key, data);
+      const base64Result = hmac(key, data, { outputFormat: OutputFormat.BASE64 });
+      
+      // base64 结果应该不同于 hex 结果
+      expect(base64Result).not.toBe(hexResult);
+      
+      // base64 结果应该是有效的 base64 字符串
+      expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    });
+  });
+
+  describe('SM3 类', () => {
+    it('应该支持设置输出格式', () => {
+      const sm3 = new SM3(OutputFormat.BASE64);
+      sm3.update('abc');
+      const result = sm3.digest();
+      
+      // 应该返回 base64 格式
+      expect(result).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    });
+
+    it('应该支持动态修改输出格式', () => {
+      const sm3 = new SM3();
+      sm3.setOutputFormat(OutputFormat.BASE64);
+      sm3.update('abc');
+      const result = sm3.digest();
+      
+      // 应该返回 base64 格式
+      expect(result).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    });
+
+    it('静态方法应该支持输出格式选项', () => {
+      const hexResult = SM3.digest('abc');
+      const base64Result = SM3.digest('abc', { outputFormat: OutputFormat.BASE64 });
+      
+      expect(hexResult).toMatch(/^[0-9a-f]{64}$/);
+      expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
   });
 });
