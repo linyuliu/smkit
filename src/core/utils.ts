@@ -114,3 +114,81 @@ export function uint32ToBytes4BE(value: number): Uint8Array {
     value & 0xff,
   ]);
 }
+
+/**
+ * Base64 编码表（标准 Base64 字符集）
+ */
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/**
+ * 将 Uint8Array 转换为 Base64 字符串
+ * @param bytes - 要转换的 Uint8Array
+ * @returns Base64 编码的字符串
+ */
+export function bytesToBase64(bytes: Uint8Array): string {
+  let result = '';
+  let i = 0;
+  const len = bytes.length;
+  
+  // 每次处理 3 个字节（24 位）转换为 4 个 Base64 字符
+  while (i < len) {
+    const byte1 = bytes[i++];
+    const byte2 = i < len ? bytes[i++] : 0;
+    const byte3 = i < len ? bytes[i++] : 0;
+    
+    const chunk = (byte1 << 16) | (byte2 << 8) | byte3;
+    
+    result += BASE64_CHARS[(chunk >> 18) & 0x3f];
+    result += BASE64_CHARS[(chunk >> 12) & 0x3f];
+    result += BASE64_CHARS[(chunk >> 6) & 0x3f];
+    result += BASE64_CHARS[chunk & 0x3f];
+  }
+  
+  // 处理填充
+  const padding = (3 - (len % 3)) % 3;
+  if (padding > 0) {
+    result = result.slice(0, -padding) + '='.repeat(padding);
+  }
+  
+  return result;
+}
+
+/**
+ * 将 Base64 字符串转换为 Uint8Array
+ * @param base64 - Base64 编码的字符串
+ * @returns Uint8Array
+ */
+export function base64ToBytes(base64: string): Uint8Array {
+  // 移除空白字符
+  base64 = base64.replace(/\s/g, '');
+  
+  // 创建反向查找表
+  const lookup: { [key: string]: number } = {};
+  for (let i = 0; i < BASE64_CHARS.length; i++) {
+    lookup[BASE64_CHARS[i]] = i;
+  }
+  
+  // 计算输出长度
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  const len = base64.length;
+  const outputLen = (len * 3) / 4 - padding;
+  
+  const bytes = new Uint8Array(outputLen);
+  let byteIndex = 0;
+  
+  // 每次处理 4 个 Base64 字符（24 位）转换为 3 个字节
+  for (let i = 0; i < len; i += 4) {
+    const char1 = lookup[base64[i]] || 0;
+    const char2 = lookup[base64[i + 1]] || 0;
+    const char3 = lookup[base64[i + 2]] || 0;
+    const char4 = lookup[base64[i + 3]] || 0;
+    
+    const chunk = (char1 << 18) | (char2 << 12) | (char3 << 6) | char4;
+    
+    if (byteIndex < outputLen) bytes[byteIndex++] = (chunk >> 16) & 0xff;
+    if (byteIndex < outputLen) bytes[byteIndex++] = (chunk >> 8) & 0xff;
+    if (byteIndex < outputLen) bytes[byteIndex++] = chunk & 0xff;
+  }
+  
+  return bytes;
+}
