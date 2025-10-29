@@ -102,6 +102,7 @@ export { SM2 } from './crypto/sm2/class';
 export {
   digest,
   hmac,
+  type SM3Options,
 } from './crypto/sm3';
 
 export { SM3 } from './crypto/sm3/class';

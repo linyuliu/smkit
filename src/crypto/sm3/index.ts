@@ -1,9 +1,11 @@
 import {
   normalizeInput,
   bytesToHex,
+  bytesToBase64,
   hexToBytes,
   rotl,
 } from '../../core/utils';
+import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 // SM3 常量 - 初始值 IV
 const IV: number[] = [
@@ -125,12 +127,34 @@ function cf(v: number[], b: Uint8Array): number[] {
 }
 
 /**
+ * SM3 哈希选项
+ */
+export interface SM3Options {
+  /**
+   * 输出格式
+   * - hex: 十六进制字符串（默认，保持向后兼容）
+   * - base64: Base64 编码字符串
+   */
+  outputFormat?: OutputFormatType;
+}
+
+/**
  * 计算 SM3 哈希摘要 - 优化版本
  * Optimized digest function with reduced allocations and direct buffer manipulation
  * @param data - 输入数据（字符串或 Uint8Array）
- * @returns 小写十六进制字符串形式的哈希摘要（64 个字符）
+ * @param options - 哈希选项
+ * @returns 哈希摘要（默认为小写十六进制字符串，64 个字符）
+ * 
+ * @example
+ * ```typescript
+ * // 十六进制格式（默认）
+ * const hash = digest('Hello, SM3!');
+ * 
+ * // Base64 格式
+ * const hash64 = digest('Hello, SM3!', { outputFormat: OutputFormat.BASE64 });
+ * ```
  */
-export function digest(data: string | Uint8Array): string {
+export function digest(data: string | Uint8Array, options?: SM3Options): string {
   const bytes = normalizeInput(data);
   const padded = pad(bytes);
   
@@ -150,16 +174,27 @@ export function digest(data: string | Uint8Array): string {
     view.setUint32(i * 4, v[i], false); // false = big-endian
   }
   
-  return bytesToHex(result);
+  // 根据输出格式返回结果
+  return options?.outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result);
 }
 
 /**
  * 计算 SM3-HMAC
  * @param key - 密钥（字符串或 Uint8Array）
  * @param data - 要认证的数据（字符串或 Uint8Array）
- * @returns 小写十六进制字符串形式的 HMAC（64 个字符）
+ * @param options - 哈希选项
+ * @returns HMAC 值（默认为小写十六进制字符串，64 个字符）
+ * 
+ * @example
+ * ```typescript
+ * // 十六进制格式（默认）
+ * const mac = hmac('secret-key', 'data to authenticate');
+ * 
+ * // Base64 格式
+ * const mac64 = hmac('secret-key', 'data to authenticate', { outputFormat: OutputFormat.BASE64 });
+ * ```
  */
-export function hmac(key: string | Uint8Array, data: string | Uint8Array): string {
+export function hmac(key: string | Uint8Array, data: string | Uint8Array, options?: SM3Options): string {
   let keyBytes = normalizeInput(key);
   const dataBytes = normalizeInput(data);
   
@@ -194,5 +229,5 @@ export function hmac(key: string | Uint8Array, data: string | Uint8Array): strin
   outerData.set(opad);
   outerData.set(hexToBytes(innerHash), blockSize);
   
-  return digest(outerData);
+  return digest(outerData, options);
 }
