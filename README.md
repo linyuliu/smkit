@@ -1,12 +1,12 @@
 # SMKit
 
-中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的纯 TypeScript 实现。
+中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的 TypeScript 实现。
 
 简体中文 | [English](./README.en.md)
 
 ## 特性
 
-- **纯粹性**: 核心加密算法使用纯 TypeScript 实现，零运行时依赖
+- **纯粹性**: 核心国密算法使用纯 TypeScript 实现，国际算法基于 @noble/hashes 高性能库
 - **性能**: 内部数据处理使用 `Uint8Array` 以获得最佳性能
 - **现代化**: 使用 TypeScript 编写，提供一流的类型支持，ES 模块优先，兼容 CommonJS
 - **同构性**: 在 Node.js 和现代浏览器中无缝运行

@@ -2,7 +2,7 @@
 
 ## 概述
 
-SMKit 除了提供中国国密算法（SM2, SM3, SM4, ZUC）外，还支持国际标准的哈希算法（SHA-256, SHA-384, SHA-512, SHA-1），并为所有加密输出提供灵活的编码格式选项（hex 和 base64）。
+SMKit 除了提供中国国密算法（SM2, SM3, SM4, ZUC）外，还支持国际标准的哈希算法（SHA-256, SHA-384, SHA-512, SHA-1），并为哈希算法提供灵活的编码格式选项（hex 和 base64）。
 
 ## 输出格式配置
 
@@ -15,10 +15,12 @@ SMKit 除了提供中国国密算法（SM2, SM3, SM4, ZUC）外，还支持国�
 
 SMKit 采用参数配置方式而非函数名后缀方式，原因如下：
 
-1. **API 简洁性**：避免函数名爆炸（如 `sm3Hex`, `sm3Base64`, `sm4EncryptHex`, `sm4EncryptBase64` 等）
+1. **API 简洁性**：避免函数名爆炸（如 `sm3Hex`, `sm3Base64` 等）
 2. **向后兼容**：默认使用 hex 格式，保持与现有代码的兼容性
 3. **类型安全**：使用 TypeScript 枚举提供编译时类型检查
 4. **一致性**：函数式 API 和面向对象 API 都使用相同的配置方式
+
+> **注意**：目前输出格式配置仅支持哈希算法（SM3 和 SHA 系列）。SM2、SM4、ZUC 的加密输出仍为固定的 hex 格式。
 
 ### 使用示例
 
@@ -29,11 +31,11 @@ import { digest, hmac, OutputFormat } from 'smkit';
 
 // 十六进制格式（默认）
 const hexHash = digest('Hello, World!');
-console.log(hexHash); // "9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca7"
+console.log(hexHash); // SM3 哈希值的十六进制表示（64 个字符）
 
 // Base64 格式
 const base64Hash = digest('Hello, World!', { outputFormat: OutputFormat.BASE64 });
-console.log(base64Hash); // "m3HSJLLy83hddkbHra+j02E5v7woirmt5t/3JRlnPKc="
+console.log(base64Hash); // SM3 哈希值的 Base64 表示
 
 // HMAC 也支持输出格式配置
 const hexMac = hmac('key', 'data');
@@ -163,6 +165,9 @@ async function encryptAES(plaintext: string, password: string): Promise<string> 
   const encoder = new TextEncoder();
   const data = encoder.encode(plaintext);
   
+  // 生成随机 salt（推荐做法）
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
   // 从密码派生密钥
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -175,7 +180,7 @@ async function encryptAES(plaintext: string, password: string): Promise<string> 
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: encoder.encode('salt'), // 实际使用中应该随机生成
+      salt: salt,
       iterations: 100000,
       hash: 'SHA-256'
     },
@@ -195,8 +200,8 @@ async function encryptAES(plaintext: string, password: string): Promise<string> 
     data
   );
   
-  // 返回 IV + 密文的 base64 编码
-  const combined = new Uint8Array([...iv, ...new Uint8Array(encrypted)]);
+  // 返回 salt + IV + 密文的 base64 编码
+  const combined = new Uint8Array([...salt, ...iv, ...new Uint8Array(encrypted)]);
   return btoa(String.fromCharCode(...combined));
 }
 
@@ -207,10 +212,11 @@ async function decryptAES(ciphertext: string, password: string): Promise<string>
   
   // 解码 base64
   const combined = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-  const iv = combined.slice(0, 12);
-  const data = combined.slice(12);
+  const salt = combined.slice(0, 16);
+  const iv = combined.slice(16, 28);
+  const data = combined.slice(28);
   
-  // 从密码派生密钥（与加密时相同）
+  // 从密码派生密钥（使用存储的 salt）
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
     encoder.encode(password),
@@ -222,7 +228,7 @@ async function decryptAES(ciphertext: string, password: string): Promise<string>
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: encoder.encode('salt'),
+      salt: salt,
       iterations: 100000,
       hash: 'SHA-256'
     },
