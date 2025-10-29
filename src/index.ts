@@ -1,11 +1,12 @@
 /**
- * SMKit - 中国国密算法库
+ * SMKit - 中国国密算法库和国际标准算法库
  * 纯 TypeScript 实现的 SM2、SM3、SM4、ZUC 算法
+ * 国际标准算法：SHA-256、SHA-384、SHA-512
  * 
  * 支持多种导入方式：
  * 1. 命名空间导入: import * as smkit from 'smkit'; smkit.sm2.encrypt(...)
- * 2. 算法模块导入: import { sm2, sm3, sm4, zuc } from 'smkit';
- * 3. 具名函数导入: import { sm2Encrypt, digest, sm4Encrypt } from 'smkit';
+ * 2. 算法模块导入: import { sm2, sm3, sm4, zuc, sha } from 'smkit';
+ * 3. 具名函数导入: import { sm2Encrypt, digest, sm4Encrypt, sha256 } from 'smkit';
  */
 
 // ============================================================================
@@ -16,10 +17,12 @@ import * as sm2Functions from './crypto/sm2';
 import * as sm3Functions from './crypto/sm3';
 import * as sm4Functions from './crypto/sm4';
 import * as zucFunctions from './crypto/zuc';
+import * as shaFunctions from './crypto/sha';
 import { SM2 as SM2Class } from './crypto/sm2/class';
 import { SM3 as SM3Class } from './crypto/sm3/class';
 import { SM4 as SM4Class } from './crypto/sm4/class';
 import { ZUC as ZUCClass } from './crypto/zuc/class';
+import { SHA256 as SHA256Class, SHA384 as SHA384Class, SHA512 as SHA512Class, SHA1 as SHA1Class } from './crypto/sha/class';
 
 /**
  * SM2 椭圆曲线密码算法模块
@@ -56,6 +59,19 @@ export const zuc = {
   ...zucFunctions,
   ZUC: ZUCClass,
 };
+
+/**
+ * SHA 哈希算法模块（国际标准）
+ * 包含所有 SHA 相关的函数和类
+ */
+export const sha = {
+  ...shaFunctions,
+  SHA256: SHA256Class,
+  SHA384: SHA384Class,
+  SHA512: SHA512Class,
+  SHA1: SHA1Class,
+};
+
 
 // ============================================================================
 // 具名函数导出（向后兼容）
@@ -113,6 +129,20 @@ export {
 
 export { ZUC } from './crypto/zuc/class';
 
+// SHA 哈希算法（国际标准）
+export {
+  sha256,
+  sha384,
+  sha512,
+  sha1,
+  hmacSha256,
+  hmacSha384,
+  hmacSha512,
+  type SHAOptions,
+} from './crypto/sha';
+
+export { SHA256, SHA384, SHA512, SHA1 } from './crypto/sha/class';
+
 // ============================================================================
 // 常量和类型导出
 // ============================================================================
@@ -121,11 +151,13 @@ export {
   CipherMode,
   PaddingMode,
   SM2CipherMode,
+  OutputFormat,
   OID,
   DEFAULT_USER_ID,
   type CipherModeType,
   type PaddingModeType,
   type SM2CipherModeType,
+  type OutputFormatType,
 } from './types/constants';
 
 // ============================================================================
@@ -135,6 +167,8 @@ export {
 export {
   hexToBytes,
   bytesToHex,
+  base64ToBytes,
+  bytesToBase64,
   stringToBytes,
   bytesToString,
   normalizeInput,
@@ -161,6 +195,7 @@ export default {
   sm3,
   sm4,
   zuc,
+  sha,
   // 向后兼容的函数导出
   generateKeyPair: sm2Functions.generateKeyPair,
   getPublicKeyFromPrivateKey: sm2Functions.getPublicKeyFromPrivateKey,
@@ -174,4 +209,12 @@ export default {
   sm4Decrypt: sm4Functions.decrypt,
   zucEncrypt: zucFunctions.encrypt,
   zucDecrypt: zucFunctions.decrypt,
+  // SHA 国际标准算法
+  sha256: shaFunctions.sha256,
+  sha384: shaFunctions.sha384,
+  sha512: shaFunctions.sha512,
+  sha1: shaFunctions.sha1,
+  hmacSha256: shaFunctions.hmacSha256,
+  hmacSha384: shaFunctions.hmacSha384,
+  hmacSha512: shaFunctions.hmacSha512,
 };

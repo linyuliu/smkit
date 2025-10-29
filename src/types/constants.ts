@@ -3,6 +3,20 @@
  */
 
 /**
+ * 输出编码格式
+ * 用于指定加密结果的编码方式
+ * 
+ * - HEX: 十六进制编码（小写）- 默认格式，与现有 API 保持兼容
+ * - BASE64: Base64 编码 - 更紧凑的表示方式，适合网络传输
+ */
+export const OutputFormat = {
+  HEX: 'hex',
+  BASE64: 'base64',
+} as const;
+
+export type OutputFormatType = typeof OutputFormat[keyof typeof OutputFormat];
+
+/**
  * 填充模式
  * Padding modes for block cipher operations
  * 
