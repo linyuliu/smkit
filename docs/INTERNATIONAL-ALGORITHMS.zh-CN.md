@@ -2,7 +2,7 @@
 
 ## 概述
 
-SMKit 除了提供中国国密算法（SM2, SM3, SM4, ZUC）外，还支持国际标准的哈希算法（SHA-256, SHA-384, SHA-512, SHA-1），并为哈希算法提供灵活的编码格式选项（hex 和 base64）。
+SMKit 除了提供中国国密算法（SM2, SM3, SM4, ZUC）外，还支持国际标准的哈希算法（SHA-256, SHA-384, SHA-512, SHA-1），并为**所有算法**提供灵活的编码格式选项（hex 和 base64）。
 
 ## 输出格式配置
 
@@ -20,7 +20,16 @@ SMKit 采用参数配置方式而非函数名后缀方式，原因如下：
 3. **类型安全**：使用 TypeScript 枚举提供编译时类型检查
 4. **一致性**：函数式 API 和面向对象 API 都使用相同的配置方式
 
-> **注意**：目前输出格式配置仅支持哈希算法（SM3 和 SHA 系列）。SM2、SM4、ZUC 的加密输出仍为固定的 hex 格式。
+### 支持的算法
+
+**所有算法都支持输出格式配置：**
+- ✅ SM3 哈希算法
+- ✅ SM4 分组密码算法
+- ✅ SM2 椭圆曲线密码算法
+- ✅ ZUC 流密码算法
+- ✅ SHA 系列哈希算法（SHA-256/384/512/1）
+
+**解密函数自动检测输入格式**：所有解密函数都能自动识别 hex 或 base64 格式的密文。
 
 ### 使用示例
 
@@ -60,6 +69,92 @@ const hexHash = sm3.digest(); // Hex 格式
 
 // 静态方法也支持
 const hash2 = SM3.digest('test', { outputFormat: OutputFormat.BASE64 });
+```
+
+#### SM4 分组密码算法
+
+```typescript
+import { sm4Encrypt, sm4Decrypt, OutputFormat, CipherMode } from 'smkit';
+
+const key = '0123456789abcdeffedcba9876543210';
+const plaintext = 'Hello, SM4!';
+
+// 十六进制格式（默认）
+const hexEncrypted = sm4Encrypt(key, plaintext);
+
+// Base64 格式
+const base64Encrypted = sm4Encrypt(key, plaintext, {
+  outputFormat: OutputFormat.BASE64
+});
+
+// 解密时自动检测格式
+const decrypted1 = sm4Decrypt(key, hexEncrypted);
+const decrypted2 = sm4Decrypt(key, base64Encrypted);
+
+// CBC 模式 with Base64
+const iv = 'fedcba98765432100123456789abcdef';
+const encrypted = sm4Encrypt(key, plaintext, {
+  mode: CipherMode.CBC,
+  iv,
+  outputFormat: OutputFormat.BASE64
+});
+const decrypted = sm4Decrypt(key, encrypted, {
+  mode: CipherMode.CBC,
+  iv
+});
+```
+
+**注意：PKCS7 填充与 Java PKCS5 的关系**
+
+JavaScript 中的 PKCS7 填充等同于 Java 中的 PKCS5Padding：
+- PKCS5 是 PKCS7 针对 8 字节块的特例
+- 对于 16 字节块的算法（如 SM4、AES），只能使用 PKCS7
+- 在与 Java 后端对接时，JavaScript 的 `PKCS7` 对应 Java 的 `PKCS5Padding`
+
+#### SM2 椭圆曲线密码算法
+
+```typescript
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, OutputFormat } from 'smkit';
+
+const keyPair = generateKeyPair();
+const plaintext = 'Hello, SM2!';
+
+// 十六进制格式（默认）
+const hexEncrypted = sm2Encrypt(keyPair.publicKey, plaintext);
+
+// Base64 格式
+const base64Encrypted = sm2Encrypt(keyPair.publicKey, plaintext, {
+  outputFormat: OutputFormat.BASE64
+});
+
+// 解密时自动检测格式
+const decrypted1 = sm2Decrypt(keyPair.privateKey, hexEncrypted);
+const decrypted2 = sm2Decrypt(keyPair.privateKey, base64Encrypted);
+
+// 向后兼容：仍支持旧的字符串模式参数
+const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, 'C1C3C2');
+```
+
+#### ZUC 流密码算法
+
+```typescript
+import { zucEncrypt, zucDecrypt, OutputFormat } from 'smkit';
+
+const key = '00000000000000000000000000000000';
+const iv = '00000000000000000000000000000000';
+const plaintext = 'Hello, ZUC!';
+
+// 十六进制格式（默认）
+const hexEncrypted = zucEncrypt(key, iv, plaintext);
+
+// Base64 格式
+const base64Encrypted = zucEncrypt(key, iv, plaintext, {
+  outputFormat: OutputFormat.BASE64
+});
+
+// 解密时自动检测格式
+const decrypted1 = zucDecrypt(key, iv, hexEncrypted);
+const decrypted2 = zucDecrypt(key, iv, base64Encrypted);
 ```
 
 ## SHA 哈希算法
