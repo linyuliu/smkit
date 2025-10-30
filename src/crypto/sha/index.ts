@@ -12,7 +12,7 @@
 import { sha256 as nobleSha256, sha384 as nobleSha384, sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { sha1 as nobleSha1 } from '@noble/hashes/legacy.js';
 import { hmac as nobleHmac } from '@noble/hashes/hmac.js';
-import { normalizeInput, bytesToHex, bytesToBase64, hexToBytes } from '../../core/utils';
+import { normalizeInput, bytesToHex, bytesToBase64 } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
