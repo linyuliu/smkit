@@ -10,36 +10,87 @@
  */
 
 import { ZUCState, generateKeystream, process } from './core';
-import { hexToBytes, bytesToHex, stringToBytes } from '../../core/utils';
+import { hexToBytes, bytesToHex, bytesToBase64, base64ToBytes, stringToBytes } from '../../core/utils';
+import { OutputFormat, type OutputFormatType } from '../../types/constants';
+
+/**
+ * ZUC 加密选项
+ * ZUC encryption options
+ */
+export interface ZUCOptions {
+  /**
+   * 输出格式 (Output format)
+   * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
+   * - base64: Base64 编码字符串 (Base64 encoded string)
+   * 
+   * 默认: hex (Default: hex)
+   */
+  outputFormat?: OutputFormatType;
+}
 
 /**
  * Encrypt data using ZUC-128 stream cipher
- * @param key 128-bit key (16 bytes or 32 hex chars)
- * @param iv 128-bit IV (16 bytes or 32 hex chars)
- * @param plaintext Data to encrypt (string or Uint8Array)
- * @returns Encrypted data as hex string
+ * 使用 ZUC-128 流密码加密数据
+ * @param key 128-bit key (16 bytes or 32 hex chars) / 128 位密钥
+ * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
+ * @param plaintext Data to encrypt (string or Uint8Array) / 要加密的数据
+ * @param options Encryption options / 加密选项
+ * @returns Encrypted data (default hex string) / 加密后的数据（默认十六进制字符串）
+ * 
+ * @example
+ * // 默认 hex 格式（向后兼容）
+ * const encrypted = encrypt(key, iv, 'data');
+ * 
+ * @example
+ * // Base64 格式
+ * const encrypted = encrypt(key, iv, 'data', { outputFormat: OutputFormat.BASE64 });
  */
 export function encrypt(
   key: string | Uint8Array,
   iv: string | Uint8Array,
-  plaintext: string | Uint8Array
+  plaintext: string | Uint8Array,
+  options?: ZUCOptions
 ): string {
-  return process(key, iv, plaintext);
+  const resultHex = process(key, iv, plaintext);
+  const outputFormat = options?.outputFormat || OutputFormat.HEX;
+  
+  if (outputFormat === OutputFormat.BASE64) {
+    const resultBytes = hexToBytes(resultHex);
+    return bytesToBase64(resultBytes);
+  }
+  
+  return resultHex;
 }
 
 /**
  * Decrypt data using ZUC-128 stream cipher
- * @param key 128-bit key (16 bytes or 32 hex chars)
- * @param iv 128-bit IV (16 bytes or 32 hex chars)
- * @param ciphertext Encrypted data as hex string
- * @returns Decrypted data as string
+ * 使用 ZUC-128 流密码解密数据
+ * @param key 128-bit key (16 bytes or 32 hex chars) / 128 位密钥
+ * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
+ * @param ciphertext Encrypted data (hex or base64 string, auto-detected) / 加密的数据（十六进制或 base64，自动检测）
+ * @returns Decrypted data as string / 解密后的数据
+ * 
+ * @example
+ * // 自动检测输入格式
+ * const decrypted = decrypt(key, iv, encrypted);
  */
 export function decrypt(
   key: string | Uint8Array,
   iv: string | Uint8Array,
   ciphertext: string
 ): string {
-  const ciphertextBytes = hexToBytes(ciphertext);
+  // 自动检测输入格式（hex 或 base64）
+  const detectAndDecode = (str: string): Uint8Array => {
+    if (/^[0-9a-fA-F]+$/.test(str)) {
+      return hexToBytes(str);
+    } else if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
+      return base64ToBytes(str);
+    }
+    // 默认尝试 hex
+    return hexToBytes(str);
+  };
+  
+  const ciphertextBytes = detectAndDecode(ciphertext);
   const resultHex = process(key, iv, ciphertextBytes);
   const resultBytes = hexToBytes(resultHex);
   return new TextDecoder().decode(resultBytes);
