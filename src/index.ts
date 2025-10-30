@@ -94,6 +94,7 @@ export {
   type SM2CurveParams,
   type SM2KeyExchangeParams,
   type SM2KeyExchangeResult,
+  type SM2EncryptOptions,
 } from './crypto/sm2';
 
 export { SM2 } from './crypto/sm2/class';
@@ -126,6 +127,7 @@ export {
   eia3,
   ZUCState,
   generateKeystream as zucGenerateKeystream,
+  type ZUCOptions,
 } from './crypto/zuc';
 
 export { ZUC } from './crypto/zuc/class';

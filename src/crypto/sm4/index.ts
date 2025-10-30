@@ -1,12 +1,14 @@
 import { 
   normalizeInput, 
-  bytesToHex, 
-  hexToBytes, 
+  bytesToHex,
+  bytesToBase64,
+  hexToBytes,
+  base64ToBytes,
   xor,
   bytes4ToUint32BE,
   uint32ToBytes4BE 
 } from '../../core/utils';
-import { PaddingMode, CipherMode, type PaddingModeType, type CipherModeType } from '../../types/constants';
+import { PaddingMode, CipherMode, OutputFormat, type PaddingModeType, type CipherModeType, type OutputFormatType } from '../../types/constants';
 
 // SM4 S盒（置换盒）- 用于非线性变换
 const SBOX: number[] = [
@@ -312,6 +314,8 @@ export interface SM4Options {
   /**
    * 填充模式 (Padding mode)
    * - PKCS7: PKCS#7 填充，填充值为填充字节数 (PKCS#7 padding, padding value equals padding length)
+   *   注意：JavaScript 中的 PKCS7 等同于 Java 中的 PKCS5（PKCS5 是 PKCS7 针对 8 字节块的特例）
+   *   Note: PKCS7 in JavaScript is equivalent to PKCS5 in Java (PKCS5 is PKCS7 for 8-byte blocks)
    * - NONE: 无填充，数据长度必须是块大小倍数 (No padding, data length must be multiple of block size)
    * - ZERO: 零填充，用零字节填充 (Zero padding, pad with zero bytes)
    * 
@@ -342,6 +346,15 @@ export interface SM4Options {
    * 默认: 16字节 (Default: 16 bytes)
    */
   tagLength?: number;
+  
+  /**
+   * 输出格式 (Output format)
+   * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
+   * - base64: Base64 编码字符串 (Base64 encoded string)
+   * 
+   * 默认: hex (Default: hex)
+   */
+  outputFormat?: OutputFormatType;
 }
 
 /**
@@ -590,15 +603,17 @@ export function encrypt(
       tag[i] = ghashResult[i] ^ preCounterBlock[i];
     }
 
+    const outputFormat = options?.outputFormat || OutputFormat.HEX;
     return {
-      ciphertext: bytesToHex(result),
-      tag: bytesToHex(tag)
+      ciphertext: outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result),
+      tag: outputFormat === OutputFormat.BASE64 ? bytesToBase64(tag) : bytesToHex(tag)
     };
   } else {
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
-  return bytesToHex(result);
+  const outputFormat = options?.outputFormat || OutputFormat.HEX;
+  return outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result);
 }
 
 /**
@@ -648,25 +663,44 @@ export function decrypt(
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
 
+  // Detect input format: check if string is valid hex or base64
+  const detectFormat = (str: string): 'hex' | 'base64' => {
+    // Hex strings only contain 0-9, a-f, A-F
+    if (/^[0-9a-fA-F]+$/.test(str)) {
+      return 'hex';
+    }
+    // Base64 strings contain A-Z, a-z, 0-9, +, /, and may end with =
+    if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
+      return 'base64';
+    }
+    // Default to hex for backward compatibility
+    return 'hex';
+  };
+  
+  const decodeInput = (str: string): Uint8Array => {
+    const format = detectFormat(str);
+    return format === 'base64' ? base64ToBytes(str) : hexToBytes(str);
+  };
+
   // Handle GCM mode with tag
-  let ciphertextHex: string;
+  let ciphertextStr: string;
   let authTag: Uint8Array | undefined;
   
   if (mode === 'gcm') {
     if (typeof encryptedData === 'object' && 'ciphertext' in encryptedData) {
-      ciphertextHex = encryptedData.ciphertext;
-      authTag = hexToBytes(encryptedData.tag);
+      ciphertextStr = encryptedData.ciphertext;
+      authTag = decodeInput(encryptedData.tag);
     } else if (typeof encryptedData === 'string' && options?.tag) {
-      ciphertextHex = encryptedData;
-      authTag = hexToBytes(options.tag);
+      ciphertextStr = encryptedData;
+      authTag = decodeInput(options.tag);
     } else {
       throw new Error('GCM mode requires authentication tag');
     }
   } else {
-    ciphertextHex = typeof encryptedData === 'string' ? encryptedData : encryptedData.ciphertext;
+    ciphertextStr = typeof encryptedData === 'string' ? encryptedData : encryptedData.ciphertext;
   }
 
-  const dataBytes = hexToBytes(ciphertextHex);
+  const dataBytes = decodeInput(ciphertextStr);
   
   // Stream cipher modes don't require data to be a multiple of block size
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';

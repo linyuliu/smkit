@@ -8,8 +8,8 @@
  */
 
 import { digest as sm3Digest } from '../sm3';
-import { normalizeInput, hexToBytes, bytesToHex } from '../../core/utils';
-import { SM2CipherMode, type SM2CipherModeType, DEFAULT_USER_ID } from '../../types/constants';
+import { normalizeInput, hexToBytes, bytesToHex, bytesToBase64, base64ToBytes } from '../../core/utils';
+import { SM2CipherMode, OutputFormat, type SM2CipherModeType, type OutputFormatType, DEFAULT_USER_ID } from '../../types/constants';
 import { sm2, SM2_CURVE_PARAMS } from './curve';
 import { encodeSignature, decodeSignature } from '../../core/asn1';
 
@@ -31,6 +31,30 @@ export interface SM2CurveParams {
 export interface KeyPair {
   publicKey: string;   // 公钥（十六进制字符串，04 开头的非压缩格式）
   privateKey: string;  // 私钥（十六进制字符串，32 字节）
+}
+
+/**
+ * SM2 加密选项
+ * SM2 encryption options
+ */
+export interface SM2EncryptOptions {
+  /**
+   * 密文模式 (Ciphertext mode)
+   * - C1C3C2: C1 || C3 || C2（默认，推荐）(Default, recommended)
+   * - C1C2C3: C1 || C2 || C3
+   * 
+   * 默认: C1C3C2 (Default: C1C3C2)
+   */
+  mode?: SM2CipherModeType;
+  
+  /**
+   * 输出格式 (Output format)
+   * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
+   * - base64: Base64 编码字符串 (Base64 encoded string)
+   * 
+   * 默认: hex (Default: hex)
+   */
+  outputFormat?: OutputFormatType;
 }
 
 /**
@@ -657,14 +681,38 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
  * 使用 SM2 加密数据
  * @param publicKey - 公钥（十六进制字符串）
  * @param data - 要加密的数据（字符串或 Uint8Array）
- * @param mode - 密文模式：'C1C3C2'（默认）或 'C1C2C3'
- * @returns 加密后的数据（十六进制字符串）
+ * @param optionsOrMode - 加密选项对象或密文模式（为了向后兼容）
+ * @returns 加密后的数据（默认十六进制字符串）
+ * 
+ * @example
+ * // 基本用法（向后兼容）
+ * const encrypted = encrypt(publicKey, 'data');
+ * 
+ * @example
+ * // 使用选项对象
+ * const encrypted = encrypt(publicKey, 'data', { 
+ *   mode: SM2CipherMode.C1C3C2,
+ *   outputFormat: OutputFormat.BASE64 
+ * });
  */
 export function encrypt(
   publicKey: string,
   data: string | Uint8Array,
-  mode: SM2CipherModeType = SM2CipherMode.C1C3C2
+  optionsOrMode?: SM2EncryptOptions | SM2CipherModeType
 ): string {
+  // 处理参数：支持旧的字符串模式参数或新的选项对象
+  let mode: SM2CipherModeType = SM2CipherMode.C1C3C2;
+  let outputFormat: OutputFormatType = OutputFormat.HEX;
+  
+  if (typeof optionsOrMode === 'string') {
+    // 向后兼容：optionsOrMode 是模式字符串
+    mode = optionsOrMode;
+  } else if (optionsOrMode) {
+    // 新的选项对象
+    mode = optionsOrMode.mode || SM2CipherMode.C1C3C2;
+    outputFormat = optionsOrMode.outputFormat || OutputFormat.HEX;
+  }
+  
   // 自动识别并规范化公钥输入
   const cleanPublicKey = normalizePublicKeyInput(publicKey);
   const plainBytes = normalizeInput(data);
@@ -709,21 +757,23 @@ export function encrypt(
   const c3 = hexToBytes(c3Hex);
   
   // 根据模式组合密文
+  let ciphertext: Uint8Array;
   if (mode === SM2CipherMode.C1C2C3) {
     // C1 || C2 || C3
-    const ciphertext = new Uint8Array(c1Bytes.length + c2.length + c3.length);
+    ciphertext = new Uint8Array(c1Bytes.length + c2.length + c3.length);
     ciphertext.set(c1Bytes, 0);
     ciphertext.set(c2, c1Bytes.length);
     ciphertext.set(c3, c1Bytes.length + c2.length);
-    return bytesToHex(ciphertext);
   } else {
     // C1 || C3 || C2（默认）
-    const ciphertext = new Uint8Array(c1Bytes.length + c3.length + c2.length);
+    ciphertext = new Uint8Array(c1Bytes.length + c3.length + c2.length);
     ciphertext.set(c1Bytes, 0);
     ciphertext.set(c3, c1Bytes.length);
     ciphertext.set(c2, c1Bytes.length + c3.length);
-    return bytesToHex(ciphertext);
   }
+  
+  // 根据输出格式返回结果
+  return outputFormat === OutputFormat.BASE64 ? bytesToBase64(ciphertext) : bytesToHex(ciphertext);
 }
 
 /**
@@ -754,7 +804,20 @@ export function decrypt(
 ): string {
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
-  const cipherBytes = hexToBytes(encryptedData);
+  
+  // 自动检测输入格式（hex 或 base64）并解码
+  const detectAndDecode = (str: string): Uint8Array => {
+    // 尝试检测格式：如果包含非十六进制字符，则认为是 base64
+    if (/^[0-9a-fA-F]+$/.test(str)) {
+      return hexToBytes(str);
+    } else if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
+      return base64ToBytes(str);
+    }
+    // 默认尝试 hex
+    return hexToBytes(str);
+  };
+  
+  const cipherBytes = detectAndDecode(encryptedData);
   
   if (cipherBytes.length === 0) {
     throw new Error('Invalid ciphertext: empty data');
