@@ -24,8 +24,7 @@ import {
   xor,
   bytes4ToUint32BE,
   uint32ToBytes4BE,
-  isHexString,
-  isBase64String 
+  isHexString
 } from '../../core/utils';
 import { PaddingMode, CipherMode, OutputFormat, type PaddingModeType, type CipherModeType, type OutputFormatType } from '../../types/constants';
 

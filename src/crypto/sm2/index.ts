@@ -8,7 +8,7 @@
  */
 
 import { digest as sm3Digest } from '../sm3';
-import { normalizeInput, hexToBytes, bytesToHex, bytesToBase64, base64ToBytes, autoDecodeString } from '../../core/utils';
+import { normalizeInput, hexToBytes, bytesToHex, bytesToBase64, autoDecodeString } from '../../core/utils';
 import { SM2CipherMode, OutputFormat, type SM2CipherModeType, type OutputFormatType, DEFAULT_USER_ID } from '../../types/constants';
 import { sm2, SM2_CURVE_PARAMS } from './curve';
 import { encodeSignature, decodeSignature } from '../../core/asn1';
