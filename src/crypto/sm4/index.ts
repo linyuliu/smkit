@@ -1,3 +1,20 @@
+/**
+ * SM4 分组密码算法实现
+ * 
+ * 参考标准：
+ * - GM/T 0002-2012: SM4 分组密码算法
+ * - 官方网站：http://www.oscca.gov.cn/
+ * 
+ * SM4 是中国国家密码管理局发布的分组密码算法，用于对称加密，
+ * 主要用于商用密码应用中的数据加密。
+ * 
+ * 算法特点：
+ * - 分组长度：128 位（16 字节）
+ * - 密钥长度：128 位（16 字节）
+ * - 轮数：32 轮
+ * - 支持多种工作模式：ECB、CBC、CTR、CFB、OFB、GCM
+ */
+
 import { 
   normalizeInput, 
   bytesToHex,
@@ -6,7 +23,9 @@ import {
   base64ToBytes,
   xor,
   bytes4ToUint32BE,
-  uint32ToBytes4BE 
+  uint32ToBytes4BE,
+  isHexString,
+  isBase64String 
 } from '../../core/utils';
 import { PaddingMode, CipherMode, OutputFormat, type PaddingModeType, type CipherModeType, type OutputFormatType } from '../../types/constants';
 
@@ -663,18 +682,9 @@ export function decrypt(
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
 
-  // Detect input format: check if string is valid hex or base64
+  // 自动检测输入格式（hex 或 base64）
   const detectFormat = (str: string): 'hex' | 'base64' => {
-    // Hex strings only contain 0-9, a-f, A-F
-    if (/^[0-9a-fA-F]+$/.test(str)) {
-      return 'hex';
-    }
-    // Base64 strings contain A-Z, a-z, 0-9, +, /, and may end with =
-    if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
-      return 'base64';
-    }
-    // Default to hex for backward compatibility
-    return 'hex';
+    return isHexString(str) ? 'hex' : 'base64';
   };
   
   const decodeInput = (str: string): Uint8Array => {

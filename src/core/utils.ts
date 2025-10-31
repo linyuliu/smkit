@@ -192,3 +192,40 @@ export function base64ToBytes(base64: string): Uint8Array {
   
   return bytes;
 }
+
+/**
+ * 检测字符串是否为十六进制格式
+ * 优化：预编译正则表达式以提高性能
+ * @param str - 要检测的字符串
+ * @returns 如果是十六进制格式返回 true
+ */
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
+export function isHexString(str: string): boolean {
+  return HEX_REGEX.test(str);
+}
+
+/**
+ * 检测字符串是否为 Base64 格式
+ * 优化：预编译正则表达式以提高性能
+ * @param str - 要检测的字符串
+ * @returns 如果是 Base64 格式返回 true
+ */
+const BASE64_REGEX = /^[A-Za-z0-9+/]+=*$/;
+export function isBase64String(str: string): boolean {
+  return BASE64_REGEX.test(str);
+}
+
+/**
+ * 自动检测并解码字符串（十六进制或 Base64）
+ * @param str - 十六进制或 Base64 格式的字符串
+ * @returns 解码后的 Uint8Array
+ */
+export function autoDecodeString(str: string): Uint8Array {
+  if (isHexString(str)) {
+    return hexToBytes(str);
+  } else if (isBase64String(str)) {
+    return base64ToBytes(str);
+  }
+  // 默认尝试十六进制解码
+  return hexToBytes(str);
+}

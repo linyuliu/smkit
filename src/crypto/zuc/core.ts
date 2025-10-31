@@ -1,10 +1,13 @@
 /**
- * ZUC Stream Cipher Algorithm - Core Implementation
+ * ZUC 流密码算法 - 核心实现
  *
- * ZUC is a word-oriented stream cipher designed for 3GPP LTE encryption and integrity protection.
- * Based on GM/T 0001-2012 (ZUC-128) and GM/T 0001.1-2023 (ZUC-256)
- *
- * @see http://www.oscca.gov.cn/sca/xxgk/2012-03/21/content_1002389.shtml
+ * 参考标准：
+ * - GM/T 0001-2012: ZUC-128 流密码算法
+ * - GM/T 0001.1-2023: ZUC-256 流密码算法
+ * - 官方网站：http://www.oscca.gov.cn/
+ * 
+ * ZUC 是一个面向字的流密码算法，专为 3GPP LTE 加密和完整性保护设计。
+ * 本实现基于官方标准文档。
  */
 
 import { hexToBytes, bytesToHex } from '../../core/utils';

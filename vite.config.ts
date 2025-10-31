@@ -18,6 +18,9 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [],
+      output: {
+        exports: 'named', // 修复警告：只使用命名导出
+      },
     },
     sourcemap: true,
   },
