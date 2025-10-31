@@ -1,16 +1,24 @@
 /**
- * ZUC Stream Cipher - Public API
+ * ZUC 流密码算法实现
  *
- * ZUC (祖冲之算法) is a stream cipher algorithm used in Chinese cryptographic standards.
- * It provides both encryption/decryption and message authentication.
- *
- * Standards:
- * - GM/T 0001-2012: ZUC-128 Stream Cipher Algorithm
- * - GM/T 0001.1-2023: ZUC-256 Stream Cipher Algorithm
+ * 参考标准：
+ * - GM/T 0001-2012: ZUC-128 流密码算法
+ * - GM/T 0001.1-2023: ZUC-256 流密码算法
+ * - 3GPP TS 35.221: EEA3 和 EIA3 规范（基于 ZUC 的 LTE 加密与完整性算法）
+ * - 官方网站：http://www.oscca.gov.cn/
+ * 
+ * ZUC（祖冲之算法）是中国国家密码管理局发布的流密码算法，
+ * 用于 4G LTE 移动通信网络的加密和完整性保护。
+ * 
+ * 算法特点：
+ * - ZUC-128: 128 位密钥和 128 位初始向量
+ * - ZUC-256: 256 位密钥和 184 位初始向量（GM/T 0001.1-2023）
+ * - 输出：32 位字流
+ * - 应用：EEA3（加密）和 EIA3（完整性）算法
  */
 
 import { ZUCState, generateKeystream, process } from './core';
-import { hexToBytes, bytesToHex, bytesToBase64, base64ToBytes, stringToBytes } from '../../core/utils';
+import { hexToBytes, bytesToHex, bytesToBase64, stringToBytes, autoDecodeString } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
@@ -80,17 +88,7 @@ export function decrypt(
   ciphertext: string
 ): string {
   // 自动检测输入格式（hex 或 base64）
-  const detectAndDecode = (str: string): Uint8Array => {
-    if (/^[0-9a-fA-F]+$/.test(str)) {
-      return hexToBytes(str);
-    } else if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
-      return base64ToBytes(str);
-    }
-    // 默认尝试 hex
-    return hexToBytes(str);
-  };
-  
-  const ciphertextBytes = detectAndDecode(ciphertext);
+  const ciphertextBytes = autoDecodeString(ciphertext);
   const resultHex = process(key, iv, ciphertextBytes);
   const resultBytes = hexToBytes(resultHex);
   return new TextDecoder().decode(resultBytes);

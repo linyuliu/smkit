@@ -4,26 +4,43 @@
  */
 
 import {
-  // Functional API
+  // Functional API - SM3
   digest,
   hmac,
+  // Functional API - SM4
   sm4Encrypt,
   sm4Decrypt,
+  // Functional API - SM2
   generateKeyPair,
   sm2Encrypt,
   sm2Decrypt,
   sign,
   verify,
+  // Functional API - ZUC
+  zucEncrypt,
+  zucDecrypt,
+  zucKeystream,
+  eea3,
+  eia3,
+  // Functional API - SHA
+  sha256,
+  sha384,
+  sha512,
+  hmacSha256,
+  // Utilities
   hexToBytes,
   bytesToHex,
   // Object-Oriented API
   SM2,
   SM3,
   SM4,
+  ZUC,
+  SHA256,
   // Constants
   CipherMode,
   PaddingMode,
   SM2CipherMode,
+  OutputFormat,
   OID,
   DEFAULT_USER_ID,
 } from './src/index';
@@ -132,6 +149,92 @@ const signature2 = sm2.sign('Message to sign');
 console.log('SM2 Signature:', signature2.slice(0, 40) + '...');
 const isValid2 = sm2.verify('Message to sign', signature2);
 console.log('SM2 Signature Valid:', isValid2);
+console.log();
+
+// ZUC Functional API Examples
+console.log('--- ZUC Stream Cipher (Functional API) ---');
+const zucKey = '00112233445566778899aabbccddeeff';
+const zucIv = 'ffeeddccbbaa99887766554433221100';
+const zucPlaintext = 'Hello, ZUC!';
+
+// 加密
+const encryptedZUC = zucEncrypt(zucKey, zucIv, zucPlaintext);
+console.log('ZUC Encrypted:', encryptedZUC.slice(0, 40) + '...');
+
+// 解密
+const decryptedZUC = zucDecrypt(zucKey, zucIv, encryptedZUC);
+console.log('ZUC Decrypted:', decryptedZUC);
+
+// 生成密钥流
+const keystream = zucKeystream(zucKey, zucIv, 4); // 生成 4 个 32 位字
+console.log('ZUC Keystream (4 words):', keystream.slice(0, 40) + '...');
+
+// EEA3 - 3GPP LTE 加密算法
+const count = 0x12345678;
+const bearer = 5;
+const direction = 0;
+const keystreamLength = 256;
+const eea3Keystream = eea3(zucKey, count, bearer, direction, keystreamLength);
+console.log('EEA3 Keystream:', eea3Keystream.slice(0, 40) + '...');
+
+// EIA3 - 3GPP LTE 完整性算法
+const zucMessage = 'Message to authenticate';
+const macValue = eia3(zucKey, count, bearer, direction, zucMessage);
+console.log('EIA3 MAC:', macValue);
+console.log();
+
+// ZUC Object-Oriented API Examples
+console.log('--- ZUC Stream Cipher (OOP API) ---');
+const zucInstance = new ZUC(zucKey, zucIv);
+const encrypted4 = zucInstance.encrypt('Hello, ZUC OOP!');
+console.log('ZUC Encrypted:', encrypted4.slice(0, 40) + '...');
+const decrypted4 = zucInstance.decrypt(encrypted4);
+console.log('ZUC Decrypted:', decrypted4);
+console.log();
+
+// SHA Functional API Examples
+console.log('--- SHA Hash Algorithms (Functional API) ---');
+const shaData = 'Hello, World!';
+
+// SHA-256
+const hash256 = sha256(shaData);
+console.log('SHA-256:', hash256);
+
+// SHA-384
+const hash384 = sha384(shaData);
+console.log('SHA-384:', hash384);
+
+// SHA-512
+const hash512 = sha512(shaData);
+console.log('SHA-512:', hash512);
+
+// HMAC-SHA256
+const hmacKey = 'secret-key';
+const mac256 = hmacSha256(hmacKey, shaData);
+console.log('HMAC-SHA256:', mac256);
+console.log();
+
+// SHA Object-Oriented API Examples
+console.log('--- SHA Hash Algorithms (OOP API) ---');
+const sha256Instance = new SHA256();
+sha256Instance.update('Hello, ').update('World!');
+const hash256OOP = sha256Instance.digest();
+console.log('SHA-256 incremental:', hash256OOP);
+console.log();
+
+// Output Format Examples
+console.log('--- Output Format Examples ---');
+// SM3 with Base64 output
+const base64Hash = digest('test', { outputFormat: OutputFormat.BASE64 });
+console.log('SM3 (Base64):', base64Hash);
+
+// SHA-256 with Base64 output
+const base64Hash256 = sha256('test', { outputFormat: OutputFormat.BASE64 });
+console.log('SHA-256 (Base64):', base64Hash256);
+
+// ZUC with Base64 output
+const encryptedZUCBase64 = zucEncrypt(zucKey, zucIv, 'test', { outputFormat: OutputFormat.BASE64 });
+console.log('ZUC Encrypted (Base64):', encryptedZUCBase64);
 console.log();
 
 // Utility Examples

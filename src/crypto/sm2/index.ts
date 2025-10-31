@@ -8,7 +8,7 @@
  */
 
 import { digest as sm3Digest } from '../sm3';
-import { normalizeInput, hexToBytes, bytesToHex, bytesToBase64, base64ToBytes } from '../../core/utils';
+import { normalizeInput, hexToBytes, bytesToHex, bytesToBase64, base64ToBytes, autoDecodeString } from '../../core/utils';
 import { SM2CipherMode, OutputFormat, type SM2CipherModeType, type OutputFormatType, DEFAULT_USER_ID } from '../../types/constants';
 import { sm2, SM2_CURVE_PARAMS } from './curve';
 import { encodeSignature, decodeSignature } from '../../core/asn1';
@@ -806,18 +806,7 @@ export function decrypt(
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   
   // 自动检测输入格式（hex 或 base64）并解码
-  const detectAndDecode = (str: string): Uint8Array => {
-    // 尝试检测格式：如果包含非十六进制字符，则认为是 base64
-    if (/^[0-9a-fA-F]+$/.test(str)) {
-      return hexToBytes(str);
-    } else if (/^[A-Za-z0-9+/]+=*$/.test(str)) {
-      return base64ToBytes(str);
-    }
-    // 默认尝试 hex
-    return hexToBytes(str);
-  };
-  
-  const cipherBytes = detectAndDecode(encryptedData);
+  const cipherBytes = autoDecodeString(encryptedData);
   
   if (cipherBytes.length === 0) {
     throw new Error('Invalid ciphertext: empty data');
