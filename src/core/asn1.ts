@@ -86,7 +86,12 @@ export function encodeInteger(value: string | Uint8Array): Uint8Array {
   
   if (typeof value === 'string') {
     // Remove leading zeros but keep at least one byte
-    const cleaned = value.replace(/^0+/, '') || '0';
+    // 优化：使用字符码判断避免正则表达式
+    let startIdx = 0;
+    while (startIdx < value.length - 1 && value.charCodeAt(startIdx) === 48) { // '0' = 48
+      startIdx++;
+    }
+    const cleaned = value.slice(startIdx);
     const hex = cleaned.length % 2 === 0 ? cleaned : '0' + cleaned;
     bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < bytes.length; i++) {

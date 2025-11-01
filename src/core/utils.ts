@@ -159,8 +159,16 @@ export function bytesToBase64(bytes: Uint8Array): string {
  * @returns Uint8Array
  */
 export function base64ToBytes(base64: string): Uint8Array {
-  // 移除空白字符
-  base64 = base64.replace(/\s/g, '');
+  // 移除空白字符 - 优化：使用字符码判断避免正则
+  let cleaned = '';
+  for (let i = 0; i < base64.length; i++) {
+    const code = base64.charCodeAt(i);
+    // 跳过空白字符：空格(32), \t(9), \n(10), \r(13)
+    if (code !== 32 && code !== 9 && code !== 10 && code !== 13) {
+      cleaned += base64[i];
+    }
+  }
+  base64 = cleaned;
   
   // 创建反向查找表
   const lookup: { [key: string]: number } = {};
@@ -195,24 +203,74 @@ export function base64ToBytes(base64: string): Uint8Array {
 
 /**
  * 检测字符串是否为十六进制格式
- * 优化：预编译正则表达式以提高性能
+ * 优化：使用位运算和字符码判断，避免正则表达式开销
+ * 性能考虑：在早期退出场景（无效输入）下性能更好
  * @param str - 要检测的字符串
  * @returns 如果是十六进制格式返回 true
  */
-const HEX_REGEX = /^[0-9a-fA-F]+$/;
 export function isHexString(str: string): boolean {
-  return HEX_REGEX.test(str);
+  if (str.length === 0) return false;
+  
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    // 使用位运算优化判断逻辑
+    // 0-9: 48-57 (0x30-0x39)
+    // A-F: 65-70 (0x41-0x46) 
+    // a-f: 97-102 (0x61-0x66)
+    
+    // 快速路径：检查是否为数字 (48-57)
+    if ((code - 48) >>> 0 < 10) continue;
+    
+    // 转换为小写后检查 (使用位运算 | 0x20 转小写)
+    const lowerCode = code | 0x20;
+    // 检查是否为 a-f (97-102)
+    if ((lowerCode - 97) >>> 0 < 6) continue;
+    
+    return false;
+  }
+  
+  return true;
 }
 
 /**
  * 检测字符串是否为 Base64 格式
- * 优化：预编译正则表达式以提高性能
+ * 优化：使用位运算和字符码判断，避免正则表达式开销
  * @param str - 要检测的字符串
  * @returns 如果是 Base64 格式返回 true
  */
-const BASE64_REGEX = /^[A-Za-z0-9+/]+=*$/;
 export function isBase64String(str: string): boolean {
-  return BASE64_REGEX.test(str);
+  if (str.length === 0) return false;
+  
+  const len = str.length;
+  
+  for (let i = 0; i < len; i++) {
+    const code = str.charCodeAt(i);
+    
+    // 填充字符 '=' (61) 只能出现在最后两个位置
+    if (code === 61) {
+      if (i >= len - 2) continue;
+      return false;
+    }
+    
+    // 使用位运算优化判断
+    // A-Z: 65-90, a-z: 97-122, 0-9: 48-57, +: 43, /: 47
+    
+    // 快速路径：数字 0-9 (48-57)
+    if ((code - 48) >>> 0 < 10) continue;
+    
+    // 大写字母 A-Z (65-90)
+    if ((code - 65) >>> 0 < 26) continue;
+    
+    // 小写字母 a-z (97-122)
+    if ((code - 97) >>> 0 < 26) continue;
+    
+    // + (43) 或 / (47)
+    if (code === 43 || code === 47) continue;
+    
+    return false;
+  }
+  
+  return true;
 }
 
 /**
