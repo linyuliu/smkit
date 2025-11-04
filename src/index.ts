@@ -2,7 +2,7 @@
  * SMKit - 中国国密算法库和国际标准算法库
  * 纯 TypeScript 实现的 SM2、SM3、SM4、ZUC 算法
  * 国际标准算法：SHA-256、SHA-384、SHA-512
- * 
+ *
  * 支持多种导入方式：
  * 1. 命名空间导入: import * as smkit from 'smkit'; smkit.sm2.encrypt(...)
  * 2. 算法模块导入: import { sm2, sm3, sm4, zuc, sha } from 'smkit';

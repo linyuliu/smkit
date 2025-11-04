@@ -39,10 +39,10 @@ describe('SM3 哈希算法测试', () => {
     it('应该支持 base64 输出格式', () => {
       const hexResult = digest('abc');
       const base64Result = digest('abc', { outputFormat: OutputFormat.BASE64 });
-      
+
       // base64 结果应该不同于 hex 结果
       expect(base64Result).not.toBe(hexResult);
-      
+
       // base64 结果应该是有效的 base64 字符串
       expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
@@ -78,10 +78,10 @@ describe('SM3 哈希算法测试', () => {
       const data = 'data';
       const hexResult = hmac(key, data);
       const base64Result = hmac(key, data, { outputFormat: OutputFormat.BASE64 });
-      
+
       // base64 结果应该不同于 hex 结果
       expect(base64Result).not.toBe(hexResult);
-      
+
       // base64 结果应该是有效的 base64 字符串
       expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
@@ -92,7 +92,7 @@ describe('SM3 哈希算法测试', () => {
       const sm3 = new SM3(OutputFormat.BASE64);
       sm3.update('abc');
       const result = sm3.digest();
-      
+
       // 应该返回 base64 格式
       expect(result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
@@ -102,7 +102,7 @@ describe('SM3 哈希算法测试', () => {
       sm3.setOutputFormat(OutputFormat.BASE64);
       sm3.update('abc');
       const result = sm3.digest();
-      
+
       // 应该返回 base64 格式
       expect(result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
@@ -110,7 +110,7 @@ describe('SM3 哈希算法测试', () => {
     it('静态方法应该支持输出格式选项', () => {
       const hexResult = SM3.digest('abc');
       const base64Result = SM3.digest('abc', { outputFormat: OutputFormat.BASE64 });
-      
+
       expect(hexResult).toMatch(/^[0-9a-f]{64}$/);
       expect(base64Result).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });

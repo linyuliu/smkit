@@ -1,5 +1,5 @@
-import { 
-  encrypt as encryptFunc, 
+import {
+  encrypt as encryptFunc,
   decrypt as decryptFunc,
   getKeystream as getKeystreamFunc,
   eea3 as eea3Func,
@@ -9,10 +9,10 @@ import {
 /**
  * ZUC class providing object-oriented API for stream cipher operations
  * ZUC 类，提供面向对象的流密码操作API
- * 
+ *
  * ZUC-128 is a stream cipher algorithm used in Chinese cryptographic standards
  * and 3GPP LTE encryption (EEA3) and integrity protection (EIA3).
- * 
+ *
  * ZUC-128 是中国密码标准和 3GPP LTE 加密（EEA3）和完整性保护（EIA3）中使用的流密码算法
  */
 export class ZUC {
@@ -22,7 +22,7 @@ export class ZUC {
   /**
    * Create a new ZUC instance
    * 创建新的 ZUC 实例
-   * 
+   *
    * @param key - Encryption key (16 bytes or 32 hex chars for ZUC-128)
    *              加密密钥（ZUC-128 需要 16 字节或 32 个十六进制字符）
    * @param iv - Initialization vector (16 bytes or 32 hex chars for ZUC-128)

@@ -5,7 +5,7 @@
  * - GM/T 0001-2012: ZUC-128 流密码算法
  * - GM/T 0001.1-2023: ZUC-256 流密码算法
  * - 官方网站：http://www.oscca.gov.cn/
- * 
+ *
  * ZUC 是一个面向字的流密码算法，专为 3GPP LTE 加密和完整性保护设计。
  * 本实现基于官方标准文档。
  */
@@ -106,7 +106,7 @@ export class ZUCState {
    * Optimized: Pre-allocate array for reuse
    */
   private x: Uint32Array = new Uint32Array(4);
-  
+
   private bitReorganization(): Uint32Array {
     this.x[0] = (((this.lfsr[15] & 0x7FFF8000) << 1) | (this.lfsr[14] & 0xFFFF)) >>> 0;
     this.x[1] = (((this.lfsr[11] & 0xFFFF) << 16) | (this.lfsr[9] >>> 15)) >>> 0;
@@ -289,7 +289,7 @@ export function process(
   for (let i = 0; i < numFullWords; i++) {
     const keyword = state.generateKeyword();
     const offset = i * 4;
-    
+
     // XOR 4 bytes at once
     output[offset] = dataBytes[offset] ^ ((keyword >>> 24) & 0xFF);
     output[offset + 1] = dataBytes[offset + 1] ^ ((keyword >>> 16) & 0xFF);
@@ -301,7 +301,7 @@ export function process(
   if (remainder > 0) {
     const keyword = state.generateKeyword();
     const offset = numFullWords * 4;
-    
+
     for (let i = 0; i < remainder; i++) {
       const keyByte = (keyword >>> (24 - i * 8)) & 0xFF;
       output[offset + i] = dataBytes[offset + i] ^ keyByte;
