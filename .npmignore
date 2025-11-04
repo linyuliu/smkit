@@ -2,6 +2,8 @@
 src/
 test/
 examples.ts
+test-local.ts
+test-umd.html
 
 # Config files
 tsconfig.json
@@ -12,6 +14,16 @@ vite.config.ts
 .gitignore
 node_modules/
 
+# Demo files
+demo/
+demo-vue/
+
 # Documentation
 *.md
 !README.md
+
+# GitHub files
+.github/
+
+# Extended docs
+docs/
