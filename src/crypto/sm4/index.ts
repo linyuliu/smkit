@@ -1,13 +1,13 @@
 /**
  * SM4 分组密码算法实现
- * 
+ *
  * 参考标准：
  * - GM/T 0002-2012: SM4 分组密码算法
  * - 官方网站：http://www.oscca.gov.cn/
- * 
+ *
  * SM4 是中国国家密码管理局发布的分组密码算法，用于对称加密，
  * 主要用于商用密码应用中的数据加密。
- * 
+ *
  * 算法特点：
  * - 分组长度：128 位（16 字节）
  * - 密钥长度：128 位（16 字节）
@@ -15,8 +15,8 @@
  * - 支持多种工作模式：ECB、CBC、CTR、CFB、OFB、GCM
  */
 
-import { 
-  normalizeInput, 
+import {
+  normalizeInput,
   bytesToHex,
   bytesToBase64,
   hexToBytes,
@@ -74,20 +74,20 @@ function rotl(value: number, shift: number): number {
  */
 function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
-  
+
   // Process data in 16-byte blocks
   for (let i = 0; i < data.length; i += 16) {
     const block = data.slice(i, i + 16);
-    
+
     // XOR with previous result
     for (let j = 0; j < 16 && j < block.length; j++) {
       result[j] ^= block[j];
     }
-    
+
     // Galois field multiplication
     result.set(gfMul(result, h));
   }
-  
+
   return result;
 }
 
@@ -98,7 +98,7 @@ function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
 function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
   const v = new Uint8Array(y);
-  
+
   for (let i = 0; i < 16; i++) {
     for (let j = 0; j < 8; j++) {
       if (x[i] & (1 << (7 - j))) {
@@ -106,23 +106,23 @@ function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
           result[k] ^= v[k];
         }
       }
-      
+
       // Check if LSB is 1
       const lsb = v[15] & 1;
-      
+
       // Right shift v by 1 bit
       for (let k = 15; k > 0; k--) {
         v[k] = (v[k] >> 1) | ((v[k - 1] & 1) << 7);
       }
       v[0] >>= 1;
-      
+
       // If LSB was 1, XOR with R
       if (lsb) {
         v[0] ^= 0xe1;
       }
     }
   }
-  
+
   return result;
 }
 
@@ -235,7 +235,7 @@ function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
  * PKCS7 填充
  * PKCS#7 padding - 填充值等于填充字节数
  * Padding value equals the number of padding bytes added
- * 
+ *
  * @param data - 要填充的数据 (Data to pad)
  * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
  * @returns 填充后的数据 (Padded data)
@@ -253,7 +253,7 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
 /**
  * 去除 PKCS7 填充
  * Remove PKCS#7 padding
- * 
+ *
  * @param data - 要去除填充的数据 (Data to unpad)
  * @returns 去除填充后的数据 (Unpadded data)
  */
@@ -274,7 +274,7 @@ function pkcs7Unpad(data: Uint8Array): Uint8Array {
  * 零填充
  * Zero padding - 用零字节填充到块大小的倍数
  * Pad with zero bytes to multiple of block size
- * 
+ *
  * @param data - 要填充的数据 (Data to pad)
  * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
  * @returns 填充后的数据 (Padded data)
@@ -297,7 +297,7 @@ function zeroPad(data: Uint8Array, blockSize: number): Uint8Array {
  * 去除零填充
  * Remove zero padding - 移除尾部的零字节
  * Remove trailing zero bytes
- * 
+ *
  * @param data - 要去除填充的数据 (Data to unpad)
  * @returns 去除填充后的数据 (Unpadded data)
  */
@@ -324,11 +324,11 @@ export interface SM4Options {
    * - CFB: 密文反馈模式，需要IV，无需填充 (Cipher Feedback, IV required, no padding)
    * - OFB: 输出反馈模式，需要IV，无需填充 (Output Feedback, IV required, no padding)
    * - GCM: 伽罗瓦/计数器模式，需要IV，无需填充，提供认证 (Galois/Counter Mode, IV required, no padding, provides authentication)
-   * 
+   *
    * 默认: ECB (Default: ECB)
    */
   mode?: CipherModeType;
-  
+
   /**
    * 填充模式 (Padding mode)
    * - PKCS7: PKCS#7 填充，填充值为填充字节数 (PKCS#7 padding, padding value equals padding length)
@@ -336,14 +336,14 @@ export interface SM4Options {
    *   Note: PKCS7 in JavaScript is equivalent to PKCS5 in Java (PKCS5 is PKCS7 for 8-byte blocks)
    * - NONE: 无填充，数据长度必须是块大小倍数 (No padding, data length must be multiple of block size)
    * - ZERO: 零填充，用零字节填充 (Zero padding, pad with zero bytes)
-   * 
+   *
    * 注意：流密码模式（CTR/CFB/OFB/GCM）不使用填充
    * Note: Stream cipher modes (CTR/CFB/OFB/GCM) don't use padding
-   * 
+   *
    * 默认: PKCS7 (Default: PKCS7)
    */
   padding?: PaddingModeType;
-  
+
   /**
    * 初始化向量 (Initialization Vector)
    * - CBC/CTR/CFB/OFB: 16字节 (32个十六进制字符) (16 bytes / 32 hex chars)
@@ -351,25 +351,25 @@ export interface SM4Options {
    * - ECB: 不需要IV (Not required for ECB)
    */
   iv?: string;
-  
+
   /**
    * 附加认证数据，用于GCM模式 (Additional Authenticated Data for GCM mode)
    * 可以是字符串或Uint8Array (Can be string or Uint8Array)
    */
   aad?: string | Uint8Array;
-  
+
   /**
    * 认证标签长度，用于GCM模式 (Authentication tag length for GCM mode)
    * 范围: 12-16字节 (Range: 12-16 bytes)
    * 默认: 16字节 (Default: 16 bytes)
    */
   tagLength?: number;
-  
+
   /**
    * 输出格式 (Output format)
    * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
    * - base64: Base64 编码字符串 (Base64 encoded string)
-   * 
+   *
    * 默认: hex (Default: hex)
    */
   outputFormat?: OutputFormatType;
@@ -385,7 +385,7 @@ export interface SM4GCMResult {
    * Ciphertext (hex string)
    */
   ciphertext: string;
-  
+
   /**
    * 认证标签（十六进制字符串）
    * Authentication tag (hex string)
@@ -396,7 +396,7 @@ export interface SM4GCMResult {
 /**
  * 使用 SM4 加密数据
  * Encrypt data using SM4 block cipher
- * 
+ *
  * 支持的模式 (Supported modes):
  * - ECB: 电码本模式 (Electronic Codebook) - 不推荐用于生产环境 (Not recommended for production)
  * - CBC: 分组链接模式 (Cipher Block Chaining) - 需要IV (Requires IV)
@@ -404,12 +404,12 @@ export interface SM4GCMResult {
  * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV (AEAD mode, requires IV)
- * 
+ *
  * 支持的填充模式 (Supported padding modes):
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
  * - NONE: 无填充 (No padding) - 数据长度必须是16字节的倍数 (Data length must be multiple of 16 bytes)
  * - ZERO: 零填充 (Zero padding) - 用零字节填充 (Pad with zero bytes)
- * 
+ *
  * @param key - 加密密钥（十六进制字符串，32 个字符 = 16 字节）
  *              Encryption key (hex string, 32 chars = 16 bytes)
  * @param data - 要加密的数据（字符串或 Uint8Array）
@@ -418,11 +418,11 @@ export interface SM4GCMResult {
  *                  Encryption options (mode, padding, IV)
  * @returns 小写十六进制字符串形式的加密数据，或GCM模式下返回包含密文和标签的对象
  *          Encrypted data as lowercase hex string, or object with ciphertext and tag for GCM mode
- * 
+ *
  * @example
  * // ECB mode
  * const encrypted = encrypt(key, 'Hello', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
- * 
+ *
  * @example
  * // GCM mode with authentication
  * const result = encrypt(key, 'Secret', { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
@@ -435,18 +435,18 @@ export function encrypt(
 ): string | SM4GCMResult {
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
-  
+
   const keyBytes = hexToBytes(key);
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
 
   let dataBytes = normalizeInput(data);
-  
+
   // Stream cipher modes (CTR, CFB, OFB, GCM) don't require padding
   // 流密码模式（CTR、CFB、OFB、GCM）不需要填充
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
-  
+
   // 应用填充 (Apply padding)
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
@@ -604,7 +604,7 @@ export function encrypt(
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
-    
+
     // Append lengths in bits (64-bit big-endian)
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
@@ -637,7 +637,7 @@ export function encrypt(
 /**
  * 使用 SM4 解密数据
  * Decrypt data using SM4 block cipher
- * 
+ *
  * 支持的模式 (Supported modes):
  * - ECB: 电码本模式 (Electronic Codebook)
  * - CBC: 分组链接模式 (Cipher Block Chaining) - 需要IV (Requires IV)
@@ -645,12 +645,12 @@ export function encrypt(
  * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV和tag (AEAD mode, requires IV and tag)
- * 
+ *
  * 支持的填充模式 (Supported padding modes):
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
  * - NONE: 无填充 (No padding)
  * - ZERO: 零填充 (Zero padding)
- * 
+ *
  * @param key - 解密密钥（十六进制字符串，32 个字符 = 16 字节）
  *              Decryption key (hex string, 32 chars = 16 bytes)
  * @param encryptedData - 加密的数据（十六进制字符串或GCM结果对象）
@@ -659,11 +659,11 @@ export function encrypt(
  *                  Decryption options (mode, padding, IV, tag for GCM)
  * @returns 解密后的数据（UTF-8 字符串）
  *          Decrypted data (UTF-8 string)
- * 
+ *
  * @example
  * // ECB mode
  * const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
- * 
+ *
  * @example
  * // GCM mode with authentication verification
  * const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
@@ -675,7 +675,7 @@ export function decrypt(
 ): string {
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
-  
+
   const keyBytes = hexToBytes(key);
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
@@ -685,7 +685,7 @@ export function decrypt(
   const detectFormat = (str: string): 'hex' | 'base64' => {
     return isHexString(str) ? 'hex' : 'base64';
   };
-  
+
   const decodeInput = (str: string): Uint8Array => {
     const format = detectFormat(str);
     return format === 'base64' ? base64ToBytes(str) : hexToBytes(str);
@@ -694,7 +694,7 @@ export function decrypt(
   // Handle GCM mode with tag
   let ciphertextStr: string;
   let authTag: Uint8Array | undefined;
-  
+
   if (mode === 'gcm') {
     if (typeof encryptedData === 'object' && 'ciphertext' in encryptedData) {
       ciphertextStr = encryptedData.ciphertext;
@@ -710,7 +710,7 @@ export function decrypt(
   }
 
   const dataBytes = decodeInput(ciphertextStr);
-  
+
   // Stream cipher modes don't require data to be a multiple of block size
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   if (!isStreamMode && dataBytes.length % 16 !== 0) {
@@ -843,7 +843,7 @@ export function decrypt(
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
-    
+
     // Append lengths in bits (64-bit big-endian)
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
@@ -904,6 +904,6 @@ export function decrypt(
     // padding === 'none' 时不需要去除填充
     // No unpadding needed when padding === 'none'
   }
-  
+
   return new TextDecoder().decode(unpadded);
 }

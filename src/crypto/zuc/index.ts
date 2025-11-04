@@ -6,10 +6,10 @@
  * - GM/T 0001.1-2023: ZUC-256 流密码算法
  * - 3GPP TS 35.221: EEA3 和 EIA3 规范（基于 ZUC 的 LTE 加密与完整性算法）
  * - 官方网站：http://www.oscca.gov.cn/
- * 
+ *
  * ZUC（祖冲之算法）是中国国家密码管理局发布的流密码算法，
  * 用于 4G LTE 移动通信网络的加密和完整性保护。
- * 
+ *
  * 算法特点：
  * - ZUC-128: 128 位密钥和 128 位初始向量
  * - ZUC-256: 256 位密钥和 184 位初始向量（GM/T 0001.1-2023）
@@ -30,7 +30,7 @@ export interface ZUCOptions {
    * 输出格式 (Output format)
    * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
    * - base64: Base64 编码字符串 (Base64 encoded string)
-   * 
+   *
    * 默认: hex (Default: hex)
    */
   outputFormat?: OutputFormatType;
@@ -44,11 +44,11 @@ export interface ZUCOptions {
  * @param plaintext Data to encrypt (string or Uint8Array) / 要加密的数据
  * @param options Encryption options / 加密选项
  * @returns Encrypted data (default hex string) / 加密后的数据（默认十六进制字符串）
- * 
+ *
  * @example
  * // 默认 hex 格式（向后兼容）
  * const encrypted = encrypt(key, iv, 'data');
- * 
+ *
  * @example
  * // Base64 格式
  * const encrypted = encrypt(key, iv, 'data', { outputFormat: OutputFormat.BASE64 });
@@ -61,12 +61,12 @@ export function encrypt(
 ): string {
   const resultHex = process(key, iv, plaintext);
   const outputFormat = options?.outputFormat || OutputFormat.HEX;
-  
+
   if (outputFormat === OutputFormat.BASE64) {
     const resultBytes = hexToBytes(resultHex);
     return bytesToBase64(resultBytes);
   }
-  
+
   return resultHex;
 }
 
@@ -77,7 +77,7 @@ export function encrypt(
  * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
  * @param ciphertext Encrypted data (hex or base64 string, auto-detected) / 加密的数据（十六进制或 base64，自动检测）
  * @returns Decrypted data as string / 解密后的数据
- * 
+ *
  * @example
  * // 自动检测输入格式
  * const decrypted = decrypt(key, iv, encrypted);
@@ -110,7 +110,7 @@ export function getKeystream(
   const keystream = generateKeystream(key, iv, length);
   // Optimized: Pre-allocate exact size needed
   const bytes = new Uint8Array(length * 4);
-  
+
   // Optimized: Process words more efficiently
   for (let i = 0; i < length; i++) {
     const word = keystream[i];
@@ -120,7 +120,7 @@ export function getKeystream(
     bytes[offset + 2] = (word >>> 8) & 0xFF;
     bytes[offset + 3] = word & 0xFF;
   }
-  
+
   return bytesToHex(bytes);
 }
 
@@ -188,7 +188,7 @@ export function eia3(
     count & 0xFF,
     (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF
   ];
-  
+
   iv[0] = countAndBearer[0];
   iv[1] = countAndBearer[1];
   iv[2] = countAndBearer[2];

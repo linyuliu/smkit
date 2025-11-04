@@ -1,5 +1,5 @@
-import { 
-  encrypt as encryptFunc, 
+import {
+  encrypt as encryptFunc,
   decrypt as decryptFunc,
   type SM4Options as FuncSM4Options,
   type SM4GCMResult,
@@ -9,7 +9,7 @@ import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } fr
 /**
  * SM4 class providing object-oriented API for block cipher operations
  * SM4 类，提供面向对象的分组密码操作API
- * 
+ *
  * 支持的加密模式 (Supported cipher modes):
  * - ECB: 电码本模式 (Electronic Codebook)
  * - CBC: 分组链接模式 (Cipher Block Chaining)
@@ -17,7 +17,7 @@ import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } fr
  * - CFB: 密文反馈模式 (Cipher Feedback)
  * - OFB: 输出反馈模式 (Output Feedback)
  * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密 (AEAD)
- * 
+ *
  * 支持的填充模式 (Supported padding modes):
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding)
  * - NONE: 无填充 (No padding)
@@ -32,7 +32,7 @@ export class SM4 {
   /**
    * Create a new SM4 instance
    * 创建新的 SM4 实例
-   * 
+   *
    * @param key - Encryption key as hex string (32 hex chars = 16 bytes)
    *              加密密钥，十六进制字符串（32个字符 = 16字节）
    * @param options - Cipher options
@@ -88,7 +88,7 @@ export class SM4 {
   /**
    * Set padding mode
    * 设置填充模式
-   * 
+   *
    * @param padding - Padding mode (PKCS7, NONE, or ZERO)
    *                  填充模式（PKCS7、NONE 或 ZERO）
    */

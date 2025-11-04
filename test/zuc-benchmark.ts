@@ -12,7 +12,7 @@ function benchmark(name: string, fn: () => void, iterations: number = ITERATIONS
   for (let i = 0; i < 10; i++) {
     fn();
   }
-  
+
   const start = performance.now();
   for (let i = 0; i < iterations; i++) {
     fn();
@@ -20,12 +20,12 @@ function benchmark(name: string, fn: () => void, iterations: number = ITERATIONS
   const end = performance.now();
   const totalTime = end - start;
   const avgTime = totalTime / iterations;
-  
+
   console.log(`${name}:`);
   console.log(`  Total: ${totalTime.toFixed(2)}ms for ${iterations} iterations`);
   console.log(`  Average: ${avgTime.toFixed(4)}ms per operation`);
   console.log();
-  
+
   return avgTime;
 }
 

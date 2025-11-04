@@ -2,7 +2,7 @@
 /**
  * 本地测试脚本 - 用于快速测试 SMKit 的各项功能
  * Local test script - for quickly testing SMKit features
- * 
+ *
  * 运行方式 / Run with: npx tsx test-local.ts
  */
 
@@ -83,14 +83,14 @@ const sm4Plaintext = 'Hello, SM4 Encryption!';
 
 // 测试 4: ECB 模式
 console.log('✓ ECB 模式加密解密');
-const ecbEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, { 
-  mode: CipherMode.ECB, 
-  padding: PaddingMode.PKCS7 
+const ecbEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, {
+  mode: CipherMode.ECB,
+  padding: PaddingMode.PKCS7
 });
 console.log(`  密文: ${ecbEncrypted}`);
-const ecbDecrypted = sm4Decrypt(sm4Key, ecbEncrypted, { 
-  mode: CipherMode.ECB, 
-  padding: PaddingMode.PKCS7 
+const ecbDecrypted = sm4Decrypt(sm4Key, ecbEncrypted, {
+  mode: CipherMode.ECB,
+  padding: PaddingMode.PKCS7
 });
 console.log(`  解密: ${ecbDecrypted}`);
 console.log(`  匹配: ${ecbDecrypted === sm4Plaintext ? '✓ 是' : '✗ 否'}`);
@@ -99,16 +99,16 @@ console.log();
 // 测试 5: CBC 模式
 const iv = 'fedcba98765432100123456789abcdef'; // 128位IV
 console.log('✓ CBC 模式加密解密');
-const cbcEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, { 
-  mode: CipherMode.CBC, 
+const cbcEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, {
+  mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
-  iv 
+  iv
 });
 console.log(`  密文: ${cbcEncrypted}`);
-const cbcDecrypted = sm4Decrypt(sm4Key, cbcEncrypted, { 
-  mode: CipherMode.CBC, 
+const cbcDecrypted = sm4Decrypt(sm4Key, cbcEncrypted, {
+  mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
-  iv 
+  iv
 });
 console.log(`  解密: ${cbcDecrypted}`);
 console.log(`  匹配: ${cbcDecrypted === sm4Plaintext ? '✓ 是' : '✗ 否'}`);
@@ -117,12 +117,12 @@ console.log();
 // 测试 6: CTR 模式
 const counter = '00000000000000000000000000000000';
 console.log('✓ CTR 模式加密解密（流密码模式，无需填充）');
-const ctrEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, { 
+const ctrEncrypted = sm4Encrypt(sm4Key, sm4Plaintext, {
   mode: CipherMode.CTR,
   iv: counter
 });
 console.log(`  密文: ${ctrEncrypted}`);
-const ctrDecrypted = sm4Decrypt(sm4Key, ctrEncrypted, { 
+const ctrDecrypted = sm4Decrypt(sm4Key, ctrEncrypted, {
   mode: CipherMode.CTR,
   iv: counter
 });
@@ -134,14 +134,14 @@ console.log();
 const gcmIv = '000102030405060708090a0b'; // 96位IV
 const aad = 'Additional Authenticated Data';
 console.log('✓ GCM 模式认证加密');
-const gcmResult = sm4Encrypt(sm4Key, sm4Plaintext, { 
+const gcmResult = sm4Encrypt(sm4Key, sm4Plaintext, {
   mode: CipherMode.GCM,
   iv: gcmIv,
   aad
 });
 console.log(`  密文: ${gcmResult.ciphertext}`);
 console.log(`  认证标签: ${gcmResult.tag}`);
-const gcmDecrypted = sm4Decrypt(sm4Key, gcmResult, { 
+const gcmDecrypted = sm4Decrypt(sm4Key, gcmResult, {
   mode: CipherMode.GCM,
   iv: gcmIv,
   aad

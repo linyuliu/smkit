@@ -73,12 +73,12 @@ abstract class SHABase {
 
 /**
  * SHA-256 哈希类
- * 
+ *
  * @example
  * ```typescript
  * // 静态方法
  * const hash = SHA256.digest('Hello, World!');
- * 
+ *
  * // 增量哈希
  * const sha = new SHA256();
  * sha.update('Hello, ').update('World!');

@@ -1,7 +1,7 @@
 /**
  * SHA 哈希算法实现
  * 基于 @noble/hashes 库提供的高性能实现
- * 
+ *
  * 支持的算法：
  * - SHA-256: 256 位哈希输出
  * - SHA-384: 384 位哈希输出
@@ -42,12 +42,12 @@ function formatOutput(bytes: Uint8Array, format: OutputFormatType = OutputFormat
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认十六进制字符串，64 个字符）
- * 
+ *
  * @example
  * ```typescript
  * const hash = sha256('Hello, World!');
  * console.log(hash); // 十六进制格式
- * 
+ *
  * const hash64 = sha256('Hello, World!', { outputFormat: OutputFormat.BASE64 });
  * console.log(hash64); // Base64 格式
  * ```
@@ -63,7 +63,7 @@ export function sha256(data: string | Uint8Array, options?: SHAOptions): string 
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认十六进制字符串，96 个字符）
- * 
+ *
  * @example
  * ```typescript
  * const hash = sha384('Hello, World!');
@@ -81,7 +81,7 @@ export function sha384(data: string | Uint8Array, options?: SHAOptions): string 
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认十六进制字符串，128 个字符）
- * 
+ *
  * @example
  * ```typescript
  * const hash = sha512('Hello, World!');
@@ -100,7 +100,7 @@ export function sha512(data: string | Uint8Array, options?: SHAOptions): string 
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认十六进制字符串，40 个字符）
- * 
+ *
  * @example
  * ```typescript
  * const hash = sha1('Hello, World!');
@@ -119,7 +119,7 @@ export function sha1(data: string | Uint8Array, options?: SHAOptions): string {
  * @param data - 要认证的数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns HMAC 值（默认十六进制字符串，64 个字符）
- * 
+ *
  * @example
  * ```typescript
  * const mac = hmacSha256('secret-key', 'data to authenticate');
