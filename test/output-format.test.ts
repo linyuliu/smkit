@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  sm2Encrypt, 
-  sm2Decrypt, 
+import {
+  sm2Encrypt,
+  sm2Decrypt,
   generateKeyPair,
-  sm4Encrypt, 
+  sm4Encrypt,
   sm4Decrypt,
   zucEncrypt,
   zucDecrypt,
@@ -50,7 +50,7 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
         outputFormat: OutputFormat.BASE64
       });
       expect(encrypted).toMatch(/^[A-Za-z0-9+/]+=*$/);
-      
+
       const decrypted = sm4Decrypt(key, encrypted, {
         mode: CipherMode.CBC,
         iv
@@ -139,7 +139,7 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
     it('PKCS7 填充应该能正常工作（与 Java PKCS5 等价）', () => {
       const key = '0123456789abcdeffedcba9876543210';
       const plaintext = 'Test';
-      
+
       // PKCS7 是 PKCS5 的通用版本
       // 对于 8 字节块（如 DES）：PKCS5 和 PKCS7 相同
       // 对于 16 字节块（如 AES、SM4）：只能使用 PKCS7
@@ -148,12 +148,12 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
         mode: CipherMode.ECB,
         padding: PaddingMode.PKCS7
       });
-      
+
       const decrypted = sm4Decrypt(key, encrypted, {
         mode: CipherMode.ECB,
         padding: PaddingMode.PKCS7
       });
-      
+
       expect(decrypted).toBe(plaintext);
     });
   });

@@ -59,10 +59,10 @@ export class SM3 {
       combined.set(chunk, offset);
       offset += chunk.length;
     }
-    
-    // 计算完成后清空缓存
+
+    // 计算哈希后清空数据 (Clear data after digesting)
     this.data = [];
-    
+
     return digestFunc(combined, { outputFormat: this.outputFormat });
   }
 

@@ -53,9 +53,9 @@ describe('ASN.1 Utilities', () => {
       const int1 = encodeInteger('01');
       const int2 = encodeInteger('02');
       const encoded = encodeSequence(int1, int2);
-      
+
       expect(encoded[0]).toBe(0x30); // SEQUENCE tag
-      
+
       const { elements } = decodeSequence(encoded);
       expect(elements).toHaveLength(2);
     });
@@ -64,7 +64,7 @@ describe('ASN.1 Utilities', () => {
       const int1 = encodeInteger('01');
       const inner = encodeSequence(int1);
       const outer = encodeSequence(inner);
-      
+
       const { elements } = decodeSequence(outer);
       expect(elements).toHaveLength(1);
       expect(elements[0][0]).toBe(0x30); // Inner sequence tag
@@ -75,10 +75,10 @@ describe('ASN.1 Utilities', () => {
     it('should encode and decode SM2 signature', () => {
       const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
-      
+
       const encoded = encodeSignature(r, s);
       const decoded = decodeSignature(encoded);
-      
+
       expect(decoded.r.toUpperCase()).toBe(r);
       expect(decoded.s.toUpperCase()).toBe(s);
     });
@@ -86,10 +86,10 @@ describe('ASN.1 Utilities', () => {
     it('should handle signatures with leading zeros', () => {
       const r = '00C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = '00003736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
-      
+
       const encoded = encodeSignature(r, s);
       const decoded = decodeSignature(encoded);
-      
+
       // Leading zeros should be removed
       expect(decoded.r.length).toBeLessThanOrEqual(r.length);
       expect(decoded.s.length).toBeLessThanOrEqual(s.length);
@@ -100,7 +100,7 @@ describe('ASN.1 Utilities', () => {
     it('should convert raw signature to DER', () => {
       const raw = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
       const der = rawToDer(raw);
-      
+
       expect(der[0]).toBe(0x30); // SEQUENCE tag
       expect(der.length).toBeGreaterThan(64);
     });
@@ -109,10 +109,10 @@ describe('ASN.1 Utilities', () => {
       const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
       const expected = r + s;
-      
+
       const der = encodeSignature(r, s);
       const raw = derToRaw(der);
-      
+
       expect(raw.toUpperCase()).toBe(expected);
     });
 
@@ -120,7 +120,7 @@ describe('ASN.1 Utilities', () => {
       const original = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
       const der = rawToDer(original);
       const raw = derToRaw(der);
-      
+
       expect(raw.toUpperCase()).toBe(original.toUpperCase());
     });
 
@@ -133,7 +133,7 @@ describe('ASN.1 Utilities', () => {
     it('should convert simple integer to XML', () => {
       const encoded = encodeInteger('01');
       const xml = asn1ToXml(encoded);
-      
+
       expect(xml).toContain('<INTEGER>');
       expect(xml).toContain('</INTEGER>');
       expect(xml).toContain('<value>01</value>');
@@ -144,7 +144,7 @@ describe('ASN.1 Utilities', () => {
       const int2 = encodeInteger('02');
       const encoded = encodeSequence(int1, int2);
       const xml = asn1ToXml(encoded);
-      
+
       expect(xml).toContain('<SEQUENCE>');
       expect(xml).toContain('</SEQUENCE>');
       expect(xml).toContain('<INTEGER>');
@@ -153,9 +153,9 @@ describe('ASN.1 Utilities', () => {
     it('should convert signature to XML', () => {
       const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
-      
+
       const xml = signatureToXml(r + s, false);
-      
+
       expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
       expect(xml).toContain('<SM2Signature>');
       expect(xml).toContain('</SM2Signature>');
@@ -169,9 +169,9 @@ describe('ASN.1 Utilities', () => {
       const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
       const der = encodeSignature(r, s);
-      
+
       const xml = signatureToXml(der);
-      
+
       expect(xml).toContain('<SM2Signature>');
       expect(xml).toContain(`<r>${r.toLowerCase()}</r>`);
       expect(xml).toContain(`<s>${s.toLowerCase()}</s>`);

@@ -1,10 +1,10 @@
 /**
  * SM2 椭圆曲线参数和工具函数
- * 
+ *
  * 标准参考：
  * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
  * - GM/T 0009-2023: SM2 密码算法使用规范
- * 
+ *
  * 使用 @noble/curves 进行高效的椭圆曲线运算
  */
 
@@ -14,11 +14,11 @@ import { sha256 } from '@noble/hashes/sha2.js';
 
 /**
  * SM2 推荐曲线参数
- * 
+ *
  * 标准参考：
  * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
  * - GM/T 0009-2023: SM2 密码算法使用规范（继续使用相同的曲线参数）
- * 
+ *
  * 素数域 p = 2^256 - 2^224 - 2^96 + 2^64 - 1
  */
 export const SM2_CURVE_PARAMS = {
@@ -26,7 +26,7 @@ export const SM2_CURVE_PARAMS = {
   p: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF',
   // 系数 a
   a: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC',
-  // 系数 b  
+  // 系数 b
   b: '28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93',
   // 基点 x 坐标
   Gx: '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7',
@@ -58,30 +58,30 @@ export function bigIntToHex(value: bigint, length: number = 64): string {
 /**
  * 生成随机字节的跨平台函数
  * 优雅地处理 Node.js 和浏览器环境，提供三重回退机制
- * 
+ *
  * 优先级（从高到低）:
  * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
  *    - 浏览器环境：window.crypto.getRandomValues
  *    - Node.js 15+：globalThis.crypto.getRandomValues
  *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
- * 
+ *
  * 2. Node.js Crypto Module (crypto.randomBytes) - 密码学安全的随机数生成器
  *    - Node.js < 15：使用 require('crypto').randomBytes
  *    - 同样使用操作系统提供的 CSPRNG
  *    - 为旧版本 Node.js 提供安全的随机数
- * 
+ *
  * 3. 时间戳 + Math.random() - 应急回退方案
  *    - ⚠️ 警告：这不是密码学安全的！
  *    - 仅用于开发/测试环境
  *    - 不应在生产环境中使用
  *    - 会在控制台输出警告信息
- * 
+ *
  * 设计理念：
  * - 优先使用最安全的随机数源
  * - 在不可用时自动降级到次优方案
  * - 确保在各种环境（浏览器、Node.js、小程序）中都能正常工作
  * - 通过警告信息提醒开发者当前使用的随机数源质量
- * 
+ *
  * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
  * 在浏览器环境中，直接使用 Web Crypto API
  * 在微信小程序等环境中，可能需要自行实现回退方案
@@ -91,7 +91,7 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
   if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
     return globalThis.crypto.getRandomValues(new Uint8Array(bytesLength));
   }
-  
+
   // 第二优先级: Node.js Crypto Module (旧版本 Node.js)
   // 尝试动态导入 Node.js 的 crypto 模块
   try {
@@ -106,21 +106,21 @@ function getRandomBytes(bytesLength: number = 32): Uint8Array {
   } catch (e) {
     // 在浏览器或不支持 crypto 的环境中会失败，继续尝试下一个方案
   }
-  
+
   // 第三优先级: 使用时间戳 + Math.random() 作为回退方案
   // 警告：此方案的随机性较弱，仅用于开发/测试环境
   console.warn('Warning: Using Math.random() for random number generation. This is NOT cryptographically secure and should only be used for testing purposes.');
-  
+
   const bytes = new Uint8Array(bytesLength);
   const timestamp = Date.now();
-  
+
   for (let i = 0; i < bytesLength; i++) {
     // 结合时间戳和 Math.random() 生成伪随机数
     const random = Math.random() * 256;
     const timestampByte = (timestamp >> (i % 8)) & 0xff;
     bytes[i] = (random ^ timestampByte) & 0xff;
   }
-  
+
   return bytes;
 }
 

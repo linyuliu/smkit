@@ -53,6 +53,9 @@
     "url": "https://github.com/linyuliu/smkit/issues"
   },
   "homepage": "https://github.com/linyuliu/smkit#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
