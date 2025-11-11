@@ -35,24 +35,23 @@ export interface KeyPair {
 
 /**
  * SM2 加密选项
- * SM2 encryption options
  */
 export interface SM2EncryptOptions {
   /**
-   * 密文模式 (Ciphertext mode)
-   * - C1C3C2: C1 || C3 || C2（默认，推荐）(Default, recommended)
+   * 密文模式
+   * - C1C3C2: C1 || C3 || C2（默认，推荐）
    * - C1C2C3: C1 || C2 || C3
-   * 
-   * 默认: C1C3C2 (Default: C1C3C2)
+   *
+   * 默认：C1C3C2
    */
   mode?: SM2CipherModeType;
-  
+
   /**
-   * 输出格式 (Output format)
-   * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
-   * - base64: Base64 编码字符串 (Base64 encoded string)
-   * 
-   * 默认: hex (Default: hex)
+   * 输出格式
+   * - hex：十六进制字符串（默认，保持向后兼容）
+   * - base64：Base64 编码字符串
+   *
+   * 默认：hex
    */
   outputFormat?: OutputFormatType;
 }
@@ -67,10 +66,10 @@ function isValidHexString(str: string): boolean {
   
   for (let i = 0; i < str.length; i++) {
     const c = str.charCodeAt(i);
-    // 检查是否为 0-9, a-f, A-F
-    const isDigit = c >= 48 && c <= 57;  // 0-9
-    const isLowerHex = c >= 97 && c <= 102;  // a-f
-    const isUpperHex = c >= 65 && c <= 70;  // A-F
+    // 检查是否为 0-9、a-f、A-F
+    const isDigit = c >= 48 && c <= 57;  // 字符 0-9
+    const isLowerHex = c >= 97 && c <= 102;  // 字符 a-f
+    const isUpperHex = c >= 65 && c <= 70;  // 字符 A-F
     
     if (!isDigit && !isLowerHex && !isUpperHex) {
       return false;
@@ -145,7 +144,7 @@ function normalizePublicKeyInput(publicKey: string): string {
     }
     // 使用 @noble/curves 解压公钥
     const point = sm2.Point.fromHex(cleaned);
-    const uncompressedBytes = point.toBytes(false); // false = 非压缩格式
+    const uncompressedBytes = point.toBytes(false); // false 表示非压缩格式
     return bytesToHex(uncompressedBytes);
   } else {
     throw new Error('Invalid public key prefix: must be 02, 03, or 04');

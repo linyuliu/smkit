@@ -205,13 +205,13 @@ After publishing, the package will be automatically available on:
 ### unpkg
 ```html
 <script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
-<script src="https://unpkg.com/smkit@0.1.0/dist/smkit.umd.js"></script>
+<script src="https://unpkg.com/smkit@0.9.1/dist/smkit.umd.js"></script>
 ```
 
 ### jsDelivr
 ```html
 <script src="https://cdn.jsdelivr.net/npm/smkit@latest/dist/smkit.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/smkit@0.1.0/dist/smkit.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/smkit@0.9.1/dist/smkit.umd.js"></script>
 ```
 
 ## 总结 / Summary

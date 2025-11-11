@@ -12,7 +12,7 @@
 
 import { hexToBytes, bytesToHex } from '../../core/utils';
 
-// S-boxes for the F function
+// F 函数使用的 S 盒
 const S0: Uint8Array = new Uint8Array([
   0x3e, 0x72, 0x5b, 0x47, 0xca, 0xe0, 0x00, 0x33, 0x04, 0xd1, 0x54, 0x98, 0x09, 0xb9, 0x6d, 0xcb,
   0x7b, 0x1b, 0xf9, 0x32, 0xaf, 0x9d, 0x6a, 0xa5, 0xb8, 0x2d, 0xfc, 0x1d, 0x08, 0x53, 0x03, 0x90,
@@ -51,18 +51,18 @@ const S1: Uint8Array = new Uint8Array([
   0x64, 0xbe, 0x85, 0x9b, 0x2f, 0x59, 0x8a, 0xd7, 0xb0, 0x25, 0xac, 0xaf, 0x12, 0x03, 0xe2, 0xf2,
 ]);
 
-// LFSR parameters for ZUC-128
+// ZUC-128 的线性反馈移位寄存器参数
 const D_128: Uint8Array = new Uint8Array([
   22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22,
 ]);
 
 /**
- * ZUC State - manages LFSR and FSM states
+ * ZUC 状态对象，维护 LFSR 与 FSM 的内部状态
  */
 export class ZUCState {
-  private lfsr: Uint32Array; // 16 31-bit words
-  private r1: number; // FSM register 1
-  private r2: number; // FSM register 2
+  private lfsr: Uint32Array; // 16 个 31 位寄存器
+  private r1: number; // FSM 寄存器 1
+  private r2: number; // FSM 寄存器 2
 
   constructor() {
     this.lfsr = new Uint32Array(16);
@@ -71,9 +71,9 @@ export class ZUCState {
   }
 
   /**
-   * Initialize ZUC state with key and IV
-   * @param key 128-bit key (16 bytes)
-   * @param iv 128-bit IV (16 bytes)
+   * 使用密钥与 IV 初始化状态
+   * @param key - 128 位密钥（16 字节）
+   * @param iv - 128 位初始向量（16 字节）
    */
   initialize(key: Uint8Array, iv: Uint8Array): void {
     if (key.length !== 16) {
@@ -83,17 +83,17 @@ export class ZUCState {
       throw new Error('IV must be 16 bytes for ZUC-128');
     }
 
-    // Load key and IV into LFSR according to the specification
+    // 按照标准将密钥与 IV 写入 LFSR
     for (let i = 0; i < 16; i++) {
       this.lfsr[i] = ((key[i] << 23) | (D_128[i] << 8) | iv[i]) >>> 0;
-      this.lfsr[i] &= 0x7FFFFFFF; // Keep 31 bits
+      this.lfsr[i] &= 0x7FFFFFFF; // 仅保留 31 位
     }
 
-    // Initialize FSM registers
+    // 初始化 FSM 寄存器
     this.r1 = 0;
     this.r2 = 0;
 
-    // Run initialization stage (32 times without producing output)
+    // 执行 32 轮初始化过程（不产生输出）
     for (let i = 0; i < 32; i++) {
       const w = this.bitReorganization();
       const f = this.fFunction(w);
@@ -102,8 +102,8 @@ export class ZUCState {
   }
 
   /**
-   * Bit Reorganization - extract specific bits from LFSR to form words
-   * Optimized: Pre-allocate array for reuse
+   * 比特重组：从 LFSR 中抽取特定位构成 32 位字
+   * 优化：预分配数组重复使用
    */
   private x: Uint32Array = new Uint32Array(4);
   
@@ -116,8 +116,8 @@ export class ZUCState {
   }
 
   /**
-   * F Function - nonlinear function with two S-boxes
-   * Optimized: Use >>> 0 for all operations to ensure 32-bit unsigned
+   * F 函数：使用双 S 盒的非线性变换
+   * 优化：统一使用 >>> 0 保持 32 位无符号运算
    */
   private fFunction(x: Uint32Array): number {
     const w = ((x[0] ^ this.r1) + this.r2) >>> 0;
@@ -127,7 +127,7 @@ export class ZUCState {
     const u = this.l1(((w1 << 16) | (w2 >>> 16)) >>> 0);
     const v = this.l2(((w2 << 16) | (w1 >>> 16)) >>> 0);
 
-    // Update registers
+    // 更新 FSM 寄存器
     this.r1 = this.s(this.l1(((v << 16) | (u >>> 16)) >>> 0));
     this.r2 = this.s(this.l2(((u << 16) | (v >>> 16)) >>> 0));
 
@@ -135,7 +135,7 @@ export class ZUCState {
   }
 
   /**
-   * S-box substitution
+   * S 盒代换
    */
   private s(x: number): number {
     return (
@@ -147,28 +147,28 @@ export class ZUCState {
   }
 
   /**
-   * Linear transformation L1
+   * 线性变换 L1
    */
   private l1(x: number): number {
     return (x ^ this.rotl(x, 2) ^ this.rotl(x, 10) ^ this.rotl(x, 18) ^ this.rotl(x, 24)) >>> 0;
   }
 
   /**
-   * Linear transformation L2
+   * 线性变换 L2
    */
   private l2(x: number): number {
     return (x ^ this.rotl(x, 8) ^ this.rotl(x, 14) ^ this.rotl(x, 22) ^ this.rotl(x, 30)) >>> 0;
   }
 
   /**
-   * Rotate left
+   * 循环左移
    */
   private rotl(x: number, n: number): number {
     return ((x << n) | (x >>> (32 - n))) >>> 0;
   }
 
   /**
-   * LFSR with initialization mode (feedback with u)
+   * 初始化模式下的 LFSR（带反馈值 u）
    */
   private lfsrWithInitMode(u: number): void {
     const s16 = this.addMod(
@@ -179,7 +179,7 @@ export class ZUCState {
       this.lfsr[13]
     );
 
-    // Shift LFSR
+    // 左移 LFSR
     for (let i = 0; i < 15; i++) {
       this.lfsr[i] = this.lfsr[i + 1];
     }
@@ -188,7 +188,7 @@ export class ZUCState {
   }
 
   /**
-   * LFSR with working mode (no feedback)
+   * 工作模式下的 LFSR（无附加反馈）
    */
   private lfsrWithWorkMode(): void {
     const s16 = this.addMod(
@@ -199,7 +199,7 @@ export class ZUCState {
       this.lfsr[13]
     );
 
-    // Shift LFSR
+    // 左移 LFSR
     for (let i = 0; i < 15; i++) {
       this.lfsr[i] = this.lfsr[i + 1];
     }
@@ -234,11 +234,11 @@ export class ZUCState {
 }
 
 /**
- * Generate keystream using ZUC-128
- * @param key 128-bit key (16 bytes or 32 hex chars)
- * @param iv 128-bit IV (16 bytes or 32 hex chars)
- * @param length Number of keystream words to generate
- * @returns Array of 32-bit keystream words
+ * 生成 ZUC-128 密钥流
+ * @param key - 128 位密钥（16 字节或 32 个十六进制字符）
+ * @param iv - 128 位初始向量（16 字节或 32 个十六进制字符）
+ * @param length - 需要输出的 32 位密钥字数量
+ * @returns 32 位密钥字数组
  */
 export function generateKeystream(
   key: string | Uint8Array,
@@ -259,14 +259,14 @@ export function generateKeystream(
   return keystream;
 }
 
-  /**
-   * Encrypt/decrypt data using ZUC-128 (stream cipher, so encryption = decryption)
-   * Optimized: Use DataView for efficient byte extraction and reduce allocations
-   * @param key 128-bit key (16 bytes or 32 hex chars)
-   * @param iv 128-bit IV (16 bytes or 32 hex chars)
-   * @param data Data to encrypt/decrypt
-   * @returns Encrypted/decrypted data as hex string
-   */
+/**
+ * 使用 ZUC-128 加密或解密数据（流密码中加解密相同）
+ * 优化：利用按字处理减少内存分配
+ * @param key - 128 位密钥（16 字节或 32 个十六进制字符）
+ * @param iv - 128 位初始向量（16 字节或 32 个十六进制字符）
+ * @param data - 待加密或解密的数据
+ * @returns 十六进制字符串形式的密文或明文
+ */
 export function process(
   key: string | Uint8Array,
   iv: string | Uint8Array,
@@ -279,25 +279,25 @@ export function process(
   const state = new ZUCState();
   state.initialize(keyBytes, ivBytes);
 
-  // Generate keystream and XOR with data
-  // Optimized: Process 4 bytes at a time using typed arrays
+  // 生成密钥流并与数据异或
+  // 优化：按 4 字节批量处理
   const output = new Uint8Array(dataBytes.length);
   const numFullWords = Math.floor(dataBytes.length / 4);
   const remainder = dataBytes.length % 4;
 
-  // Process full 32-bit words
+  // 处理完整的 32 位字
   for (let i = 0; i < numFullWords; i++) {
     const keyword = state.generateKeyword();
     const offset = i * 4;
     
-    // XOR 4 bytes at once
+    // 一次性异或 4 个字节
     output[offset] = dataBytes[offset] ^ ((keyword >>> 24) & 0xFF);
     output[offset + 1] = dataBytes[offset + 1] ^ ((keyword >>> 16) & 0xFF);
     output[offset + 2] = dataBytes[offset + 2] ^ ((keyword >>> 8) & 0xFF);
     output[offset + 3] = dataBytes[offset + 3] ^ (keyword & 0xFF);
   }
 
-  // Process remaining bytes
+  // 处理剩余字节
   if (remainder > 0) {
     const keyword = state.generateKeyword();
     const offset = numFullWords * 4;

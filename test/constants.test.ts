@@ -45,6 +45,12 @@ describe('Constants', () => {
       expect(CipherMode.OFB).toBe('ofb');
       expect(CipherMode.GCM).toBe('gcm');
     });
+
+    it('should not expose planned-but-unimplemented modes', () => {
+      const modes = Object.values(CipherMode);
+      expect(modes).not.toContain('ccm');
+      expect(modes).not.toContain('xts');
+    });
   });
 
   describe('PaddingMode', () => {

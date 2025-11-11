@@ -58,8 +58,7 @@ function pad(data: Uint8Array): Uint8Array {
 }
 
 /**
- * 压缩函数 CF - 优化版本
- * Optimized compression function with inlined operations and reduced allocations
+ * 压缩函数 CF（优化实现，减少临时对象与函数调用）
  */
 function cf(v: number[], b: Uint8Array): number[] {
   const w: number[] = new Array(68);
@@ -68,7 +67,7 @@ function cf(v: number[], b: Uint8Array): number[] {
   // 消息扩展 - 优化：使用 DataView 一次性读取
   const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
   for (let i = 0; i < 16; i++) {
-    w[i] = view.getUint32(i * 4, false); // false = big-endian
+    w[i] = view.getUint32(i * 4, false); // false 表示大端序
   }
   
   // 消息扩展 - 优化：内联 p1 函数减少函数调用开销
@@ -155,8 +154,7 @@ export interface SM3Options {
 }
 
 /**
- * 计算 SM3 哈希摘要 - 优化版本
- * Optimized digest function with reduced allocations and direct buffer manipulation
+ * 计算 SM3 哈希摘要（优化实现，减少内存分配并直接操作缓冲区）
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认为小写十六进制字符串，64 个字符）
@@ -187,7 +185,7 @@ export function digest(data: string | Uint8Array, options?: SM3Options): string 
   const result = new Uint8Array(32);
   const view = new DataView(result.buffer);
   for (let i = 0; i < 8; i++) {
-    view.setUint32(i * 4, v[i], false); // false = big-endian
+    view.setUint32(i * 4, v[i], false); // false 表示大端序
   }
   
   // 根据输出格式返回结果

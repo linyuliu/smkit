@@ -7,21 +7,20 @@ import {
 import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } from '../../types/constants';
 
 /**
- * SM4 class providing object-oriented API for block cipher operations
- * SM4 类，提供面向对象的分组密码操作API
- * 
- * 支持的加密模式 (Supported cipher modes):
- * - ECB: 电码本模式 (Electronic Codebook)
- * - CBC: 分组链接模式 (Cipher Block Chaining)
- * - CTR: 计数器模式 (Counter mode)
- * - CFB: 密文反馈模式 (Cipher Feedback)
- * - OFB: 输出反馈模式 (Output Feedback)
- * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密 (AEAD)
- * 
- * 支持的填充模式 (Supported padding modes):
- * - PKCS7: PKCS#7 填充 (PKCS#7 padding)
- * - NONE: 无填充 (No padding)
- * - ZERO: 零填充 (Zero padding)
+ * SM4 分组密码的面向对象封装
+ *
+ * 支持的加密模式：
+ * - ECB：电码本模式（Electronic Codebook）
+ * - CBC：分组链接模式（Cipher Block Chaining）
+ * - CTR：计数器模式（Counter Mode）
+ * - CFB：密文反馈模式（Cipher Feedback）
+ * - OFB：输出反馈模式（Output Feedback）
+ * - GCM：伽罗瓦/计数器模式（Galois/Counter Mode，认证加密）
+ *
+ * 支持的填充模式：
+ * - PKCS7：PKCS#7 填充
+ * - NONE：无填充
+ * - ZERO：零填充
  */
 export class SM4 {
   private key: string;
@@ -30,19 +29,13 @@ export class SM4 {
   private iv?: string;
 
   /**
-   * Create a new SM4 instance
    * 创建新的 SM4 实例
-   * 
-   * @param key - Encryption key as hex string (32 hex chars = 16 bytes)
-   *              加密密钥，十六进制字符串（32个字符 = 16字节）
-   * @param options - Cipher options
-   *                  加密选项
-   * @param options.mode - Cipher mode (default: ECB)
-   *                       加密模式（默认：ECB）
-   * @param options.padding - Padding mode (default: PKCS7)
-   *                          填充模式（默认：PKCS7）
-   * @param options.iv - Initialization vector (required for CBC/CTR/CFB/OFB/GCM)
-   *                     初始化向量（CBC/CTR/CFB/OFB/GCM模式需要）
+   *
+   * @param key - 加密密钥，十六进制字符串（32 个字符 = 16 字节）
+   * @param options - 加密选项
+   * @param options.mode - 加密模式（默认：ECB）
+   * @param options.padding - 填充模式（默认：PKCS7）
+   * @param options.iv - 初始化向量（CBC/CTR/CFB/OFB/GCM 模式必需）
    */
   constructor(key: string, options?: {
     mode?: CipherModeType;
@@ -56,57 +49,55 @@ export class SM4 {
   }
 
   /**
-   * Set initialization vector for CBC/CTR/CFB/OFB/GCM modes
-   * @param iv - IV as hex string (32 hex chars = 16 bytes for most modes, 24 hex chars = 12 bytes for GCM)
+   * 设置初始化向量（CBC/CTR/CFB/OFB/GCM 模式专用）
+   * @param iv - 十六进制字符串表示的 IV（常规模式 32 个字符，GCM 模式 24 个字符）
    */
   setIV(iv: string): void {
     this.iv = iv;
   }
 
   /**
-   * Get initialization vector
+   * 获取初始化向量
    */
   getIV(): string | undefined {
     return this.iv;
   }
 
   /**
-   * Set cipher mode
-   * @param mode - Cipher mode (ECB, CBC, CTR, CFB, OFB, GCM)
+   * 设置加密模式
+   * @param mode - 加密模式（ECB、CBC、CTR、CFB、OFB、GCM）
    */
   setMode(mode: CipherModeType): void {
     this.mode = mode;
   }
 
   /**
-   * Get cipher mode
+   * 获取当前加密模式
    */
   getMode(): CipherModeType {
     return this.mode;
   }
 
   /**
-   * Set padding mode
    * 设置填充模式
-   * 
-   * @param padding - Padding mode (PKCS7, NONE, or ZERO)
-   *                  填充模式（PKCS7、NONE 或 ZERO）
+   *
+   * @param padding - 填充模式（PKCS7、NONE 或 ZERO）
    */
   setPadding(padding: PaddingModeType): void {
     this.padding = padding;
   }
 
   /**
-   * Get padding mode
+   * 获取当前填充模式
    */
   getPadding(): PaddingModeType {
     return this.padding;
   }
 
   /**
-   * Encrypt data
-   * @param data - Data to encrypt
-   * @returns Encrypted data as hex string or SM4GCMResult for GCM mode
+   * 加密数据
+   * @param data - 待加密的数据
+   * @returns 十六进制密文；GCM 模式下返回包含密文与标签的对象
    */
   encrypt(data: string | Uint8Array): string | SM4GCMResult {
     const options: FuncSM4Options = {
@@ -118,9 +109,9 @@ export class SM4 {
   }
 
   /**
-   * Decrypt data
-   * @param encryptedData - Encrypted data as hex string or SM4GCMResult for GCM mode
-   * @returns Decrypted data as string
+   * 解密数据
+   * @param encryptedData - 十六进制密文或 GCM 模式的密文结果
+   * @returns 解密得到的明文字符串
    */
   decrypt(encryptedData: string | SM4GCMResult): string {
     const options: FuncSM4Options = {
@@ -132,55 +123,55 @@ export class SM4 {
   }
 
   /**
-   * Create SM4 instance with ECB mode
-   * @param key - Encryption key as hex string
-   * @param padding - Padding mode (default: PKCS7)
+   * 以 ECB 模式创建实例
+   * @param key - 十六进制密钥
+   * @param padding - 填充模式（默认：PKCS7）
    */
   static ECB(key: string, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.ECB, padding });
   }
 
   /**
-   * Create SM4 instance with CBC mode
-   * @param key - Encryption key as hex string
-   * @param iv - Initialization vector as hex string
-   * @param padding - Padding mode (default: PKCS7)
+   * 以 CBC 模式创建实例
+   * @param key - 十六进制密钥
+   * @param iv - 十六进制初始化向量
+   * @param padding - 填充模式（默认：PKCS7）
    */
   static CBC(key: string, iv: string, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.CBC, padding, iv });
   }
 
   /**
-   * Create SM4 instance with CTR mode
-   * @param key - Encryption key as hex string
-   * @param iv - Counter/nonce as hex string
+   * 以 CTR 模式创建实例
+   * @param key - 十六进制密钥
+   * @param iv - 十六进制计数器/随机数
    */
   static CTR(key: string, iv: string): SM4 {
     return new SM4(key, { mode: CipherMode.CTR, padding: PaddingMode.NONE, iv });
   }
 
   /**
-   * Create SM4 instance with CFB mode
-   * @param key - Encryption key as hex string
-   * @param iv - Initialization vector as hex string
+   * 以 CFB 模式创建实例
+   * @param key - 十六进制密钥
+   * @param iv - 十六进制初始化向量
    */
   static CFB(key: string, iv: string): SM4 {
     return new SM4(key, { mode: CipherMode.CFB, padding: PaddingMode.NONE, iv });
   }
 
   /**
-   * Create SM4 instance with OFB mode
-   * @param key - Encryption key as hex string
-   * @param iv - Initialization vector as hex string
+   * 以 OFB 模式创建实例
+   * @param key - 十六进制密钥
+   * @param iv - 十六进制初始化向量
    */
   static OFB(key: string, iv: string): SM4 {
     return new SM4(key, { mode: CipherMode.OFB, padding: PaddingMode.NONE, iv });
   }
 
   /**
-   * Create SM4 instance with GCM mode
-   * @param key - Encryption key as hex string
-   * @param iv - Initialization vector as hex string (24 hex chars = 12 bytes)
+   * 以 GCM 模式创建实例
+   * @param key - 十六进制密钥
+   * @param iv - 十六进制初始化向量（24 个字符 = 12 字节）
    */
   static GCM(key: string, iv: string): SM4 {
     return new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv });

@@ -69,31 +69,29 @@ function rotl(value: number, shift: number): number {
 }
 
 /**
- * GCM模式：Galois field multiplication in GF(2^128)
- * 伽罗瓦域乘法 GF(2^128)
+ * GCM 模式下的伽罗瓦域乘法（GF(2^128)）
  */
 function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
-  
-  // Process data in 16-byte blocks
+
+  // 逐块处理每 16 字节的数据
   for (let i = 0; i < data.length; i += 16) {
     const block = data.slice(i, i + 16);
-    
-    // XOR with previous result
+
+    // 与上一轮结果按位异或
     for (let j = 0; j < 16 && j < block.length; j++) {
       result[j] ^= block[j];
     }
-    
-    // Galois field multiplication
+
+    // 伽罗瓦域乘法
     result.set(gfMul(result, h));
   }
-  
+
   return result;
 }
 
 /**
- * Galois field multiplication for GCM
- * 伽罗瓦域乘法（用于GCM模式）
+ * 伽罗瓦域乘法（用于 GCM 模式）
  */
 function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
@@ -106,17 +104,17 @@ function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
           result[k] ^= v[k];
         }
       }
-      
-      // Check if LSB is 1
+
+      // 判断最低位是否为 1
       const lsb = v[15] & 1;
-      
-      // Right shift v by 1 bit
+
+      // v 向右移 1 位
       for (let k = 15; k > 0; k--) {
         v[k] = (v[k] >> 1) | ((v[k - 1] & 1) << 7);
       }
       v[0] >>= 1;
-      
-      // If LSB was 1, XOR with R
+
+      // 若最低位为 1，则与常量 R 异或
       if (lsb) {
         v[0] ^= 0xe1;
       }
@@ -127,11 +125,10 @@ function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
 }
 
 /**
- * Increment counter for GCM mode (32-bit counter in rightmost 4 bytes)
- * GCM模式的计数器递增（最右边4字节的32位计数器）
+ * GCM 模式的计数器递增（最右侧 32 位计数器）
  */
 function incrementGCMCounter(counter: Uint8Array): void {
-  // Increment the rightmost 32 bits (big-endian)
+  // 按大端方式递增最右侧的 32 位计数器
   for (let i = 15; i >= 12; i--) {
     if (++counter[i] !== 0) break;
   }
@@ -232,13 +229,11 @@ function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
 }
 
 /**
- * PKCS7 填充
- * PKCS#7 padding - 填充值等于填充字节数
- * Padding value equals the number of padding bytes added
- * 
- * @param data - 要填充的数据 (Data to pad)
- * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
- * @returns 填充后的数据 (Padded data)
+ * PKCS#7 填充，填充值等于填充字节数
+ *
+ * @param data - 要填充的数据
+ * @param blockSize - 块大小，通常为 16 字节
+ * @returns 填充后的数据
  */
 function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
   const padding = blockSize - (data.length % blockSize);
@@ -251,11 +246,10 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
 }
 
 /**
- * 去除 PKCS7 填充
- * Remove PKCS#7 padding
- * 
- * @param data - 要去除填充的数据 (Data to unpad)
- * @returns 去除填充后的数据 (Unpadded data)
+ * 去除 PKCS#7 填充
+ *
+ * @param data - 要去除填充的数据
+ * @returns 去除填充后的数据
  */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
   const padding = data[data.length - 1];
@@ -271,40 +265,33 @@ function pkcs7Unpad(data: Uint8Array): Uint8Array {
 }
 
 /**
- * 零填充
- * Zero padding - 用零字节填充到块大小的倍数
- * Pad with zero bytes to multiple of block size
- * 
- * @param data - 要填充的数据 (Data to pad)
- * @param blockSize - 块大小，通常为16字节 (Block size, typically 16 bytes)
- * @returns 填充后的数据 (Padded data)
+ * 零填充，将数据补齐到块大小的倍数
+ *
+ * @param data - 要填充的数据
+ * @param blockSize - 块大小，通常为 16 字节
+ * @returns 填充后的数据
  */
 function zeroPad(data: Uint8Array, blockSize: number): Uint8Array {
   const padding = blockSize - (data.length % blockSize);
   if (padding === blockSize) {
-    // 数据已经是块大小的倍数，无需填充
-    // Data is already a multiple of block size, no padding needed
+    // 已经满足块大小，无需填充
     return data;
   }
   const padded = new Uint8Array(data.length + padding);
   padded.set(data);
-  // 剩余字节自动为0，无需显式设置
-  // Remaining bytes are automatically 0, no need to set explicitly
+  // 剩余字节默认为 0，无需额外赋值
   return padded;
 }
 
 /**
- * 去除零填充
- * Remove zero padding - 移除尾部的零字节
- * Remove trailing zero bytes
- * 
- * @param data - 要去除填充的数据 (Data to unpad)
- * @returns 去除填充后的数据 (Unpadded data)
+ * 去除零填充（移除尾部的零字节）
+ *
+ * @param data - 要去除填充的数据
+ * @returns 去除填充后的数据
  */
 function zeroUnpad(data: Uint8Array): Uint8Array {
   let length = data.length;
-  // 从尾部开始查找第一个非零字节
-  // Find first non-zero byte from the end
+  // 从尾部寻找第一个非零字节
   while (length > 0 && data[length - 1] === 0) {
     length--;
   }
@@ -313,118 +300,103 @@ function zeroUnpad(data: Uint8Array): Uint8Array {
 
 /**
  * SM4 加密选项
- * SM4 encryption options
  */
 export interface SM4Options {
   /**
-   * 加密模式 (Cipher mode)
-   * - ECB: 电码本模式，不需要IV (Electronic Codebook, no IV required)
-   * - CBC: 分组链接模式，需要IV (Cipher Block Chaining, IV required)
-   * - CTR: 计数器模式，需要IV，无需填充 (Counter mode, IV required, no padding)
-   * - CFB: 密文反馈模式，需要IV，无需填充 (Cipher Feedback, IV required, no padding)
-   * - OFB: 输出反馈模式，需要IV，无需填充 (Output Feedback, IV required, no padding)
-   * - GCM: 伽罗瓦/计数器模式，需要IV，无需填充，提供认证 (Galois/Counter Mode, IV required, no padding, provides authentication)
-   * 
-   * 默认: ECB (Default: ECB)
+   * 加密模式
+   * - ECB：电码本模式，不需要 IV
+   * - CBC：分组链接模式，需要 IV
+   * - CTR：计数器模式，需要 IV，无需填充
+   * - CFB：密文反馈模式，需要 IV，无需填充
+   * - OFB：输出反馈模式，需要 IV，无需填充
+   * - GCM：伽罗瓦/计数器模式，需要 IV，无需填充，且提供认证能力
+   *
+   * 默认：ECB
    */
   mode?: CipherModeType;
-  
+
   /**
-   * 填充模式 (Padding mode)
-   * - PKCS7: PKCS#7 填充，填充值为填充字节数 (PKCS#7 padding, padding value equals padding length)
-   *   注意：JavaScript 中的 PKCS7 等同于 Java 中的 PKCS5（PKCS5 是 PKCS7 针对 8 字节块的特例）
-   *   Note: PKCS7 in JavaScript is equivalent to PKCS5 in Java (PKCS5 is PKCS7 for 8-byte blocks)
-   * - NONE: 无填充，数据长度必须是块大小倍数 (No padding, data length must be multiple of block size)
-   * - ZERO: 零填充，用零字节填充 (Zero padding, pad with zero bytes)
-   * 
-   * 注意：流密码模式（CTR/CFB/OFB/GCM）不使用填充
-   * Note: Stream cipher modes (CTR/CFB/OFB/GCM) don't use padding
-   * 
-   * 默认: PKCS7 (Default: PKCS7)
+   * 填充模式
+   * - PKCS7：PKCS#7 填充，填充值即填充字节数（Java 环境常称为 PKCS5）
+   * - NONE：无填充，数据长度必须是块大小的整数倍
+   * - ZERO：零填充，使用字节 0x00 补齐
+   *
+   * 注意：流模式（CTR/CFB/OFB/GCM）不进行填充
+   *
+   * 默认：PKCS7
    */
   padding?: PaddingModeType;
-  
+
   /**
-   * 初始化向量 (Initialization Vector)
-   * - CBC/CTR/CFB/OFB: 16字节 (32个十六进制字符) (16 bytes / 32 hex chars)
-   * - GCM: 12字节 (24个十六进制字符) (12 bytes / 24 hex chars)
-   * - ECB: 不需要IV (Not required for ECB)
+   * 初始化向量
+   * - CBC/CTR/CFB/OFB：16 字节（32 个十六进制字符）
+   * - GCM：12 字节（24 个十六进制字符）
+   * - ECB：不需要 IV
    */
   iv?: string;
-  
+
   /**
-   * 附加认证数据，用于GCM模式 (Additional Authenticated Data for GCM mode)
-   * 可以是字符串或Uint8Array (Can be string or Uint8Array)
+   * GCM 模式的附加认证数据，可使用字符串或 Uint8Array
    */
   aad?: string | Uint8Array;
-  
+
   /**
-   * 认证标签长度，用于GCM模式 (Authentication tag length for GCM mode)
-   * 范围: 12-16字节 (Range: 12-16 bytes)
-   * 默认: 16字节 (Default: 16 bytes)
+   * GCM 模式的认证标签长度，范围 12-16 字节，默认 16 字节
    */
   tagLength?: number;
-  
+
   /**
-   * 输出格式 (Output format)
-   * - hex: 十六进制字符串（默认，保持向后兼容）(Hex string, default for backward compatibility)
-   * - base64: Base64 编码字符串 (Base64 encoded string)
-   * 
-   * 默认: hex (Default: hex)
+   * 输出格式
+   * - hex：十六进制字符串（默认值，向后兼容）
+   * - base64：Base64 编码字符串
+   *
+   * 默认：hex
    */
   outputFormat?: OutputFormatType;
 }
 
 /**
- * SM4 GCM模式加密结果
- * SM4 GCM mode encryption result
+ * SM4 GCM 模式的加密结果
  */
 export interface SM4GCMResult {
   /**
    * 密文（十六进制字符串）
-   * Ciphertext (hex string)
    */
   ciphertext: string;
-  
+
   /**
    * 认证标签（十六进制字符串）
-   * Authentication tag (hex string)
    */
   tag: string;
 }
 
 /**
- * 使用 SM4 加密数据
- * Encrypt data using SM4 block cipher
- * 
- * 支持的模式 (Supported modes):
- * - ECB: 电码本模式 (Electronic Codebook) - 不推荐用于生产环境 (Not recommended for production)
- * - CBC: 分组链接模式 (Cipher Block Chaining) - 需要IV (Requires IV)
- * - CTR: 计数器模式 (Counter mode) - 流密码模式，需要IV (Stream mode, requires IV)
- * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
- * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
- * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV (AEAD mode, requires IV)
- * 
- * 支持的填充模式 (Supported padding modes):
- * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
- * - NONE: 无填充 (No padding) - 数据长度必须是16字节的倍数 (Data length must be multiple of 16 bytes)
- * - ZERO: 零填充 (Zero padding) - 用零字节填充 (Pad with zero bytes)
- * 
- * @param key - 加密密钥（十六进制字符串，32 个字符 = 16 字节）
- *              Encryption key (hex string, 32 chars = 16 bytes)
- * @param data - 要加密的数据（字符串或 Uint8Array）
- *               Data to encrypt (string or Uint8Array)
- * @param options - 加密选项（模式、填充、IV）
- *                  Encryption options (mode, padding, IV)
- * @returns 小写十六进制字符串形式的加密数据，或GCM模式下返回包含密文和标签的对象
- *          Encrypted data as lowercase hex string, or object with ciphertext and tag for GCM mode
- * 
+ * 使用 SM4 执行对称加密
+ *
+ * 支持的模式：
+ * - ECB：电码本模式（不推荐用于生产）
+ * - CBC：分组链接模式，需要 IV
+ * - CTR：计数器模式，视作流模式，需要 IV
+ * - CFB：密文反馈模式，流模式，需要 IV
+ * - OFB：输出反馈模式，流模式，需要 IV
+ * - GCM：伽罗瓦/计数器模式，提供认证能力，需要 IV
+ *
+ * 支持的填充模式：
+ * - PKCS7：默认填充方案
+ * - NONE：无填充，数据长度必须是 16 字节的整数倍
+ * - ZERO：零填充
+ *
+ * @param key - 加密密钥（32 个十六进制字符 = 16 字节）
+ * @param data - 待加密的数据（字符串或 Uint8Array）
+ * @param options - 加密选项（模式、填充、IV 等）
+ * @returns 小写十六进制字符串；在 GCM 模式下返回包含密文与标签的对象
+ *
  * @example
- * // ECB mode
+ * // ECB 模式
  * const encrypted = encrypt(key, 'Hello', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
  * 
  * @example
- * // GCM mode with authentication
+ * // GCM 模式（包含认证标签）
  * const result = encrypt(key, 'Secret', { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
  * console.log(result.ciphertext, result.tag);
  */
@@ -443,11 +415,10 @@ export function encrypt(
 
   let dataBytes = normalizeInput(data);
   
-  // Stream cipher modes (CTR, CFB, OFB, GCM) don't require padding
-  // 流密码模式（CTR、CFB、OFB、GCM）不需要填充
+  // 流密码模式（CTR、CFB、OFB、GCM）无需填充
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   
-  // 应用填充 (Apply padding)
+  // 应用填充
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
       // PKCS#7 填充
@@ -506,7 +477,7 @@ export function encrypt(
       for (let j = 0; j < blockSize; j++) {
         result[i + j] = dataBytes[i + j] ^ keystream[j];
       }
-      // Increment counter (big-endian)
+      // 按大端序递增计数器
       for (let j = 15; j >= 0; j--) {
         if (++counterBlock[j] !== 0) break;
       }
@@ -547,7 +518,7 @@ export function encrypt(
       }
     }
   } else if (mode === 'gcm') {
-    // GCM mode: Galois/Counter Mode with authenticated encryption
+    // GCM 模式：带认证的伽罗瓦/计数器加密
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
@@ -556,27 +527,27 @@ export function encrypt(
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
 
-    const tagLength = options.tagLength || 16; // Default 128-bit tag
+    const tagLength = options.tagLength || 16; // 默认生成 128 位标签
     if (tagLength < 12 || tagLength > 16) {
       throw new Error('Tag length must be between 12 and 16 bytes');
     }
 
-    // Compute H = E(K, 0^128)
+    // 计算 H = E(K, 0^128)
     const h = encryptBlock(new Uint8Array(16), roundKeys);
 
-    // Construct initial counter block: IV || 0^31 || 1
+    // 构造初始计数器块：IV || 0^31 || 1
     const j0 = new Uint8Array(16);
     j0.set(ivBytes, 0);
     j0[15] = 1;
 
-    // Encrypt the initial counter to get the pre-counter block
+    // 对初始计数器加密得到预计数块
     const preCounterBlock = encryptBlock(j0, roundKeys);
 
-    // Prepare counter for CTR mode encryption
+    // 为 CTR 加密准备计数器
     const counterBlock = new Uint8Array(j0);
     incrementGCMCounter(counterBlock);
 
-    // Encrypt plaintext using CTR mode
+    // 使用 CTR 模式加密明文
     for (let i = 0; i < dataBytes.length; i += 16) {
       const keystream = encryptBlock(counterBlock, roundKeys);
       const blockSize = Math.min(16, dataBytes.length - i);
@@ -586,13 +557,13 @@ export function encrypt(
       incrementGCMCounter(counterBlock);
     }
 
-    // Process Additional Authenticated Data (AAD)
+    // 处理附加认证数据（AAD）
     let aadBytes: Uint8Array = new Uint8Array(0);
     if (options.aad) {
       aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
     }
 
-    // Pad AAD and ciphertext to 16-byte blocks for GHASH
+    // 将 AAD 和密文补齐到 16 字节供 GHASH 使用
     const aadLen = aadBytes.length;
     const cLen = result.length;
     const aadPadded = new Uint8Array(Math.ceil(aadLen / 16) * 16);
@@ -600,22 +571,22 @@ export function encrypt(
     const cPadded = new Uint8Array(Math.ceil(cLen / 16) * 16);
     cPadded.set(result);
 
-    // Construct the data for GHASH: AAD || C || len(AAD) || len(C)
+    // 构造 GHASH 输入：AAD || C || len(AAD) || len(C)
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
     
-    // Append lengths in bits (64-bit big-endian)
+    // 追加比特长度（64 位大端）
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
     view.setUint32(ghashData.length - 12, (aadLen * 8) >>> 0, false);
     view.setUint32(ghashData.length - 8, Math.floor((cLen * 8) / 0x100000000), false);
     view.setUint32(ghashData.length - 4, (cLen * 8) >>> 0, false);
 
-    // Compute GHASH
+    // 计算 GHASH
     const ghashResult = ghash(h, ghashData);
 
-    // Compute authentication tag: GHASH(H, A, C) XOR E(K, J0)
+    // 计算认证标签：GHASH(H, A, C) ⊕ E(K, J0)
     const tag = new Uint8Array(tagLength);
     for (let i = 0; i < tagLength; i++) {
       tag[i] = ghashResult[i] ^ preCounterBlock[i];
@@ -661,11 +632,11 @@ export function encrypt(
  *          Decrypted data (UTF-8 string)
  * 
  * @example
- * // ECB mode
+ * // ECB 模式
  * const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
  * 
  * @example
- * // GCM mode with authentication verification
+ * // GCM 模式（校验认证标签）
  * const decrypted = decrypt(key, result, { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
  */
 export function decrypt(
@@ -691,7 +662,7 @@ export function decrypt(
     return format === 'base64' ? base64ToBytes(str) : hexToBytes(str);
   };
 
-  // Handle GCM mode with tag
+  // 处理带有认证标签的 GCM 密文
   let ciphertextStr: string;
   let authTag: Uint8Array | undefined;
   
@@ -711,7 +682,7 @@ export function decrypt(
 
   const dataBytes = decodeInput(ciphertextStr);
   
-  // Stream cipher modes don't require data to be a multiple of block size
+  // 流模式下的数据长度不必是块大小的整数倍
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
   if (!isStreamMode && dataBytes.length % 16 !== 0) {
     throw new Error('Encrypted data length must be multiple of 16 bytes');
@@ -743,7 +714,7 @@ export function decrypt(
       ivBytes = block;
     }
   } else if (mode === 'ctr') {
-    // CTR decryption is identical to encryption (XOR with keystream)
+    // CTR 解密与加密相同，均为与密钥流异或
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
@@ -759,7 +730,7 @@ export function decrypt(
       for (let j = 0; j < blockSize; j++) {
         result[i + j] = dataBytes[i + j] ^ keystream[j];
       }
-      // Increment counter (big-endian)
+      // 按大端序递增计数器
       for (let j = 15; j >= 0; j--) {
         if (++counterBlock[j] !== 0) break;
       }
@@ -784,7 +755,7 @@ export function decrypt(
       shift = cipherBlock;
     }
   } else if (mode === 'ofb') {
-    // OFB decryption is identical to encryption (XOR with keystream)
+    // OFB 解密与加密相同，均为与密钥流异或
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
@@ -801,7 +772,7 @@ export function decrypt(
       }
     }
   } else if (mode === 'gcm') {
-    // GCM mode: Galois/Counter Mode with authenticated decryption
+    // GCM 模式：带认证的伽罗瓦/计数器解密
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
@@ -814,24 +785,24 @@ export function decrypt(
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
 
-    // Compute H = E(K, 0^128)
+    // 计算 H = E(K, 0^128)
     const h = encryptBlock(new Uint8Array(16), roundKeys);
 
-    // Construct initial counter block: IV || 0^31 || 1
+    // 构造初始计数器块：IV || 0^31 || 1
     const j0 = new Uint8Array(16);
     j0.set(ivBytes, 0);
     j0[15] = 1;
 
-    // Encrypt the initial counter to get the pre-counter block
+    // 对初始计数器加密得到预计数块
     const preCounterBlock = encryptBlock(j0, roundKeys);
 
-    // Process Additional Authenticated Data (AAD)
+    // 处理附加认证数据（AAD）
     let aadBytes: Uint8Array = new Uint8Array(0);
     if (options.aad) {
       aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
     }
 
-    // Pad AAD and ciphertext to 16-byte blocks for GHASH
+    // 将 AAD 和密文补齐到 16 字节供 GHASH 使用
     const aadLen = aadBytes.length;
     const cLen = dataBytes.length;
     const aadPadded = new Uint8Array(Math.ceil(aadLen / 16) * 16);
@@ -839,28 +810,28 @@ export function decrypt(
     const cPadded = new Uint8Array(Math.ceil(cLen / 16) * 16);
     cPadded.set(dataBytes);
 
-    // Construct the data for GHASH: AAD || C || len(AAD) || len(C)
+    // 构造 GHASH 输入：AAD || C || len(AAD) || len(C)
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
     
-    // Append lengths in bits (64-bit big-endian)
+    // 追加比特长度（64 位大端）
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
     view.setUint32(ghashData.length - 12, (aadLen * 8) >>> 0, false);
     view.setUint32(ghashData.length - 8, Math.floor((cLen * 8) / 0x100000000), false);
     view.setUint32(ghashData.length - 4, (cLen * 8) >>> 0, false);
 
-    // Compute GHASH
+    // 计算 GHASH
     const ghashResult = ghash(h, ghashData);
 
-    // Compute expected authentication tag: GHASH(H, A, C) XOR E(K, J0)
+    // 计算期望的认证标签：GHASH(H, A, C) ⊕ E(K, J0)
     const expectedTag = new Uint8Array(authTag.length);
     for (let i = 0; i < authTag.length; i++) {
       expectedTag[i] = ghashResult[i] ^ preCounterBlock[i];
     }
 
-    // Verify authentication tag (constant-time comparison)
+    // 以常数时间比较方式校验认证标签
     let tagMatch = true;
     for (let i = 0; i < authTag.length; i++) {
       if (authTag[i] !== expectedTag[i]) {
@@ -872,7 +843,7 @@ export function decrypt(
       throw new Error('Authentication tag verification failed');
     }
 
-    // Decrypt ciphertext using CTR mode
+    // 使用 CTR 模式解密密文
     const counterBlock = new Uint8Array(j0);
     incrementGCMCounter(counterBlock);
 
@@ -888,21 +859,20 @@ export function decrypt(
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
-  // 去除填充 (Remove padding)
-  // 流密码模式不使用填充 (Stream cipher modes don't use padding)
+    // 去除填充
+    // 流密码模式不使用填充
   let unpadded: Uint8Array = result;
   if (!isStreamMode) {
     if (padding === 'pkcs7') {
       // 去除 PKCS#7 填充
-      // Type assertion needed for TypeScript compatibility with different ArrayBuffer types
+      // 为兼容不同的 ArrayBuffer 类型进行类型断言
       unpadded = pkcs7Unpad(result) as Uint8Array;
     } else if (padding === 'zero') {
       // 去除零填充
-      // Type assertion needed for TypeScript compatibility with different ArrayBuffer types
+      // 为兼容不同的 ArrayBuffer 类型进行类型断言
       unpadded = zeroUnpad(result) as Uint8Array;
     }
-    // padding === 'none' 时不需要去除填充
-    // No unpadding needed when padding === 'none'
+    // 当 padding 设为 'none' 时无需去除填充
   }
   
   return new TextDecoder().decode(unpadded);
