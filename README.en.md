@@ -628,14 +628,14 @@ npm run type-check
 
 ## Local Testing
 
-Want to quickly test all features? We provide comprehensive testing guides and scripts:
+Want to quickly test all features? We provide comprehensive testing scripts:
 
 ```bash
 # Run interactive test script (recommended)
 npx tsx test-local.ts
 
-# Or view detailed testing guide
-cat TESTING.zh-CN.md
+# Run full test suite
+npm test
 ```
 
 Test coverage:
@@ -643,8 +643,6 @@ Test coverage:
 - ✅ SM4 multiple modes (ECB, CBC, CTR, CFB, OFB, GCM)
 - ✅ SM2 key generation, encryption/decryption, signing/verification, key exchange
 - ✅ ZUC encryption/decryption, EEA3, EIA3
-
-For detailed testing instructions, see [Local Testing Guide](./TESTING.zh-CN.md)
 
 ## Integration with Hutool Backend
 
@@ -699,7 +697,6 @@ SMKit provides full implementations of SM2, SM3, SM4, and ZUC algorithms, valida
 
 For more documentation, see the [docs](./docs) directory:
 
-- [Local Testing Guide](./TESTING.zh-CN.md) - How to test encryption/decryption, signing/verification, etc.
 - [Hutool Integration Guide](./docs/HUTOOL-INTEGRATION.zh-CN.md) - Integration with Java Hutool backend
 - [Architecture Guide](./docs/ARCHITECTURE.zh-CN.md) - Project architecture design
 - [Publishing Guide](./docs/PUBLISHING.md) - How to publish new versions

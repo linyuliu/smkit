@@ -274,6 +274,5 @@ console.log('下一步:');
 console.log('  1. 运行完整测试套件: npm test');
 console.log('  2. 查看演示页面: npm run demo');
 console.log('  3. 查看 Vue 演示: cd demo-vue && npm run dev');
-console.log('  4. 查看测试指南: cat TESTING.zh-CN.md');
-console.log('  5. 查看 Hutool 对接指南: cat docs/HUTOOL-INTEGRATION.zh-CN.md');
+console.log('  4. 查看 Hutool 对接指南: cat docs/HUTOOL-INTEGRATION.zh-CN.md');
 console.log();
