@@ -798,14 +798,14 @@ npm run type-check
 
 ## 本地测试
 
-想要快速测试各项功能？我们提供了完整的测试指南和脚本：
+想要快速测试各项功能？我们提供了完整的测试脚本：
 
 ```bash
 # 运行交互式测试脚本（推荐）
 npx tsx test-local.ts
 
-# 或查看详细测试指南
-cat TESTING.zh-CN.md
+# 运行完整测试套件
+npm test
 ```
 
 测试覆盖：
@@ -813,8 +813,6 @@ cat TESTING.zh-CN.md
 - ✅ SM4 多种模式（ECB, CBC, CTR, CFB, OFB, GCM）
 - ✅ SM2 密钥生成、加密解密、签名验签、密钥交换
 - ✅ ZUC 加密解密、EEA3、EIA3
-
-详细测试说明请参阅 [本地测试指南](./TESTING.zh-CN.md)
 
 ## 与 Hutool 后端对接
 
@@ -872,7 +870,6 @@ SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均�
 
 更多文档请查看 [docs](./docs) 目录：
 
-- [本地测试指南](./TESTING.zh-CN.md) - 如何测试加解密、签名验签等功能
 - [国际标准算法使用指南](./docs/INTERNATIONAL-ALGORITHMS.zh-CN.md) - SHA 系列算法、输出格式配置、AES/RSA 使用建议
 - [Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md) - 与 Java Hutool 后端对接
 - [架构文档](./docs/ARCHITECTURE.zh-CN.md) - 项目架构设计

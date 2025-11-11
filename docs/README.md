@@ -8,7 +8,6 @@
 
 - [README.md](../README.md) - 主要文档，快速开始和 API 参考
 - [README.en.md](../README.en.md) - 英文文档
-- [TESTING.zh-CN.md](../TESTING.zh-CN.md) - 本地测试指南
 - [CHANGELOG.md](../CHANGELOG.md) - 版本变更记录
 
 ### 开发指南
@@ -45,7 +44,7 @@
 ### 我想...
 
 - **开始使用 SMKit** → [README.md](../README.md)
-- **测试功能** → [TESTING.zh-CN.md](../TESTING.zh-CN.md)
+- **测试功能** → 运行 `npx tsx test-local.ts` 或 `npm test`
 - **使用国际标准算法** → [INTERNATIONAL-ALGORITHMS.zh-CN.md](./INTERNATIONAL-ALGORITHMS.zh-CN.md)
 - **与后端对接** → [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md)
 - **了解架构** → [ARCHITECTURE.zh-CN.md](./ARCHITECTURE.zh-CN.md)
@@ -58,7 +57,7 @@
 ### 新用户
 
 1. [README.md](../README.md) - 了解 SMKit 是什么
-2. [TESTING.zh-CN.md](../TESTING.zh-CN.md) - 快速测试功能
+2. 运行 `npx tsx test-local.ts` - 快速测试功能
 3. [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md) - 与后端对接（如需要）
 
 ### 开发者

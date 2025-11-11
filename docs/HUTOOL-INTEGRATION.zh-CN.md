@@ -492,7 +492,6 @@ async function testIntegration() {
 - [SMKit API 文档](../README.md)
 - [Hutool 官方文档](https://hutool.cn/docs/)
 - [国密算法标准](../docs/STANDARDS.md)
-- [本地测试指南](../TESTING.zh-CN.md)
 
 ## 技术支持
 
