@@ -23,7 +23,6 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
  * ZUC 加密选项
- * ZUC encryption options
  */
 export interface ZUCOptions {
   /**
@@ -37,7 +36,6 @@ export interface ZUCOptions {
 }
 
 /**
- * Encrypt data using ZUC-128 stream cipher
  * 使用 ZUC-128 流密码加密数据
  * @param key 128-bit key (16 bytes or 32 hex chars) / 128 位密钥
  * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
@@ -71,7 +69,6 @@ export function encrypt(
 }
 
 /**
- * Decrypt data using ZUC-128 stream cipher
  * 使用 ZUC-128 流密码解密数据
  * @param key 128-bit key (16 bytes or 32 hex chars) / 128 位密钥
  * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
@@ -95,12 +92,11 @@ export function decrypt(
 }
 
 /**
- * Generate ZUC-128 keystream
- * Optimized: Use Uint32Array view for efficient byte extraction
- * @param key 128-bit key (16 bytes or 32 hex chars)
- * @param iv 128-bit IV (16 bytes or 32 hex chars)
- * @param length Number of 32-bit words to generate
- * @returns Keystream as hex string
+ * 生成 ZUC-128 密钥流
+ * @param key - 128 位密钥（16 字节或 32 个十六进制字符）
+ * @param iv - 128 位初始向量（16 字节或 32 个十六进制字符）
+ * @param length - 需要生成的 32 位字数量
+ * @returns 十六进制字符串形式的密钥流
  */
 export function getKeystream(
   key: string | Uint8Array,
@@ -108,10 +104,10 @@ export function getKeystream(
   length: number
 ): string {
   const keystream = generateKeystream(key, iv, length);
-  // Optimized: Pre-allocate exact size needed
+  // 预先分配精确长度的缓冲区
   const bytes = new Uint8Array(length * 4);
 
-  // Optimized: Process words more efficiently
+  // 更高效地处理 32 位字
   for (let i = 0; i < length; i++) {
     const word = keystream[i];
     const offset = i * 4;
@@ -125,15 +121,14 @@ export function getKeystream(
 }
 
 /**
- * Generate EEA3 integrity key (for LTE encryption)
- * EEA3 is the confidentiality algorithm based on ZUC-128
- * Optimized: Pre-allocate IV buffer
- * @param key 128-bit confidentiality key
- * @param count 32-bit count value
- * @param bearer 5-bit bearer identity
- * @param direction 1-bit direction (0 for uplink, 1 for downlink)
- * @param length Bit length of the keystream to generate
- * @returns Keystream for EEA3
+ * 生成 EEA3 密钥流（用于 LTE 加密）
+ * 优化：单次分配 IV 缓冲区
+ * @param key - 128 位保密密钥
+ * @param count - 32 位计数值
+ * @param bearer - 5 位承载标识
+ * @param direction - 1 位方向标志（0 表示上行，1 表示下行）
+ * @param length - 需要生成的密钥流比特长度
+ * @returns EEA3 密钥流
  */
 export function eea3(
   key: string | Uint8Array,
@@ -142,31 +137,28 @@ export function eea3(
   direction: number,
   length: number
 ): string {
-  // Construct IV according to EEA3 specification
-  // Optimized: Single buffer allocation
+  // 按照 EEA3 规范构造 IV，使用单次缓冲区分配
   const iv = new Uint8Array(16);
   iv[0] = (count >>> 24) & 0xFF;
   iv[1] = (count >>> 16) & 0xFF;
   iv[2] = (count >>> 8) & 0xFF;
   iv[3] = count & 0xFF;
   iv[4] = ((bearer << 3) | (direction << 2)) & 0xFF;
-  // iv[5-15] are already 0
+  // iv[5-15] 默认即为 0
 
-  // Generate keystream
+  // 生成密钥流
   const numWords = Math.ceil(length / 32);
   return getKeystream(key, iv, numWords);
 }
 
 /**
- * Generate EIA3 integrity tag (for LTE authentication)
- * EIA3 is the integrity algorithm based on ZUC-128
- * Optimized: Reduce array allocations and improve bit operations
- * @param key 128-bit integrity key
- * @param count 32-bit count value
- * @param bearer 5-bit bearer identity
- * @param direction 1-bit direction (0 for uplink, 1 for downlink)
- * @param message Message to authenticate
- * @returns 32-bit MAC-I as hex string
+ * 生成 EIA3 完整性标签（用于 LTE 认证）
+ * @param key - 128 位完整性密钥
+ * @param count - 32 位计数值
+ * @param bearer - 5 位承载标识
+ * @param direction - 1 位方向标志（0 表示上行，1 表示下行）
+ * @param message - 待认证的消息
+ * @returns 32 位 MAC-I（十六进制字符串）
  */
 export function eia3(
   key: string | Uint8Array,
@@ -178,8 +170,7 @@ export function eia3(
   const messageBytes = typeof message === 'string' ? stringToBytes(message) : message;
   const bitLength = messageBytes.length * 8;
 
-  // Construct IV according to EIA3 specification
-  // Optimized: Single buffer allocation
+  // 按照 EIA3 规范构造 IV，使用单次缓冲区分配
   const iv = new Uint8Array(16);
   const countAndBearer = [
     (count >>> 24) & 0xFF,
@@ -194,24 +185,23 @@ export function eia3(
   iv[2] = countAndBearer[2];
   iv[3] = countAndBearer[3];
   iv[4] = countAndBearer[4];
-  // iv[5-7] are already 0
+  // iv[5-7] 默认即为 0
   iv[8] = countAndBearer[0];
   iv[9] = countAndBearer[1];
   iv[10] = countAndBearer[2];
   iv[11] = countAndBearer[3];
   iv[12] = countAndBearer[4];
-  // iv[13-15] are already 0
+  // iv[13-15] 默认即为 0
 
-  // Generate keystream
+  // 生成密钥流
   const numWords = Math.ceil((bitLength + 64) / 32);
   const keystream = generateKeystream(key, iv, numWords);
 
-  // Compute MAC
-  // Optimized: Compute XOR in a more efficient way
+  // 计算 MAC，采用更高效的异或运算方式
   let t = 0;
   const l = bitLength;
 
-  // Process message bytes
+  // 遍历消息字节
   for (let i = 0; i < messageBytes.length; i++) {
     const wordIndex = Math.floor((i * 8) / 32);
     const shift = 24 - ((i * 8) % 32);
@@ -219,22 +209,22 @@ export function eia3(
     t ^= messageBytes[i] ^ keyByte;
   }
 
-  // Process length
+  // 处理长度比特
   const bitSet = getBitFromKeystream(keystream, bitLength);
   if (bitSet) {
     t ^= l >>> 0;
   }
 
-  // Final XOR with keystream
+  // 最终与密钥流进行一次异或
   const finalZ = keystream[Math.floor(bitLength / 32)];
   const mac = (t ^ finalZ) >>> 0;
 
-  // Return as 8 hex chars (32 bits)
+  // 以 8 个十六进制字符（32 位）返回结果
   return (mac >>> 0).toString(16).padStart(8, '0');
 }
 
 /**
- * Helper function to get a specific bit from keystream
+ * 从密钥流中获取指定比特的辅助函数
  */
 function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boolean {
   const wordIndex = Math.floor(bitPosition / 32);
@@ -242,8 +232,8 @@ function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boole
   return ((keystream[wordIndex] >>> bitIndex) & 1) === 1;
 }
 
-// Export core components for advanced usage
+// 导出底层组件以供高级场景使用
 export { ZUCState, generateKeystream };
 
-// Export ZUC class for OOP API
+// 导出面向对象封装的 ZUC 类
 export { ZUC } from './class';

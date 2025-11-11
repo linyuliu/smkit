@@ -542,10 +542,6 @@ CipherMode.OFB  // 'ofb' - 输出反馈模式
 
 // 认证加密模式
 CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（已实现）
-CipherMode.CCM  // 'ccm' - 计数器与CBC-MAC模式（计划中）
-
-// 磁盘加密模式
-CipherMode.XTS  // 'xts' - 可调密码本模式（计划中）
 ```
 
 **说明**：
@@ -553,7 +549,7 @@ CipherMode.XTS  // 'xts' - 可调密码本模式（计划中）
 - **CBC**: 需要 IV，每个块与前一个密文块异或
 - **CTR/CFB/OFB**: 流密码模式，不需要填充，需要 IV
 - **GCM**: 认证加密，提供加密和认证，需要 12 字节 IV
-- **CCM/XTS**: 计划实现中
+- **CCM/XTS**: 规划中的特性，尚未在当前版本中提供
 
 ### 填充模式
 ```typescript

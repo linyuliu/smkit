@@ -4,10 +4,10 @@ Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2
 
 ## Features
 
-- **纯粹性 (Purity)**: Core cryptographic algorithms implemented in pure TypeScript with zero runtime dependencies
-- **性能 (Performance)**: Internal data processing uses `Uint8Array` for optimal performance
-- **现代化 (Modern)**: Written in TypeScript with first-class type support, ES Modules primary, CommonJS compatible
-- **同构性 (Isomorphic)**: Works seamlessly in both Node.js and modern browsers
+- **Purity**: Core cryptographic algorithms implemented in pure TypeScript with zero runtime dependencies
+- **Performance**: Internal data processing uses `Uint8Array` for optimal throughput
+- **Modern**: Written in TypeScript with first-class type support, prioritising ES Modules while staying compatible with CommonJS
+- **Isomorphic**: Works seamlessly in both Node.js and modern browsers
 
 ## Installation
 
@@ -393,19 +393,15 @@ CipherMode.CFB  // 'cfb' - Cipher Feedback
 CipherMode.OFB  // 'ofb' - Output Feedback
 
 // Authenticated Encryption with Associated Data (AEAD) modes
-CipherMode.GCM  // 'gcm' - Galois/Counter Mode (Implemented)
-CipherMode.CCM  // 'ccm' - Counter with CBC-MAC (Planned)
-
-// Disk encryption modes
-CipherMode.XTS  // 'xts' - XEX-based tweaked-codebook mode (Planned)
+CipherMode.GCM  // 'gcm' - Galois/Counter Mode (implemented)
 ```
 
 **Notes**:
 - **ECB**: Not recommended for production, encrypts each block independently
 - **CBC**: Requires IV, each block is XORed with previous ciphertext
 - **CTR/CFB/OFB**: Stream cipher modes, no padding required, requires IV
-- **GCM**: Authenticated encryption, provides both encryption and authentication, requires 12-byte IV
-- **CCM/XTS**: Planned for future implementation
+- **GCM**: Authenticated encryption, provides both encryption and authentication, requires a 12-byte IV
+- **CCM/XTS**: Planned roadmap items that are not included in this release
 
 ### Padding Modes
 ```typescript

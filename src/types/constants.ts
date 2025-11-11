@@ -59,8 +59,6 @@ export const CipherMode = {
   CFB: 'cfb',
   OFB: 'ofb',
   GCM: 'gcm',
-  CCM: 'ccm',
-  XTS: 'xts',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];

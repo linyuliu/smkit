@@ -168,6 +168,8 @@ const decrypted = sm4Decrypt(key, result, {
 });
 ```
 
+> **Note / 提示**: The following cipher modes are roadmap explorations and are **not available** in the current NPM release. / 下列密码模式仍在规划中，当前 NPM 版本尚未提供。
+
 ### 2. XTS (XEX-based tweaked-codebook mode with ciphertext stealing)
 **Status 状态: ⏳ Planned 计划中**
 

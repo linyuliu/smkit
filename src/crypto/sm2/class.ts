@@ -170,8 +170,8 @@ export class SM2 {
    *
    * // A 完成密钥交换
    * const resultA2 = sm2A.keyExchange(sm2B.getPublicKey(), resultB.tempPublicKey, true);
-   *
-   * // resultA2.sharedKey === resultB.sharedKey
+   * 
+   * // 此时 resultA2.sharedKey === resultB.sharedKey
    * ```
    */
   keyExchange(

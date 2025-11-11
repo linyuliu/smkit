@@ -143,7 +143,17 @@ git commit -m "chore: bump version to 0.2.0"
 git push
 ```
 
-#### 4. 创建并推送标签 / Create and Push Tag
+#### 4. 运行预发布检查 / Run prepublish checks
+
+在发布前执行自动化检查，确保类型检查、单元测试和构建流程全部通过：
+
+Run the automated prepublish checks to ensure type checking, unit tests, and the production build all succeed:
+
+```bash
+npm run prepublishOnly
+```
+
+#### 5. 创建并推送标签 / Create and Push Tag
 
 **重要：标签版本必须与 package.json 中的版本一致**
 
@@ -159,7 +169,7 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-#### 5. 自动发布 / Automatic Publishing
+#### 6. 自动发布 / Automatic Publishing
 
 当标签被推送后，GitHub Actions 会自动：
 
@@ -178,7 +188,7 @@ When the tag is pushed, GitHub Actions will automatically:
 
 You can monitor the publishing progress in the "Actions" tab of your GitHub repository.
 
-#### 6. 验证发布 / Verify Publication
+#### 7. 验证发布 / Verify Publication
 
 发布成功后，验证包是否可用：
 

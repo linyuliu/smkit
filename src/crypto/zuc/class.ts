@@ -20,7 +20,6 @@ export class ZUC {
   private iv: string | Uint8Array;
 
   /**
-   * Create a new ZUC instance
    * 创建新的 ZUC 实例
    *
    * @param key - Encryption key (16 bytes or 32 hex chars for ZUC-128)
@@ -34,60 +33,54 @@ export class ZUC {
   }
 
   /**
-   * Set initialization vector
    * 设置初始化向量
-   * @param iv - IV as hex string (32 hex chars = 16 bytes for ZUC-128)
+   * @param iv - 十六进制字符串或字节数组（ZUC-128 为 32 个十六进制字符）
    */
   setIV(iv: string | Uint8Array): void {
     this.iv = iv;
   }
 
   /**
-   * Get initialization vector
-   * 获取初始化向量
+   * 获取当前初始化向量
    */
   getIV(): string | Uint8Array {
     return this.iv;
   }
 
   /**
-   * Encrypt data using ZUC stream cipher
    * 使用 ZUC 流密码加密数据
-   * @param plaintext - Data to encrypt (string or Uint8Array)
-   * @returns Encrypted data as hex string
+   * @param plaintext - 待加密的数据（字符串或 Uint8Array）
+   * @returns 十六进制字符串形式的密文
    */
   encrypt(plaintext: string | Uint8Array): string {
     return encryptFunc(this.key, this.iv, plaintext);
   }
 
   /**
-   * Decrypt data using ZUC stream cipher
    * 使用 ZUC 流密码解密数据
-   * @param ciphertext - Encrypted data as hex string
-   * @returns Decrypted data as string
+   * @param ciphertext - 十六进制字符串形式的密文
+   * @returns 解密后的字符串
    */
   decrypt(ciphertext: string): string {
     return decryptFunc(this.key, this.iv, ciphertext);
   }
 
   /**
-   * Generate ZUC keystream
    * 生成 ZUC 密钥流
-   * @param length - Number of 32-bit words to generate
-   * @returns Keystream as hex string
+   * @param length - 需要生成的 32 位字数量
+   * @returns 十六进制字符串形式的密钥流
    */
   keystream(length: number): string {
     return getKeystreamFunc(this.key, this.iv, length);
   }
 
   /**
-   * Generate EEA3 keystream for LTE encryption
    * 为 LTE 加密生成 EEA3 密钥流
-   * @param count - 32-bit count value
-   * @param bearer - 5-bit bearer identity
-   * @param direction - 1-bit direction (0 for uplink, 1 for downlink)
-   * @param length - Bit length of the keystream to generate
-   * @returns Keystream for EEA3
+   * @param count - 32 位计数值
+   * @param bearer - 5 位承载标识
+   * @param direction - 1 位方向标志（0 表示上行，1 表示下行）
+   * @param length - 需要生成的密钥流比特长度
+   * @returns EEA3 密钥流
    */
   static eea3(
     key: string | Uint8Array,
@@ -100,13 +93,12 @@ export class ZUC {
   }
 
   /**
-   * Generate EIA3 integrity tag for LTE authentication
    * 为 LTE 认证生成 EIA3 完整性标签
-   * @param count - 32-bit count value
-   * @param bearer - 5-bit bearer identity
-   * @param direction - 1-bit direction (0 for uplink, 1 for downlink)
-   * @param message - Message to authenticate
-   * @returns 32-bit MAC-I as hex string
+   * @param count - 32 位计数值
+   * @param bearer - 5 位承载标识
+   * @param direction - 1 位方向标志（0 表示上行，1 表示下行）
+   * @param message - 待认证的消息
+   * @returns 32 位 MAC-I（十六进制字符串）
    */
   static eia3(
     key: string | Uint8Array,
@@ -119,10 +111,9 @@ export class ZUC {
   }
 
   /**
-   * Create ZUC instance for ZUC-128
    * 创建 ZUC-128 实例
-   * @param key - 128-bit key (16 bytes or 32 hex chars)
-   * @param iv - 128-bit IV (16 bytes or 32 hex chars)
+   * @param key - 128 位密钥（16 字节或 32 个十六进制字符）
+   * @param iv - 128 位初始化向量（16 字节或 32 个十六进制字符）
    */
   static ZUC128(key: string | Uint8Array, iv: string | Uint8Array): ZUC {
     return new ZUC(key, iv);
