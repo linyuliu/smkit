@@ -1,45 +1,195 @@
 # SMKit
 
-中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的 TypeScript 实现。
+<div align="center">
 
-简体中文 | [English](./README.en.md)
+[![npm version](https://img.shields.io/npm/v/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
+[![npm downloads](https://img.shields.io/npm/dm/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
+[![License](https://img.shields.io/npm/l/smkit.svg?style=flat-square)](https://github.com/linyuliu/smkit/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
+
+**中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的 TypeScript 实现**
+
+[简体中文](./README.md) | [English](./README.en.md)
+
+</div>
+
+---
+
+## 📑 目录
+
+- [什么是 SMKit？](#什么是-smkit)
+- [为什么选择 SMKit？](#为什么选择-smkit)
+- [特性](#特性)
+- [快速开始](#快速开始)
+  - [安装](#安装)
+  - [5 分钟上手](#5-分钟上手)
+- [在线演示](#在线演示)
+- [使用指南](#使用指南)
+- [算法对比](#算法对比)
+- [API 文档](#api-参考)
+- [常见问题](#常见问题)
+- [文档](#文档)
+
+---
+
+## 什么是 SMKit？
+
+SMKit 是一个功能完整的国密算法工具库，让您在前端和 Node.js 环境中轻松使用中国商用密码算法（国密算法）。
+
+**国密算法是什么？**
+国密算法是由中国国家密码管理局制定的商用密码标准，包括 SM2（非对称加密）、SM3（哈希算法）、SM4（对称加密）和 ZUC（流密码）等。这些算法在金融、政务、电信等领域被广泛应用，特别是在需要符合中国信息安全法规的场景中。
+
+**SMKit 能做什么？**
+- 🔐 **数据加密**: 使用 SM2 或 SM4 加密敏感数据
+- ✍️ **数字签名**: 使用 SM2 对数据进行签名和验证
+- 🔑 **密钥交换**: 安全地在双方之间协商共享密钥
+- 🎲 **哈希计算**: 使用 SM3 或 SHA 系列算法生成数据摘要
+- 📡 **流加密**: 使用 ZUC 算法进行高速数据加密
+
+---
+
+## 为什么选择 SMKit？
+
+### 与其他国密库的对比
+
+| 特性 | SMKit | 其他库 |
+|------|-------|--------|
+| **类型支持** | ✅ 完整的 TypeScript 类型定义 | ⚠️ 部分库缺少类型 |
+| **模块化** | ✅ 支持 Tree-shaking，按需加载 | ⚠️ 通常需要加载整个库 |
+| **双 API 设计** | ✅ 函数式 + 面向对象 | ❌ 通常只有一种 |
+| **国际标准** | ✅ 同时支持国密和 SHA 系列 | ⚠️ 大多只支持国密 |
+| **浏览器兼容** | ✅ 支持 UMD 直接引入 | ⚠️ 部分只支持 Node.js |
+| **文档完善度** | ✅ 中英文详细文档 + 示例 | ⚠️ 文档通常较简略 |
+| **依赖管理** | ✅ 仅 2 个生产依赖 | ⚠️ 依赖通常较多 |
+| **维护状态** | ✅ 持续维护更新 | ⚠️ 部分已停止维护 |
+
+### 核心优势
+
+- **生产就绪**: 通过 214+ 单元测试，覆盖所有核心功能和边界情况
+- **标准合规**: 严格遵循 GM/T 国家标准（GM/T 0003-2012、GM/T 0004-2012 等）
+- **易于集成**: 提供详细的 [Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md)，轻松对接 Java 后端
+- **开发体验**: 清晰的错误提示、完整的文档、丰富的示例代码
+
+---
 
 ## 特性
 
-- **纯粹性**: 核心国密算法使用纯 TypeScript 实现，国际算法基于 @noble/hashes 高性能库
-- **性能**: 内部数据处理使用 `Uint8Array` 以获得最佳性能
-- **现代化**: 使用 TypeScript 编写，提供一流的类型支持，ES 模块优先，兼容 CommonJS
-- **同构性**: 在 Node.js 和现代浏览器中无缝运行
-- **灵活性**: 支持多种输出格式（hex、base64），适应不同使用场景
-- **国际标准**: 除国密算法外，还支持 SHA 系列哈希算法
+- **✨ 纯粹性**: 核心国密算法使用纯 TypeScript 实现，国际算法基于 @noble/hashes 高性能库
+- **⚡ 高性能**: 内部数据处理使用 `Uint8Array` 以获得最佳性能
+- **🔧 现代化**: 使用 TypeScript 编写，提供一流的类型支持，ES 模块优先，兼容 CommonJS
+- **🌐 同构性**: 在 Node.js 和现代浏览器中无缝运行
+- **🎨 灵活性**: 支持多种输出格式（hex、base64），适应不同使用场景
+- **📚 国际标准**: 除国密算法外，还支持 SHA 系列哈希算法
 
-## 安装
+---
+
+## 快速开始
+
+### 安装
 
 ```bash
+# 使用 npm
 npm install smkit
+
+# 使用 yarn
+yarn add smkit
+
+# 使用 pnpm
+pnpm add smkit
 ```
 
-### 多种导入方式
+### 5 分钟上手
 
-SMKit 支持多种模块格式，可以在不同环境中使用：
+选择您熟悉的模块格式开始使用：
 
-**ES Module (推荐用于现代项目)**
-```javascript
+#### **方式 1: ES Module（推荐 ⭐）**
+
+适用于现代前端项目（Vue、React、Angular 等）和 Node.js (>= 18)
+
+```typescript
 import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+
+// 1. 哈希计算 - 最简单的入门
+const hash = digest('Hello, SM3!');
+console.log('哈希值:', hash);
+
+// 2. 对称加密 - 加密敏感数据
+const key = '0123456789abcdeffedcba9876543210'; // 128 位密钥
+const encrypted = sm4Encrypt(key, '我的密码');
+console.log('加密后:', encrypted);
+
+// 3. 非对称加密 - 生成密钥对
+const keyPair = generateKeyPair();
+console.log('公钥:', keyPair.publicKey);
+console.log('私钥:', keyPair.privateKey);
 ```
 
-**CommonJS (Node.js)**
+#### **方式 2: CommonJS**
+
+适用于传统 Node.js 项目
+
 ```javascript
 const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+
+// 使用方法与 ES Module 相同
+const hash = digest('Hello, SM3!');
 ```
 
-**UMD (浏览器直接引入)**
+#### **方式 3: UMD（浏览器直接引入）**
+
+适用于不使用构建工具的项目
+
 ```html
-<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
-<script>
-  const hash = SMKit.digest('Hello, World!');
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SMKit 快速开始</title>
+</head>
+<body>
+  <script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+  <script>
+    // 通过全局对象 SMKit 访问所有功能
+    const hash = SMKit.digest('Hello, World!');
+    console.log('哈希值:', hash);
+    
+    // 加密示例
+    const key = '0123456789abcdeffedcba9876543210';
+    const encrypted = SMKit.sm4Encrypt(key, '秘密信息');
+    console.log('加密后:', encrypted);
+  </script>
+</body>
+</html>
 ```
+
+### 完整示例：实现一个简单的加密通信
+
+```typescript
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'smkit';
+
+// 场景：Alice 要发送加密消息给 Bob
+
+// 1. Bob 生成密钥对（公钥可以公开，私钥必须保密）
+const bobKeyPair = generateKeyPair();
+
+// 2. Alice 使用 Bob 的公钥加密消息
+const message = '这是一条秘密消息';
+const encrypted = sm2Encrypt(bobKeyPair.publicKey, message);
+console.log('加密后的消息:', encrypted);
+
+// 3. Bob 使用自己的私钥解密消息
+const decrypted = sm2Decrypt(bobKeyPair.privateKey, encrypted);
+console.log('解密后的消息:', decrypted); // 输出: '这是一条秘密消息'
+
+// 4. Alice 对消息进行签名（证明消息确实来自 Alice）
+const aliceKeyPair = generateKeyPair();
+const signature = sign(aliceKeyPair.privateKey, message);
+
+// 5. Bob 验证签名（确认消息来源）
+const isValid = verify(aliceKeyPair.publicKey, message, signature);
+console.log('签名验证:', isValid ? '✅ 通过' : '❌ 失败');
+```
+
+---
 
 ## 在线演示
 
@@ -87,7 +237,95 @@ npm run demo
 
 [查看 H5 演示说明](./demo/README.md)
 
-## 使用方法
+---
+
+## 算法对比
+
+### 国密算法 vs 国际标准算法
+
+了解不同算法的特点和适用场景，帮助您选择最合适的方案：
+
+| 特性 | SM2 | RSA | SM3 | SHA-256 | SM4 | AES |
+|------|-----|-----|-----|---------|-----|-----|
+| **类型** | 非对称加密 | 非对称加密 | 哈希算法 | 哈希算法 | 对称加密 | 对称加密 |
+| **密钥长度** | 256 位 | 2048-4096 位 | - | - | 128 位 | 128/192/256 位 |
+| **性能** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **安全性** | 极高 | 高 | 极高 | 高 | 极高 | 高 |
+| **标准** | GM/T 0003 | PKCS#1 | GM/T 0004 | FIPS 180-4 | GM/T 0002 | FIPS 197 |
+| **合规性** | ✅ 中国信创 | ✅ 国际通用 | ✅ 中国信创 | ✅ 国际通用 | ✅ 中国信创 | ✅ 国际通用 |
+
+### 各算法的典型应用场景
+
+#### **SM2 - 非对称加密**
+```typescript
+// 适用场景
+✅ 数字签名（合同、文档认证）
+✅ 密钥交换（建立安全通信）
+✅ 加密小量数据（如密钥、密码）
+❌ 不适合加密大文件（性能低）
+
+// 典型用例
+const keyPair = generateKeyPair();
+const signature = sign(keyPair.privateKey, '重要合同内容');
+```
+
+#### **SM3 - 哈希算法**
+```typescript
+// 适用场景
+✅ 数据完整性校验
+✅ 密码存储（加盐哈希）
+✅ 数字指纹生成
+✅ 区块链应用
+
+// 典型用例
+const hash = digest('用户密码' + '随机盐值');
+// 存储 hash 而不是明文密码
+```
+
+#### **SM4 - 对称加密**
+```typescript
+// 适用场景
+✅ 大量数据加密（文件、数据库）
+✅ 实时通信加密
+✅ 存储加密
+✅ 高性能要求场景
+
+// 典型用例
+const key = '0123456789abcdeffedcba9876543210';
+const encrypted = sm4Encrypt(key, '大量敏感数据...');
+```
+
+#### **ZUC - 流密码**
+```typescript
+// 适用场景
+✅ 移动通信（4G/5G LTE）
+✅ 实时视频/音频加密
+✅ 低延迟加密需求
+✅ 硬件实现优化
+
+// 典型用例
+const keystream = zucEncrypt(key, iv, '实时数据流');
+```
+
+### 如何选择算法？
+
+**🔒 需要加密数据？**
+- 小量数据（< 100 字节）：使用 **SM2**
+- 大量数据（> 100 字节）：使用 **SM4**
+- 实时流数据：使用 **ZUC**
+
+**✍️ 需要数字签名？**
+- 使用 **SM2** 的 `sign()` 和 `verify()` 函数
+
+**🔑 需要验证数据完整性？**
+- 使用 **SM3** 或 **SHA-256**
+
+**🤝 需要密钥交换？**
+- 使用 **SM2** 的 `keyExchange()` 函数
+
+---
+
+## 使用指南
 
 ### 输出格式配置
 
@@ -878,6 +1116,332 @@ SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均�
 - [标准合规](./docs/GMT-0009-COMPLIANCE.md) - GMT 国密标准合规性
 
 完整文档索引请查看 [docs/README.md](./docs/README.md)
+
+---
+
+## 常见问题
+
+### 安装和使用问题
+
+<details>
+<summary><strong>❓ 如何在 TypeScript 项目中使用？</strong></summary>
+
+SMKit 原生支持 TypeScript，无需额外配置：
+
+```typescript
+import { digest, sm4Encrypt, type KeyPair } from 'smkit';
+
+// TypeScript 会自动提供类型提示和检查
+const keyPair: KeyPair = generateKeyPair();
+```
+
+</details>
+
+<details>
+<summary><strong>❓ 浏览器中出现 "Module not found" 错误？</strong></summary>
+
+如果使用 Vite、Webpack 等构建工具，确保配置正确：
+
+**Vite 配置示例：**
+```javascript
+// vite.config.js
+export default {
+  optimizeDeps: {
+    include: ['smkit']
+  }
+}
+```
+
+**或直接使用 UMD 版本：**
+```html
+<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+```
+
+</details>
+
+<details>
+<summary><strong>❓ Node.js 中出现 "Cannot find module" 错误？</strong></summary>
+
+确保您的 Node.js 版本 >= 18.0.0：
+
+```bash
+node --version  # 应该 >= v18.0.0
+```
+
+如果使用 CommonJS，确保正确导入：
+```javascript
+const { digest } = require('smkit');
+```
+
+</details>
+
+### 加密和解密问题
+
+<details>
+<summary><strong>❓ SM4 解密失败，返回乱码？</strong></summary>
+
+**可能原因 1：加密和解密的参数不一致**
+
+```typescript
+// ❌ 错误示例
+const encrypted = sm4Encrypt(key, data, { mode: CipherMode.CBC, iv });
+const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.ECB }); // 模式不一致！
+
+// ✅ 正确示例
+const encrypted = sm4Encrypt(key, data, { mode: CipherMode.CBC, iv });
+const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.CBC, iv }); // 参数一致
+```
+
+**可能原因 2：密钥格式错误**
+
+```typescript
+// ❌ 错误：密钥长度不是 32 个十六进制字符（128 位）
+const key = '0123456789';
+
+// ✅ 正确：必须是 32 个十六进制字符
+const key = '0123456789abcdeffedcba9876543210';
+```
+
+</details>
+
+<details>
+<summary><strong>❓ SM2 加密后无法解密？</strong></summary>
+
+**检查密文模式是否一致：**
+
+```typescript
+// ✅ 方式 1：加密和解密都指定相同模式
+const encrypted = sm2Encrypt(publicKey, data, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+
+// ✅ 方式 2：让解密自动检测模式
+const encrypted = sm2Encrypt(publicKey, data, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, encrypted); // 自动检测
+```
+
+**检查公钥私钥是否匹配：**
+
+```typescript
+// ✅ 正确：使用同一个密钥对
+const keyPair = generateKeyPair();
+const encrypted = sm2Encrypt(keyPair.publicKey, data);
+const decrypted = sm2Decrypt(keyPair.privateKey, encrypted); // 使用对应的私钥
+```
+
+</details>
+
+<details>
+<summary><strong>❓ 签名验证总是返回 false？</strong></summary>
+
+**可能原因 1：userId 不一致**
+
+```typescript
+// ❌ 错误：签名和验证的 userId 不同
+const sig = sign(privateKey, data, { userId: 'alice@example.com' });
+const valid = verify(publicKey, data, sig, { userId: 'bob@example.com' }); // userId 不同！
+
+// ✅ 正确：userId 必须相同
+const sig = sign(privateKey, data, { userId: 'alice@example.com' });
+const valid = verify(publicKey, data, sig, { userId: 'alice@example.com' }); // userId 相同
+```
+
+**可能原因 2：数据被修改**
+
+```typescript
+const sig = sign(privateKey, 'original data');
+const valid = verify(publicKey, 'modified data', sig); // ❌ 数据不同，验证失败
+```
+
+**可能原因 3：DER 格式不匹配**
+
+```typescript
+// ✅ 格式必须一致
+const sig = sign(privateKey, data, { der: true });
+const valid = verify(publicKey, data, sig, { der: true }); // der 参数必须相同
+```
+
+</details>
+
+### 与其他系统对接问题
+
+<details>
+<summary><strong>❓ 如何与 Java 后端（Hutool）对接？</strong></summary>
+
+我们提供了详细的对接指南：[Hutool 集成指南](./docs/HUTOOL-INTEGRATION.zh-CN.md)
+
+**快速要点：**
+1. 密文模式统一使用 `C1C3C2`
+2. 公钥格式使用非压缩格式（04 开头）
+3. 密钥使用十六进制字符串传输
+4. userId 必须与后端保持一致
+
+</details>
+
+<details>
+<summary><strong>❓ 如何与 OpenSSL 生成的密钥对接？</strong></summary>
+
+**注意 OpenSSL 版本差异：**
+- OpenSSL 1.x：SM2 公钥使用错误的 OID `1.2.840.10045.2.1`
+- OpenSSL 3.x：使用正确的国密 OID `1.2.156.10197.1.301`
+
+**建议使用 OpenSSL 3.x 生成密钥：**
+```bash
+# 生成 SM2 私钥
+openssl ecparam -genkey -name SM2 -out private.pem
+
+# 提取公钥
+openssl ec -in private.pem -pubout -out public.pem
+```
+
+详细说明请查看 [OID 常量文档](#oid对象标识符)。
+
+</details>
+
+### 性能问题
+
+<details>
+<summary><strong>❓ 加密大文件很慢怎么办？</strong></summary>
+
+**对于大文件（> 1MB）：**
+
+1. **使用流式处理**（分块加密）：
+```typescript
+function encryptLargeFile(key: string, data: string, chunkSize = 1024 * 1024) {
+  const chunks = [];
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+    chunks.push(sm4Encrypt(key, chunk));
+  }
+  return chunks;
+}
+```
+
+2. **使用混合加密**（SM2 + SM4）：
+```typescript
+// 1. 生成随机 SM4 密钥
+const sm4Key = generateRandomKey(); // 自己实现随机密钥生成
+
+// 2. 用 SM4 加密大文件
+const encryptedData = sm4Encrypt(sm4Key, largeFileData);
+
+// 3. 用 SM2 加密 SM4 密钥
+const encryptedKey = sm2Encrypt(publicKey, sm4Key);
+
+// 传输：{ encryptedData, encryptedKey }
+```
+
+</details>
+
+<details>
+<summary><strong>❓ 如何提高性能？</strong></summary>
+
+**性能优化建议：**
+
+1. **选择合适的算法**：
+   - 大数据加密：使用 SM4（对称加密）而非 SM2
+   - 流式数据：使用 ZUC
+   
+2. **选择合适的模式**：
+   - ECB/CTR 模式比 CBC 略快
+   - GCM 模式提供加密 + 认证，避免额外哈希计算
+
+3. **减少重复操作**：
+```typescript
+// ❌ 不好：每次都创建新实例
+for (let i = 0; i < 1000; i++) {
+  const hash = digest(data[i]);
+}
+
+// ✅ 更好：复用实例
+const sm3 = new SM3();
+for (let i = 0; i < 1000; i++) {
+  sm3.reset();
+  sm3.update(data[i]);
+  const hash = sm3.digest();
+}
+```
+
+</details>
+
+### 安全问题
+
+<details>
+<summary><strong>❓ 密钥应该如何存储？</strong></summary>
+
+**⚠️ 安全建议：**
+
+❌ **不要这样做：**
+```typescript
+// 永远不要硬编码密钥
+const key = '0123456789abcdeffedcba9876543210';
+
+// 不要在前端存储私钥
+localStorage.setItem('privateKey', privateKey);
+```
+
+✅ **推荐做法：**
+
+1. **私钥始终在服务端**：
+```typescript
+// 前端只存储公钥
+const publicKey = await fetch('/api/public-key').then(r => r.text());
+
+// 加密操作在前端
+const encrypted = sm2Encrypt(publicKey, sensitiveData);
+
+// 解密操作在服务端
+await fetch('/api/decrypt', {
+  method: 'POST',
+  body: JSON.stringify({ encrypted })
+});
+```
+
+2. **使用环境变量**（服务端）：
+```typescript
+// .env
+SM4_KEY=0123456789abcdeffedcba9876543210
+
+// 代码中
+const key = process.env.SM4_KEY;
+```
+
+3. **使用密钥管理服务**（生产环境）：
+   - AWS KMS
+   - Azure Key Vault
+   - HashiCorp Vault
+
+</details>
+
+<details>
+<summary><strong>❓ 如何安全地传输密钥？</strong></summary>
+
+**使用密钥交换协议：**
+
+```typescript
+// 双方协商密钥，而不是直接传输
+const alice = generateKeyPair();
+const bob = generateKeyPair();
+
+// Alice 和 Bob 各自生成临时密钥
+const aliceTemp = generateKeyPair();
+const bobTemp = generateKeyPair();
+
+// 通过公开信道交换公钥，协商出共享密钥
+const aliceResult = keyExchange({
+  privateKey: alice.privateKey,
+  tempPrivateKey: aliceTemp.privateKey,
+  peerPublicKey: bob.publicKey,
+  peerTempPublicKey: bobTemp.publicKey,
+  isInitiator: true,
+  keyLength: 16
+});
+
+// Alice 和 Bob 得到相同的密钥，但从未在网络上传输
+```
+
+</details>
+
+---
 
 ## 相关项目
 
