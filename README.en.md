@@ -1,41 +1,195 @@
 # SMKit
 
-Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4, ZUC).
+<div align="center">
+
+[![npm version](https://img.shields.io/npm/v/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
+[![npm downloads](https://img.shields.io/npm/dm/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
+[![License](https://img.shields.io/npm/l/smkit.svg?style=flat-square)](https://github.com/linyuliu/smkit/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
+
+**Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4, ZUC) and international standards (SHA-256, SHA-384, SHA-512)**
+
+[简体中文](./README.md) | [English](./README.en.md)
+
+</div>
+
+---
+
+## 📑 Table of Contents
+
+- [What is SMKit?](#what-is-smkit)
+- [Why SMKit?](#why-smkit)
+- [Features](#features)
+- [Quick Start](#quick-start)
+  - [Installation](#installation)
+  - [5-Minute Tutorial](#5-minute-tutorial)
+- [Online Demo](#online-demo)
+- [Usage Guide](#usage)
+- [Algorithm Comparison](#algorithm-comparison)
+- [API Reference](#api-reference)
+- [FAQ](#faq)
+- [Documentation](#documentation)
+
+---
+
+## What is SMKit?
+
+SMKit is a comprehensive cryptographic library that makes it easy to use Chinese national cryptographic algorithms (SM algorithms) in frontend and Node.js environments.
+
+**What are SM algorithms?**
+SM algorithms are commercial cryptographic standards developed by the State Cryptography Administration of China, including SM2 (asymmetric encryption), SM3 (hash algorithm), SM4 (symmetric encryption), and ZUC (stream cipher). These algorithms are widely used in finance, government affairs, telecommunications, and especially in scenarios that need to comply with Chinese information security regulations.
+
+**What can SMKit do?**
+- 🔐 **Data Encryption**: Encrypt sensitive data using SM2 or SM4
+- ✍️ **Digital Signatures**: Sign and verify data using SM2
+- 🔑 **Key Exchange**: Securely negotiate shared keys between parties
+- 🎲 **Hash Computation**: Generate data digests using SM3 or SHA series
+- 📡 **Stream Encryption**: High-speed data encryption using ZUC
+
+---
+
+## Why SMKit?
+
+### Comparison with Other SM Libraries
+
+| Feature | SMKit | Other Libraries |
+|---------|-------|-----------------|
+| **Type Support** | ✅ Complete TypeScript definitions | ⚠️ Some lack types |
+| **Modular** | ✅ Tree-shaking, load on demand | ⚠️ Usually load entire library |
+| **Dual API** | ✅ Functional + Object-Oriented | ❌ Usually only one |
+| **International** | ✅ Both SM and SHA series | ⚠️ Mostly SM only |
+| **Browser** | ✅ UMD direct import | ⚠️ Some Node.js only |
+| **Documentation** | ✅ Detailed docs in CN/EN + examples | ⚠️ Usually brief |
+| **Dependencies** | ✅ Only 2 production deps | ⚠️ Usually more |
+| **Maintenance** | ✅ Actively maintained | ⚠️ Some unmaintained |
+
+### Core Advantages
+
+- **Production Ready**: 214+ unit tests covering all core features and edge cases
+- **Standards Compliant**: Strictly follows GM/T national standards (GM/T 0003-2012, GM/T 0004-2012, etc.)
+- **Easy Integration**: Detailed [Hutool Integration Guide](./docs/HUTOOL-INTEGRATION.zh-CN.md) for Java backend integration
+- **Developer Experience**: Clear error messages, complete documentation, rich examples
+
+---
 
 ## Features
 
-- **Purity**: Core cryptographic algorithms implemented in pure TypeScript with zero runtime dependencies
-- **Performance**: Internal data processing uses `Uint8Array` for optimal throughput
-- **Modern**: Written in TypeScript with first-class type support, prioritising ES Modules while staying compatible with CommonJS
-- **Isomorphic**: Works seamlessly in both Node.js and modern browsers
+- **✨ Purity**: Core SM algorithms in pure TypeScript, international algorithms based on @noble/hashes
+- **⚡ High Performance**: Internal data processing uses `Uint8Array` for optimal throughput
+- **🔧 Modern**: Written in TypeScript with first-class type support, ES Modules first, CommonJS compatible
+- **🌐 Isomorphic**: Works seamlessly in both Node.js and modern browsers
+- **🎨 Flexible**: Multiple output formats (hex, base64) for different scenarios
+- **📚 International**: Supports both SM and SHA series hash algorithms
 
-## Installation
+---
+
+## Quick Start
+
+### Installation
 
 ```bash
+# Using npm
 npm install smkit
+
+# Using yarn
+yarn add smkit
+
+# Using pnpm
+pnpm add smkit
 ```
 
-### Multiple Import Methods
+### 5-Minute Tutorial
 
-SMKit supports multiple module formats for use in different environments:
+Choose the module format you're familiar with:
 
-**ES Module (Recommended for modern projects)**
-```javascript
+#### **Method 1: ES Module (Recommended ⭐)**
+
+For modern frontend projects (Vue, React, Angular, etc.) and Node.js (>= 18)
+
+```typescript
 import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+
+// 1. Hash computation - simplest entry point
+const hash = digest('Hello, SM3!');
+console.log('Hash:', hash);
+
+// 2. Symmetric encryption - encrypt sensitive data
+const key = '0123456789abcdeffedcba9876543210'; // 128-bit key
+const encrypted = sm4Encrypt(key, 'my password');
+console.log('Encrypted:', encrypted);
+
+// 3. Asymmetric encryption - generate key pair
+const keyPair = generateKeyPair();
+console.log('Public Key:', keyPair.publicKey);
+console.log('Private Key:', keyPair.privateKey);
 ```
 
-**CommonJS (Node.js)**
+#### **Method 2: CommonJS**
+
+For traditional Node.js projects
+
 ```javascript
 const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+
+// Usage is the same as ES Module
+const hash = digest('Hello, SM3!');
 ```
 
-**UMD (Direct browser usage)**
+#### **Method 3: UMD (Direct Browser Import)**
+
+For projects without build tools
+
 ```html
-<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
-<script>
-  const hash = SMKit.digest('Hello, World!');
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SMKit Quick Start</title>
+</head>
+<body>
+  <script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+  <script>
+    // Access all features through global SMKit object
+    const hash = SMKit.digest('Hello, World!');
+    console.log('Hash:', hash);
+    
+    // Encryption example
+    const key = '0123456789abcdeffedcba9876543210';
+    const encrypted = SMKit.sm4Encrypt(key, 'secret message');
+    console.log('Encrypted:', encrypted);
+  </script>
+</body>
+</html>
 ```
+
+### Complete Example: Secure Communication
+
+```typescript
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'smkit';
+
+// Scenario: Alice wants to send an encrypted message to Bob
+
+// 1. Bob generates a key pair (public key can be shared, private key must be secret)
+const bobKeyPair = generateKeyPair();
+
+// 2. Alice encrypts the message using Bob's public key
+const message = 'This is a secret message';
+const encrypted = sm2Encrypt(bobKeyPair.publicKey, message);
+console.log('Encrypted message:', encrypted);
+
+// 3. Bob decrypts the message using his private key
+const decrypted = sm2Decrypt(bobKeyPair.privateKey, encrypted);
+console.log('Decrypted message:', decrypted); // Output: 'This is a secret message'
+
+// 4. Alice signs the message (prove it's from Alice)
+const aliceKeyPair = generateKeyPair();
+const signature = sign(aliceKeyPair.privateKey, message);
+
+// 5. Bob verifies the signature (confirm the source)
+const isValid = verify(aliceKeyPair.publicKey, message, signature);
+console.log('Signature verification:', isValid ? '✅ Valid' : '❌ Invalid');
+```
+
+---
 
 ## Online Demo
 
@@ -83,7 +237,95 @@ Features:
 
 [View H5 Demo Documentation](./demo/README.md)
 
-## Usage
+---
+
+## Algorithm Comparison
+
+### SM Algorithms vs International Standards
+
+Understanding different algorithms helps you choose the right solution:
+
+| Feature | SM2 | RSA | SM3 | SHA-256 | SM4 | AES |
+|---------|-----|-----|-----|---------|-----|-----|
+| **Type** | Asymmetric | Asymmetric | Hash | Hash | Symmetric | Symmetric |
+| **Key Length** | 256-bit | 2048-4096-bit | - | - | 128-bit | 128/192/256-bit |
+| **Performance** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Security** | Very High | High | Very High | High | Very High | High |
+| **Standard** | GM/T 0003 | PKCS#1 | GM/T 0004 | FIPS 180-4 | GM/T 0002 | FIPS 197 |
+| **Compliance** | ✅ Chinese | ✅ International | ✅ Chinese | ✅ International | ✅ Chinese | ✅ International |
+
+### Typical Use Cases
+
+#### **SM2 - Asymmetric Encryption**
+```typescript
+// Use cases
+✅ Digital signatures (contracts, documents)
+✅ Key exchange (establish secure channel)
+✅ Encrypt small data (keys, passwords)
+❌ Not for large files (low performance)
+
+// Typical example
+const keyPair = generateKeyPair();
+const signature = sign(keyPair.privateKey, 'Important contract');
+```
+
+#### **SM3 - Hash Algorithm**
+```typescript
+// Use cases
+✅ Data integrity verification
+✅ Password storage (salted hash)
+✅ Digital fingerprints
+✅ Blockchain applications
+
+// Typical example
+const hash = digest('user password' + 'random salt');
+// Store hash instead of plaintext
+```
+
+#### **SM4 - Symmetric Encryption**
+```typescript
+// Use cases
+✅ Large data encryption (files, databases)
+✅ Real-time communication encryption
+✅ Storage encryption
+✅ High-performance scenarios
+
+// Typical example
+const key = '0123456789abcdeffedcba9876543210';
+const encrypted = sm4Encrypt(key, 'Large sensitive data...');
+```
+
+#### **ZUC - Stream Cipher**
+```typescript
+// Use cases
+✅ Mobile communications (4G/5G LTE)
+✅ Real-time video/audio encryption
+✅ Low-latency requirements
+✅ Hardware optimization
+
+// Typical example
+const keystream = zucEncrypt(key, iv, 'Real-time data stream');
+```
+
+### How to Choose?
+
+**🔒 Need to encrypt data?**
+- Small data (< 100 bytes): Use **SM2**
+- Large data (> 100 bytes): Use **SM4**
+- Stream data: Use **ZUC**
+
+**✍️ Need digital signatures?**
+- Use **SM2** `sign()` and `verify()` functions
+
+**🔑 Need data integrity verification?**
+- Use **SM3** or **SHA-256**
+
+**🤝 Need key exchange?**
+- Use **SM2** `keyExchange()` function
+
+---
+
+## Usage Guide
 
 [简体中文](./README.md) | English
 
@@ -704,6 +946,332 @@ For more documentation, see the [docs](./docs) directory:
 - [Standards Compliance](./docs/GMT-0009-COMPLIANCE.md) - GMT national standard compliance
 
 For a complete documentation index, see [docs/README.md](./docs/README.md)
+
+---
+
+## FAQ
+
+### Installation and Usage
+
+<details>
+<summary><strong>❓ How to use in TypeScript projects?</strong></summary>
+
+SMKit has native TypeScript support, no additional configuration needed:
+
+```typescript
+import { digest, sm4Encrypt, type KeyPair } from 'smkit';
+
+// TypeScript automatically provides type hints and checks
+const keyPair: KeyPair = generateKeyPair();
+```
+
+</details>
+
+<details>
+<summary><strong>❓ Getting "Module not found" error in browser?</strong></summary>
+
+If using build tools like Vite or Webpack, ensure correct configuration:
+
+**Vite Configuration Example:**
+```javascript
+// vite.config.js
+export default {
+  optimizeDeps: {
+    include: ['smkit']
+  }
+}
+```
+
+**Or use UMD version directly:**
+```html
+<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+```
+
+</details>
+
+<details>
+<summary><strong>❓ Getting "Cannot find module" error in Node.js?</strong></summary>
+
+Ensure your Node.js version >= 18.0.0:
+
+```bash
+node --version  # Should be >= v18.0.0
+```
+
+If using CommonJS, ensure correct import:
+```javascript
+const { digest } = require('smkit');
+```
+
+</details>
+
+### Encryption and Decryption
+
+<details>
+<summary><strong>❓ SM4 decryption fails, returns gibberish?</strong></summary>
+
+**Reason 1: Inconsistent parameters between encryption and decryption**
+
+```typescript
+// ❌ Wrong example
+const encrypted = sm4Encrypt(key, data, { mode: CipherMode.CBC, iv });
+const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.ECB }); // Mode mismatch!
+
+// ✅ Correct example
+const encrypted = sm4Encrypt(key, data, { mode: CipherMode.CBC, iv });
+const decrypted = sm4Decrypt(key, encrypted, { mode: CipherMode.CBC, iv }); // Consistent params
+```
+
+**Reason 2: Wrong key format**
+
+```typescript
+// ❌ Wrong: Key length is not 32 hex characters (128 bits)
+const key = '0123456789';
+
+// ✅ Correct: Must be 32 hex characters
+const key = '0123456789abcdeffedcba9876543210';
+```
+
+</details>
+
+<details>
+<summary><strong>❓ Can't decrypt SM2 encrypted data?</strong></summary>
+
+**Check cipher mode consistency:**
+
+```typescript
+// ✅ Method 1: Specify same mode for both
+const encrypted = sm2Encrypt(publicKey, data, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+
+// ✅ Method 2: Let decryption auto-detect mode
+const encrypted = sm2Encrypt(publicKey, data, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, encrypted); // Auto-detect
+```
+
+**Check if public and private keys match:**
+
+```typescript
+// ✅ Correct: Use same key pair
+const keyPair = generateKeyPair();
+const encrypted = sm2Encrypt(keyPair.publicKey, data);
+const decrypted = sm2Decrypt(keyPair.privateKey, encrypted); // Use corresponding private key
+```
+
+</details>
+
+<details>
+<summary><strong>❓ Signature verification always returns false?</strong></summary>
+
+**Reason 1: Inconsistent userId**
+
+```typescript
+// ❌ Wrong: Different userId for signing and verification
+const sig = sign(privateKey, data, { userId: 'alice@example.com' });
+const valid = verify(publicKey, data, sig, { userId: 'bob@example.com' }); // Different userId!
+
+// ✅ Correct: userId must be the same
+const sig = sign(privateKey, data, { userId: 'alice@example.com' });
+const valid = verify(publicKey, data, sig, { userId: 'alice@example.com' }); // Same userId
+```
+
+**Reason 2: Data was modified**
+
+```typescript
+const sig = sign(privateKey, 'original data');
+const valid = verify(publicKey, 'modified data', sig); // ❌ Different data, verification fails
+```
+
+**Reason 3: DER format mismatch**
+
+```typescript
+// ✅ Format must be consistent
+const sig = sign(privateKey, data, { der: true });
+const valid = verify(publicKey, data, sig, { der: true }); // der parameter must match
+```
+
+</details>
+
+### Integration with Other Systems
+
+<details>
+<summary><strong>❓ How to integrate with Java backend (Hutool)?</strong></summary>
+
+We provide a detailed integration guide: [Hutool Integration Guide](./docs/HUTOOL-INTEGRATION.zh-CN.md)
+
+**Quick points:**
+1. Use `C1C3C2` cipher mode consistently
+2. Use uncompressed public key format (starts with 04)
+3. Transfer keys as hex strings
+4. userId must be consistent with backend
+
+</details>
+
+<details>
+<summary><strong>❓ How to integrate with OpenSSL-generated keys?</strong></summary>
+
+**Note OpenSSL version differences:**
+- OpenSSL 1.x: SM2 public keys use incorrect OID `1.2.840.10045.2.1`
+- OpenSSL 3.x: Uses correct national crypto OID `1.2.156.10197.1.301`
+
+**Recommended to use OpenSSL 3.x for key generation:**
+```bash
+# Generate SM2 private key
+openssl ecparam -genkey -name SM2 -out private.pem
+
+# Extract public key
+openssl ec -in private.pem -pubout -out public.pem
+```
+
+See [OID Constants Documentation](#oid-object-identifier) for details.
+
+</details>
+
+### Performance
+
+<details>
+<summary><strong>❓ Encrypting large files is slow?</strong></summary>
+
+**For large files (> 1MB):**
+
+1. **Use streaming (chunked encryption):**
+```typescript
+function encryptLargeFile(key: string, data: string, chunkSize = 1024 * 1024) {
+  const chunks = [];
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+    chunks.push(sm4Encrypt(key, chunk));
+  }
+  return chunks;
+}
+```
+
+2. **Use hybrid encryption (SM2 + SM4):**
+```typescript
+// 1. Generate random SM4 key
+const sm4Key = generateRandomKey(); // Implement random key generation
+
+// 2. Encrypt large file with SM4
+const encryptedData = sm4Encrypt(sm4Key, largeFileData);
+
+// 3. Encrypt SM4 key with SM2
+const encryptedKey = sm2Encrypt(publicKey, sm4Key);
+
+// Transfer: { encryptedData, encryptedKey }
+```
+
+</details>
+
+<details>
+<summary><strong>❓ How to improve performance?</strong></summary>
+
+**Performance optimization tips:**
+
+1. **Choose right algorithm:**
+   - Large data encryption: Use SM4 (symmetric) not SM2
+   - Stream data: Use ZUC
+   
+2. **Choose right mode:**
+   - ECB/CTR modes are slightly faster than CBC
+   - GCM provides encryption + authentication, avoiding extra hash computation
+
+3. **Reduce repeated operations:**
+```typescript
+// ❌ Bad: Create new instance each time
+for (let i = 0; i < 1000; i++) {
+  const hash = digest(data[i]);
+}
+
+// ✅ Better: Reuse instance
+const sm3 = new SM3();
+for (let i = 0; i < 1000; i++) {
+  sm3.reset();
+  sm3.update(data[i]);
+  const hash = sm3.digest();
+}
+```
+
+</details>
+
+### Security
+
+<details>
+<summary><strong>❓ How should keys be stored?</strong></summary>
+
+**⚠️ Security recommendations:**
+
+❌ **Don't do this:**
+```typescript
+// Never hardcode keys
+const key = '0123456789abcdeffedcba9876543210';
+
+// Don't store private keys in frontend
+localStorage.setItem('privateKey', privateKey);
+```
+
+✅ **Recommended practices:**
+
+1. **Private keys always on server:**
+```typescript
+// Frontend only stores public key
+const publicKey = await fetch('/api/public-key').then(r => r.text());
+
+// Encryption on frontend
+const encrypted = sm2Encrypt(publicKey, sensitiveData);
+
+// Decryption on server
+await fetch('/api/decrypt', {
+  method: 'POST',
+  body: JSON.stringify({ encrypted })
+});
+```
+
+2. **Use environment variables** (server-side):
+```typescript
+// .env
+SM4_KEY=0123456789abcdeffedcba9876543210
+
+// Code
+const key = process.env.SM4_KEY;
+```
+
+3. **Use key management services** (production):
+   - AWS KMS
+   - Azure Key Vault
+   - HashiCorp Vault
+
+</details>
+
+<details>
+<summary><strong>❓ How to securely transfer keys?</strong></summary>
+
+**Use key exchange protocol:**
+
+```typescript
+// Negotiate keys instead of direct transfer
+const alice = generateKeyPair();
+const bob = generateKeyPair();
+
+// Both generate temporary keys
+const aliceTemp = generateKeyPair();
+const bobTemp = generateKeyPair();
+
+// Exchange public keys over public channel, negotiate shared key
+const aliceResult = keyExchange({
+  privateKey: alice.privateKey,
+  tempPrivateKey: aliceTemp.privateKey,
+  peerPublicKey: bob.publicKey,
+  peerTempPublicKey: bobTemp.publicKey,
+  isInitiator: true,
+  keyLength: 16
+});
+
+// Alice and Bob get same key without ever transmitting it
+```
+
+</details>
+
+---
 
 ## Related Projects
 
